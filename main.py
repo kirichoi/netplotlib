@@ -8,15 +8,13 @@ Kiri Choi (c) 2018
 
 import tellurium as te
 import antimony
-import libsbml
 import networkx as nx
-from matplotlib.patches import FancyArrowPatch, Rectangle
+from matplotlib.patches import FancyArrowPatch, Rectangle, Circle
 import matplotlib.pyplot as plt
 import numpy as np
 import sympy
-import test_models as ts
 import tesbml
-import re
+from test_models import testmodels as ts
 
 def plotNetworkFromSBML(model):
     """
@@ -30,16 +28,25 @@ def plotNetworkFromSBML(model):
     plotNetwork(r.getAntimony())
     
 
-def plotNetwork(model, lw=3):
+def plotNetwork(model, scale=1.5, fontsize=20, lw=3):
     """     
     plot reaction network from a single model
     
     :param model: antimony string of a model to plot
+    :param scale: scaling factor for layout algorithm
+    :param fontsize: fontsize for labels
+    :param lw: linewidth of edges
+    :param node: node color
+    :param reaction: reaction node color
+    :param label: label color
+    :param edge: edge color
+    :param modifier: modifier edge color
     """
     
     r = te.loada(model)
     numBnd = r.getNumBoundarySpecies()
     numFlt = r.getNumFloatingSpecies()
+    rid = r.getReactionIds()
     
     paramIdsStr = ' '.join(r.getGlobalParameterIds())
     floatingIdsStr = ' '.join(r.getFloatingSpeciesIds())
@@ -102,29 +109,30 @@ def plotNetwork(model, lw=3):
     for i in range(sbmlmodel.getNumReactions()):
         if len(rct[i]) == 1:
             if len(prd[i]) == 1:
-                G.add_edges_from([(rct[i][0], prd[i][0])], weight=(1+lw))
+                G.add_edges_from([(rct[i][0], rid[i])], weight=(1+lw))
+                G.add_edges_from([(rid[i], prd[i][0])], weight=(1+lw))
             else:
-                G.add_edges_from([(rct[i][0], '')], weight=(1+lw))
+                G.add_edges_from([(rct[i][0], rid[i])], weight=(1+lw))
                 for j in range(len(prd[i])):
-                    G.add_edges_from([('', prd[i][j])], weight=(1+lw))
+                    G.add_edges_from([(rid[i], prd[i][j])], weight=(1+lw))
         else:
             if len(prd[i]) == 1:
                 for k in range(len(rct[i])):
-                    G.add_edges_from([(rct[i][k], '')], weight=(1+lw))
-                G.add_edges_from([('', prd[i][0])], weight=(1+lw))
+                    G.add_edges_from([(rct[i][k], rid[i])], weight=(1+lw))
+                G.add_edges_from([(rid[i], prd[i][0])], weight=(1+lw))
             else:
                 for k in range(len(rct[i])):
-                    G.add_edges_from([(rct[i][k], '')], weight=(1+lw))
+                    G.add_edges_from([(rct[i][k], rid[i])], weight=(1+lw))
                 for j in range(len(prd[i])):
-                    G.add_edges_from([('', prd[i][j])], weight=(1+lw))
+                    G.add_edges_from([(rid[i], prd[i][j])], weight=(1+lw))
                     
         if len(mod[i]) > 0:
             if mod_type[i][0] == 'inhibitor':
-                G.add_edges_from([(mod[i][0], rct[i][0])], weight=(1+lw))
+                G.add_edges_from([(mod[i][0], rid[i])], weight=(1+lw))
             elif mod_type[i][0] == 'activator':
-                G.add_edges_from([(mod[i][0], rct[i][0])], weight=(1+lw))
+                G.add_edges_from([(mod[i][0], rid[i])], weight=(1+lw))
     
-    pos = nx.spring_layout(G)
+    pos = nx.kamada_kawai_layout(G, scale=scale)
     
     max_width = []
     max_height = []
@@ -135,31 +143,29 @@ def plotNetwork(model, lw=3):
     max_width = [min(max_width), max(max_width)]
     max_height = [min(max_height), max(max_height)]
     
-#    edges = G.edges()
-#    weights = [G[u][v]['weight'] for u,v in edges]
-    
     flat_rct = [item for sublist in rct for item in sublist]
     flat_prd = [item for sublist in prd for item in sublist]
 
     strMaxLen = len(max(flat_rct+flat_prd, key=len))
-#    nx.draw(G, pos, node_size=250*strMaxLen, with_labels=True, width=weights, 
-#            node_shape='s')
-    
-    
-    fontsize = 20
     
     fig = plt.figure()
     ax = plt.gca()
     
     for n in G:
-        if n == '':
-            c = Rectangle(pos[n], width=0, height=0)
+        if n in rid:
+            c = Circle(pos[n], radius=0.05)
+            plt.text(pos[n][0], pos[n][1], n, fontsize=fontsize, 
+                 horizontalalignment='center', verticalalignment='center')
         else:
-            c = Rectangle(pos[n], width=max(0.05*strMaxLen, 0.2), height=0.15)
+            rec_width = max(0.05*strMaxLen, 0.2)
+            rec_height = 0.15
+            c = Rectangle(np.array([pos[n][0]-rec_width/2,pos[n][1]-rec_height/2]), width=rec_width, height=rec_height)
+            plt.text(pos[n][0], pos[n][1], n, 
+                     fontsize=fontsize, horizontalalignment='center', 
+                     verticalalignment='center')
         ax.add_patch(c)
         G.node[n]['patch'] = c
-        plt.text(pos[n][0]+c.get_width()/2, pos[n][1]+c.get_height()/2, n, fontsize=fontsize, 
-                 horizontalalignment='center', verticalalignment='center')
+       
     seen={}
     for (u,v,d) in G.edges(data=True):
         n1 = G.node[u]['patch']
@@ -169,9 +175,21 @@ def plotNetwork(model, lw=3):
             rad = seen.get((u,v)) # TODO: No curvature when there is just a single line between two nodes
             rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
         color = 'k'
-
-        e = FancyArrowPatch((n1.xy[0]+n1.get_width()/2,n1.xy[1]+n1.get_height()/2),
-                            (n2.xy[0]+n2.get_width()/2,n2.xy[1]+n2.get_height()/2),
+        
+        if u in rid or v in rid:
+            if u in rid:
+                X1 = (n1.center[0],n1.center[1])
+            else:
+                X1 = (n1.xy[0]+n1.get_width()/2,n1.xy[1]+n1.get_height()/2)
+            if v in rid:
+                X2 = (n2.center[0],n2.center[1])
+            else:
+                X2 = (n2.xy[0]+n2.get_width()/2,n2.xy[1]+n2.get_height()/2)
+        else:
+            X1 = (n1.xy[0]+n1.get_width()/2,n1.xy[1]+n1.get_height()/2)
+            X2 = (n2.xy[0]+n2.get_width()/2,n2.xy[1]+n2.get_height()/2)
+        e = FancyArrowPatch(X1,
+                            X2,
                             patchA=n1,
                             patchB=n2,
                             arrowstyle='-|>',
@@ -187,7 +205,6 @@ def plotNetwork(model, lw=3):
     fig.set_figheight((abs(max_height[0] - max_height[1])+0.5)*5)
     plt.axis('off')
     plt.axis('equal')
-    
     
     plt.show()
     
@@ -297,7 +314,7 @@ def plotWeightedNetwork(models, lw=10):
             c = Rectangle(pos[n], width=max(0.05*strMaxLen, 0.2), height=0.15)
         ax.add_patch(c)
         G.node[n]['patch'] = c
-        plt.text(pos[n][0]+c.get_width()/2, pos[n][1]+c.get_height()/2, n, fontsize=fontsize, 
+        plt.text(pos[n][0], pos[n][1], n, fontsize=fontsize, 
                  horizontalalignment='center', verticalalignment='center')
     seen={}
     for (u,v,d) in G.edges(data=True):
@@ -334,3 +351,4 @@ def plotWeightedNetwork(models, lw=10):
     plt.show()
     
     return allRxn, count
+
