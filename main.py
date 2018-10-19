@@ -9,11 +9,12 @@ Kiri Choi (c) 2018
 import tellurium as te
 import antimony
 import networkx as nx
-from matplotlib.patches import FancyArrowPatch, Rectangle, Circle
+from matplotlib.patches import FancyArrowPatch, Rectangle, Circle, FancyBboxPatch
 import matplotlib.pyplot as plt
 import numpy as np
 import sympy
 import tesbml
+import itertools
 from test_models import testmodels as ts
 
 def plotNetworkFromSBML(model):
@@ -28,7 +29,8 @@ def plotNetworkFromSBML(model):
     plotNetwork(r.getAntimony())
     
 
-def plotNetwork(model, scale=1.5, fontsize=20, lw=3, edge='k', modifier='r'):
+def plotNetwork(model, scale=1.5, fontsize=20, lw=3, node='tab:blue', reaction='tab:blue', 
+                label='w', edge='k', modifier='tab:red', break_boundary=False):
     """     
     plot reaction network from a single model
     
@@ -41,13 +43,16 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, edge='k', modifier='r'):
     :param label: label color
     :param edge: edge color
     :param modifier: modifier edge color
+    :param break_boundary: flag for breaking all boundary species into separate nodes
     """
     
     r = te.loada(model)
     numBnd = r.getNumBoundarySpecies()
     numFlt = r.getNumFloatingSpecies()
+    speciesId = r.getBoundarySpeciesIds() + r.getFloatingSpeciesIds()
     rid = r.getReactionIds()
     
+    # prepare symbols for sympy
     paramIdsStr = ' '.join(r.getGlobalParameterIds())
     floatingIdsStr = ' '.join(r.getFloatingSpeciesIds())
     boundaryIdsStr = ' '.join(r.getBoundarySpeciesIds())
@@ -57,6 +62,7 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, edge='k', modifier='r'):
     
     avsym = sympy.symbols(allIds)
     
+    # extract reactant, product, modifiers, and kinetic laws
     rct = []
     prd = []
     mod = []
@@ -89,7 +95,7 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, edge='k', modifier='r'):
         mod.append(tempmod)
         kineticLaw.append(kl.getFormula())
     
-    # Sympy weSmart
+    # use sympy for analyzing modifiers weSmart
     for ml in range(len(mod)):
         mod_type_temp = []
         expression = kineticLaw[ml]
@@ -103,7 +109,6 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, edge='k', modifier='r'):
                 continue
         mod_type.append(mod_type_temp)
     
-    
     for i in range(len(mod)):
         mod_target_temp = []
         if len(mod[i]) > 0:
@@ -114,8 +119,10 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, edge='k', modifier='r'):
     modtype_flat = [item for sublist in mod_type for item in sublist]
     modtarget_flat = [item for sublist in mod_target for item in sublist]
     
+    # initialize directional graph
     G = nx.DiGraph()
 
+    # add edges
     # TODO: Separate boundary species?
     for i in range(sbmlmodel.getNumReactions()):
         if len(rct[i]) == 1:
@@ -142,10 +149,25 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, edge='k', modifier='r'):
                 G.add_edges_from([(mod[i][0], rid[i])], weight=(1+lw))
             elif mod_type[i][0] == 'activator':
                 G.add_edges_from([(mod[i][0], rid[i])], weight=(1+lw))
-    
+        
+    # calcutate positions
     thres = 0.1
-    pos = nx.kamada_kawai_layout(G, scale=scale)
+    shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
+    pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=scale)
+    #pos = nx.spring_layout(G, pos=pos, seed=1, scale=scale)
     
+    dist_flag = True
+    
+    while dist_flag:
+        dist_flag = False
+        for i in itertools.combinations(pos.keys(), 2):
+            pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+            if pos_dist < thres:
+                dist_flag = True
+                shortest_dist[i[0]][i[1]] = 4
+        pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=scale)
+    
+    # check the range of x and y positions
     max_width = []
     max_height = []
     for key, value in pos.items():
@@ -160,24 +182,32 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, edge='k', modifier='r'):
 
     strMaxLen = len(max(flat_rct+flat_prd, key=len))
     
+    # initialize figure
     fig = plt.figure()
     ax = plt.gca()
     
+    # add nodes to the figure
     for n in G:
         if n in rid:
-            c = Circle(pos[n], radius=0.05)
+            rec_rad = max(0.01*(len(n)+2), 0.055)
+            c = Circle(pos[n], radius=rec_rad, color=reaction)
             plt.text(pos[n][0], pos[n][1], n, fontsize=fontsize, 
-                 horizontalalignment='center', verticalalignment='center')
+                 horizontalalignment='center', verticalalignment='center', color=label)
         else:
-            rec_width = max(0.05*strMaxLen, 0.2)
-            rec_height = 0.15
-            c = Rectangle(np.array([pos[n][0]-rec_width/2,pos[n][1]-rec_height/2]), width=rec_width, height=rec_height)
+            # TODO: if the label is too long, increase the height and change line/abbreviate?
+            rec_width = max(0.04*(len(n)+2), 0.17)
+            rec_height = 0.12
+            c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
+                               rec_width, rec_height,
+                               boxstyle="round,pad=0.01, rounding_size=0.02",
+                               linewidth=0)
             plt.text(pos[n][0], pos[n][1], n, 
                      fontsize=fontsize, horizontalalignment='center', 
-                     verticalalignment='center')
+                     verticalalignment='center', color=label)
         ax.add_patch(c)
         G.node[n]['patch'] = c
-       
+    
+    # add edges to the figure
     seen={}
     for (u,v,d) in G.edges(data=True):
         n1 = G.node[u]['patch']
@@ -191,62 +221,43 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, edge='k', modifier='r'):
             if u in rid:
                 X1 = (n1.center[0],n1.center[1])
             else:
-                X1 = (n1.xy[0]+n1.get_width()/2,n1.xy[1]+n1.get_height()/2)
+                X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
             if v in rid:
                 X2 = (n2.center[0],n2.center[1])
             else:
-                X2 = (n2.xy[0]+n2.get_width()/2,n2.xy[1]+n2.get_height()/2)
+                X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
         else:
-            X1 = (n1.xy[0]+n1.get_width()/2,n1.xy[1]+n1.get_height()/2)
-            X2 = (n2.xy[0]+n2.get_width()/2,n2.xy[1]+n2.get_height()/2)
+            X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
+            X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
         
         if u not in rid and v in rid and u not in mod_flat and v not in modtarget_flat: # species node to reaction node
-            e = FancyArrowPatch(X1,
-                                X2,
-                                patchA=n1,
-                                patchB=n2,
-                                arrowstyle='-',
-                                connectionstyle='arc3,rad=%s'%rad,
-                                mutation_scale=10.0,
-                                lw=G[u][v]['weight'],
-                                color=edge)
-            
+            color=edge
+            arrowstyle='-'
         elif u not in rid and v in rid and u in mod_flat and v in modtarget_flat: # modifiers
             uind = [i for i, e in enumerate(mod_flat) if e == u]
             vind = [i for i, e in enumerate(modtarget_flat) if e == v]
-            if modtype_flat[list(set(uind).intersection(vind))[0]] == 'inhibitor':
-                e = FancyArrowPatch(X1,
-                                X2,
-                                patchA=n1,
-                                patchB=n2,
-                                arrowstyle='-[',
-                                connectionstyle='arc3,rad=%s'%rad,
-                                mutation_scale=10.0,
-                                lw=G[u][v]['weight'],
-                                color=modifier)
-            else:
-                e = FancyArrowPatch(X1,
-                                    X2,
-                                    patchA=n1,
-                                    patchB=n2,
-                                    arrowstyle='-|>',
-                                    connectionstyle='arc3,rad=%s'%rad,
-                                    mutation_scale=10.0,
-                                    lw=G[u][v]['weight'],
-                                    color=modifier)
+            if modtype_flat[list(set(uind).intersection(vind))[0]] == 'inhibitor': # inhibition
+                color=modifier
+                arrowstyle='-['
+            else: # activation
+                color=modifier
+                arrowstyle='-|>'
         else: # reaction node to species node
-            e = FancyArrowPatch(X1,
-                                X2,
-                                patchA=n1,
-                                patchB=n2,
-                                arrowstyle='-|>',
-                                connectionstyle='arc3,rad=%s'%rad,
-                                mutation_scale=10.0,
-                                lw=G[u][v]['weight'],
-                                color=edge)
+            color=edge
+            arrowstyle='-|>'
+        e = FancyArrowPatch(X1,
+                            X2,
+                            patchA=n1,
+                            patchB=n2,
+                            arrowstyle=arrowstyle,
+                            connectionstyle='arc3,rad=%s'%rad,
+                            mutation_scale=10.0,
+                            lw=G[u][v]['weight'],
+                            color=color)
         seen[(u,v)]=rad
         ax.add_patch(e)
     
+    # reset width and height
     ax.autoscale()
     fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5)
     fig.set_figheight((abs(max_height[0] - max_height[1])+0.5)*5)
