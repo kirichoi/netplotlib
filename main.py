@@ -17,20 +17,36 @@ import tesbml
 import itertools
 from test_models import testmodels as ts
 
-def plotNetworkFromSBML(model):
+def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
+                        reaction='tab:blue', label='w', edge='k', 
+                        modifier='tab:red', boundary='tab:gray',
+                        break_boundary=False):
     """
     plot reaction network from a single SBML model
     
-    :param model: SBML file path or string    
+    :param model: antimony string of a model to plot
+    :param scale: scaling factor for layout algorithm
+    :param fontsize: fontsize for labels
+    :param lw: linewidth of edges
+    :param node: node color
+    :param reaction: reaction node color
+    :param label: label color
+    :param edge: edge color
+    :param modifier: modifier edge color
+    :param boundary: boundary node color
+    :param break_boundary: flag for breaking all boundary species into separate nodes
     """
     
     r = te.loadSBMLModel(model)
     
-    plotNetwork(r.getAntimony())
+    plotNetwork(r.getAntimony(), scale=scale, fontsize=fontsize, lw=lw, 
+                node=node, reaction=reaction, label=label, edge=edge,
+                modifier=modifier, boundary=boundary, break_boundary=break_boundary)
     
 
-def plotNetwork(model, scale=1.5, fontsize=20, lw=3, node='tab:blue', reaction='tab:blue', 
-                label='w', edge='k', modifier='tab:red', break_boundary=False):
+def plotNetwork(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
+                reaction='tab:blue', label='w', edge='k', modifier='tab:red', 
+                boundary='tab:gray', break_boundary=False):
     """     
     plot reaction network from a single model
     
@@ -43,13 +59,16 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, node='tab:blue', reaction='
     :param label: label color
     :param edge: edge color
     :param modifier: modifier edge color
+    :param boundary: boundary node color
     :param break_boundary: flag for breaking all boundary species into separate nodes
     """
     
     r = te.loada(model)
     numBnd = r.getNumBoundarySpecies()
     numFlt = r.getNumFloatingSpecies()
-    speciesId = r.getBoundarySpeciesIds() + r.getFloatingSpeciesIds()
+    boundaryId = r.getBoundarySpeciesIds()
+    floatingId = r.getFloatingSpeciesIds()
+    speciesId = boundaryId + floatingId
     rid = r.getReactionIds()
     
     # prepare symbols for sympy
@@ -154,7 +173,6 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, node='tab:blue', reaction='
     thres = 0.1
     shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
     pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=scale)
-    #pos = nx.spring_layout(G, pos=pos, seed=1, scale=scale)
     
     dist_flag = True
     
@@ -177,11 +195,6 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, node='tab:blue', reaction='
     max_width = [min(max_width), max(max_width)]
     max_height = [min(max_height), max(max_height)]
     
-    flat_rct = [item for sublist in rct for item in sublist]
-    flat_prd = [item for sublist in prd for item in sublist]
-
-    strMaxLen = len(max(flat_rct+flat_prd, key=len))
-    
     # initialize figure
     fig = plt.figure()
     ax = plt.gca()
@@ -197,10 +210,14 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, node='tab:blue', reaction='
             # TODO: if the label is too long, increase the height and change line/abbreviate?
             rec_width = max(0.04*(len(n)+2), 0.17)
             rec_height = 0.12
+            if n in boundaryId:
+                node_color = boundary
+            else:
+                node_color = node
             c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
                                rec_width, rec_height,
                                boxstyle="round,pad=0.01, rounding_size=0.02",
-                               linewidth=0)
+                               linewidth=0, color=node_color)
             plt.text(pos[n][0], pos[n][1], n, 
                      fontsize=fontsize, horizontalalignment='center', 
                      verticalalignment='center', color=label)
