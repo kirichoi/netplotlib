@@ -1,7 +1,8 @@
 tellurium>=2.1.0
 networkx>=2.1
 numpy>=1.15.0 
-scipy>=0.19.0  # 0.19.1
+scipy>=0.19.0
 matplotlib>=2.0.2
 libroadrunner>=1.4.24
 antimony>=2.9.4
+sympy>=1.1.1
