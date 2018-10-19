@@ -144,24 +144,10 @@ def plotNetwork(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
     # add edges
     # TODO: Separate boundary species?
     for i in range(sbmlmodel.getNumReactions()):
-        if len(rct[i]) == 1:
-            if len(prd[i]) == 1:
-                G.add_edges_from([(rct[i][0], rid[i])], weight=(1+lw))
-                G.add_edges_from([(rid[i], prd[i][0])], weight=(1+lw))
-            else:
-                G.add_edges_from([(rct[i][0], rid[i])], weight=(1+lw))
-                for j in range(len(prd[i])):
-                    G.add_edges_from([(rid[i], prd[i][j])], weight=(1+lw))
-        else:
-            if len(prd[i]) == 1:
-                for k in range(len(rct[i])):
-                    G.add_edges_from([(rct[i][k], rid[i])], weight=(1+lw))
-                G.add_edges_from([(rid[i], prd[i][0])], weight=(1+lw))
-            else:
-                for k in range(len(rct[i])):
-                    G.add_edges_from([(rct[i][k], rid[i])], weight=(1+lw))
-                for j in range(len(prd[i])):
-                    G.add_edges_from([(rid[i], prd[i][j])], weight=(1+lw))
+        for k in range(len(rct[i])):
+            G.add_edges_from([(rct[i][k], rid[i])], weight=(1+lw))
+        for j in range(len(prd[i])):
+            G.add_edges_from([(rid[i], prd[i][j])], weight=(1+lw))
                     
         if len(mod[i]) > 0:
             if mod_type[i][0] == 'inhibitor':
