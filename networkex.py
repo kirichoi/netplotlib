@@ -514,12 +514,10 @@ def plotWeightedNetwork(models, scale=1.5, fontsize=20, lw=10, node='tab:blue',
     # Edge labels
     edgeLabels = {}
     for i in range(len(allRxn)):
-        for k in range(len(allRxn[i][0])):
-            edgeLabels[(allRxn[i][0][k], rid[i])] = round(count[i], 3)
         for j in range(len(allRxn[i][1])):
             edgeLabels[(rid[i], allRxn[i][1][j])] = round(count[i], 3)
             
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edgeLabels)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edgeLabels, font_size=12)
 
     # reset width and height
     ax.autoscale()
