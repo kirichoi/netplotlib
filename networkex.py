@@ -420,7 +420,7 @@ def plotWeightedNetwork(models, scale=1.5, fontsize=20, lw=10, node='tab:blue',
                 dist_flag = True
                 shortest_dist[i[0]][i[1]] = 4
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=scale)
-    
+        
     # check the range of x and y positions
     max_width = []
     max_height = []
@@ -506,10 +506,21 @@ def plotWeightedNetwork(models, scale=1.5, fontsize=20, lw=10, node='tab:blue',
                             connectionstyle='arc3,rad=%s'%rad,
                             mutation_scale=10.0,
                             lw=G[u][v]['weight'],
+                            alpha=G[u][v]['weight']/lw,
                             color=color)
         seen[(u,v)]=rad
         ax.add_patch(e)
-    
+
+    # Edge labels
+    edgeLabels = {}
+    for i in range(len(allRxn)):
+        for k in range(len(allRxn[i][0])):
+            edgeLabels[(allRxn[i][0][k], rid[i])] = round(count[i], 3)
+        for j in range(len(allRxn[i][1])):
+            edgeLabels[(rid[i], allRxn[i][1][j])] = round(count[i], 3)
+            
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edgeLabels)
+
     # reset width and height
     ax.autoscale()
     fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5)
@@ -518,38 +529,6 @@ def plotWeightedNetwork(models, scale=1.5, fontsize=20, lw=10, node='tab:blue',
     plt.axis('equal')
     
     plt.show()
-    
-    
-    
-    
-#    edgeLabels = {}
-#    for i in range(len(allRxn)):
-#        if len(allRxn[i][0]) == 1:
-#            if len(allRxn[i][1]) == 1:
-#                edgeLabels[(allRxn[i][0][0], allRxn[i][1][0])] = round(count[i], 3)
-#            else:
-#                edgeLabels[(allRxn[i][0], 'J')] = round(count[i], 3)
-#                for j in range(len(allRxn[i][1])):
-#                    edgeLabels[('J', allRxn[i][1][j])] = round(count[i], 3)
-#        else:
-#            if len(allRxn[i][1]) == 1:
-#                for k in range(len(allRxn[i][0])):
-#                    edgeLabels[(allRxn[i][0][k], 'J')] = round(count[i], 3)
-#                edgeLabels[('J', allRxn[i][1][0])] = round(count[i], 3)
-#            else:
-#                for k in range(len(allRxn[i][0])):
-#                    edgeLabels[(allRxn[i][0][k], 'J')] = round(count[i], 3)
-#                for j in range(len(allRxn[i][1])):
-#                    edgeLabels[('J', allRxn[i][1][j])] = round(count[i], 3)
-#    
-#    flat_rct = [item for sublist in rct for item in sublist]
-#    flat_prd = [item for sublist in prd for item in sublist]
-#
-#    strMaxLen = len(max(flat_rct+flat_prd, key=len))
-    
-    
-    
-    
     
     return allRxn, count
 
