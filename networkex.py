@@ -22,7 +22,7 @@ def plotNetworkFromAntimony(model, scale=1.5, fontsize=20, lw=3, node='tab:blue'
                         modifier='tab:red', boundary='tab:gray',
                         break_boundary=False):
     """
-    plot reaction network from a single SBML model
+    plot reaction network from an Antimony string
     
     :param model: Antimony string of a model to plot
     :param scale: scaling factor for layout algorithm
@@ -39,16 +39,16 @@ def plotNetworkFromAntimony(model, scale=1.5, fontsize=20, lw=3, node='tab:blue'
     
     r = te.loada(model)
     
-    plotNetworkfromSBML(r.getSBML(), scale=scale, fontsize=fontsize, lw=lw, 
+    plotNetworkFromSBML(r.getSBML(), scale=scale, fontsize=fontsize, lw=lw, 
                 node=node, reaction=reaction, label=label, edge=edge,
                 modifier=modifier, boundary=boundary, break_boundary=break_boundary)
     
 
-def plotNetworkfromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
+def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
                 reaction='tab:blue', label='w', edge='k', modifier='tab:red', 
                 boundary='tab:gray', break_boundary=False):
     """     
-    plot reaction network from a single model
+    plot reaction network from an SBML string
     
     :param model: SBML string of a model to plot
     :param scale: scaling factor for layout algorithm
@@ -274,7 +274,7 @@ def plotWeightedNetwork(models, scale=1.5, fontsize=20, lw=10, node='tab:blue',
                 reaction='tab:blue', label='w', edge='k', modifier='tab:red', 
                 boundary='tab:gray', break_boundary=False):
     """     
-    plot weighted reaction network from an ensemble of model
+    plot weighted reaction network from a list of Antimony strings
     
     :param models: a list of antimony string of models to plot
     :param scale: scaling factor for layout algorithm
