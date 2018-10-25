@@ -15,7 +15,7 @@ import numpy as np
 import sympy
 import tesbml
 import itertools
-from test_models import testmodels as ts
+from testmodels import testmodels as ts
 
 def plotNetworkFromAntimony(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
                         reaction='tab:blue', label='w', edge='k', 
@@ -268,13 +268,42 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
     plt.axis('equal')
     
     plt.show()
+
+def plotWeightedNetworkFromAntimony(models, scale=1.5, fontsize=20, lw=10, 
+                node='tab:blue', reaction='tab:blue', label='w', edge='k', 
+                modifier='tab:red', boundary='tab:gray', break_boundary=False):
+    """     
+    plot weighted reaction network from a list of Antimony strings
+    
+    :param models: a list of antimony string of models to plot
+    :param scale: scaling factor for layout algorithm
+    :param fontsize: fontsize for labels
+    :param lw: weighting constant for the thickness of the edges
+    :param node: node color
+    :param reaction: reaction node color
+    :param label: label color
+    :param edge: edge color
+    :param modifier: modifier edge color
+    :param boundary: boundary node color
+    :param break_boundary: flag for breaking all boundary species into separate nodes
+    :returns allRxn: list of pairs of all reactions present throughout the ensemble
+    :returns count: weighted frequency of each reaction
+    """
+    
+    for i in models:
+        r = te.loada(i)
+        models[i] = r.getSBML()
+        
+    plotWeightedNetworkFromSBML(models, scale=scale, fontsize=fontsize, lw=lw, 
+                node=node, reaction=reaction, label=label, edge=edge,
+                modifier=modifier, boundary=boundary, break_boundary=break_boundary)
     
     
-def plotWeightedNetwork(models, scale=1.5, fontsize=20, lw=10, node='tab:blue',
+def plotWeightedNetworkFromSBML(models, scale=1.5, fontsize=20, lw=10, node='tab:blue',
                 reaction='tab:blue', label='w', edge='k', modifier='tab:red', 
                 boundary='tab:gray', break_boundary=False):
     """     
-    plot weighted reaction network from a list of Antimony strings
+    plot weighted reaction network from a list of SBML strings
     
     :param models: a list of antimony string of models to plot
     :param scale: scaling factor for layout algorithm
@@ -308,7 +337,7 @@ def plotWeightedNetwork(models, scale=1.5, fontsize=20, lw=10, node='tab:blue',
         kineticLaw = []
         mod_type_m = []
         
-        r = te.loada(m)
+        r = te.loadSBMLModel(m)
         numBnd = r.getNumBoundarySpecies()
         numFlt = r.getNumFloatingSpecies()
         boundaryId = r.getBoundarySpeciesIds()
