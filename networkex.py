@@ -72,9 +72,25 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
     rid = r.getReactionIds()
     
     # prepare symbols for sympy
+    boundaryId_sympy = [] 
+    floatingId_sympy = []
+    
+    # Fix issues with reserved characters
+    for i in range(numBnd):
+        if boundaryId[i] == 'S':
+            boundaryId_sympy.append('_S')
+        else:
+            boundaryId_sympy.append(boundaryId[i])
+    
+    for i in range(numFlt):
+        if floatingId[i] == 'S':
+            floatingId_sympy.append('_S')
+        else:
+            floatingId_sympy.append(floatingId[i])
+    
     paramIdsStr = ' '.join(r.getGlobalParameterIds())
-    floatingIdsStr = ' '.join(r.getFloatingSpeciesIds())
-    boundaryIdsStr = ' '.join(r.getBoundarySpeciesIds())
+    floatingIdsStr = ' '.join(floatingId_sympy)
+    boundaryIdsStr = ' '.join(boundaryId_sympy)
     comparmentIdsStr = ' '.join(r.getCompartmentIds())
     
     allIds = paramIdsStr + ' ' + floatingIdsStr + ' ' + boundaryIdsStr + ' ' + comparmentIdsStr
@@ -112,7 +128,16 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
         rct.append(temprct)
         prd.append(tempprd)
         mod.append(tempmod)
-        kineticLaw.append(kl.getFormula())
+        
+        # Update kinetic law according to change in species name
+        kl_split = kl.getFormula().split(' ')
+        for i in range(len(kl_split)):
+            if kl_split[i] == 'S':
+                kl_split[i] = '_S'
+            else:
+                pass
+        
+        kineticLaw.append(' '.join(kl_split))
     
     # use sympy for analyzing modifiers weSmart
     for ml in range(len(mod)):
