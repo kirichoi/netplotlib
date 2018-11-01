@@ -8,20 +8,19 @@ Created on Sat Oct 20 21:48:16 2018
 from setuptools import setup
 import os
 
-try:
-    with open(os.path.join(os.path.dirname(__file__), 'VERSION.txt'), 'r') as f:
-        version = f.read().rstrip()
-except IOError:
-    with open(os.path.join(os.path.dirname(__file__), 'networkex/VERSION.txt'), 'r') as f:
-        version = f.read().rstrip()
+with open(os.path.join(os.path.dirname(__file__), 'VERSION.txt'), 'r') as f:
+    _version = f.read().rstrip()
 
 setup(name='networkex',
-      version=version,
+      version=_version,
       author='Kiri Choi',
-      description='NetworkEx: A simple extension for NetworkX for Antimony models',
+      description='NetworkEX: A simple extension for NetworkX for SBML and Antimony',
       packages=[
-          'networkex'
+          'networkex',
       ],
+      package_data={
+          'networkex.testcases': ['*.xml']
+      },
       install_requires=[
         'tellurium>=2.1.0',
         'networkx>=2.1',
@@ -30,6 +29,6 @@ setup(name='networkex',
         'matplotlib>=2.0.2',
         'libroadrunner>=1.4.24',
         'antimony>=2.9.4',
-        'sympy>=1.1.1'
+        'sympy>=1.1.1',
         ]
       )
