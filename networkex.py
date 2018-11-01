@@ -6,6 +6,7 @@ from ensemble of models.
 Kiri Choi (c) 2018
 """
 
+import os
 import tellurium as te
 import antimony
 import networkx as nx
@@ -315,12 +316,14 @@ def plotWeightedNetworkFromAntimony(models, scale=1.5, fontsize=20, lw=10,
     :returns count: weighted frequency of each reaction
     """
     
+    sbml = []
+    
     for i in models:
         r = te.loada(i)
-        models[i] = r.getSBML()
+        sbml.append(r.getSBML())
         
-    plotWeightedNetworkFromSBML(models, scale=scale, fontsize=fontsize, lw=lw, 
-                node=node, reaction=reaction, label=label, edge=edge,
+    return plotWeightedNetworkFromSBML(sbml, scale=scale, fontsize=fontsize, 
+                lw=lw, node=node, reaction=reaction, label=label, edge=edge,
                 modifier=modifier, boundary=boundary, break_boundary=break_boundary)
     
     
