@@ -61,6 +61,8 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
     :param edge: edge color
     :param modifier: modifier edge color
     :param boundary: boundary node color
+    :param nodelw: linewidth of node edges
+    :param highlight: list of species ids or reaction ids to highlight
     :param break_boundary: flag for breaking all boundary species into separate nodes
     """
     
