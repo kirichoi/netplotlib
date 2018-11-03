@@ -46,8 +46,8 @@ def plotNetworkFromAntimony(model, scale=1.5, fontsize=20, lw=3, node='tab:blue'
     
 
 def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
-                reaction='tab:blue', label='w', edge='k', modifier='tab:red', 
-                boundary='tab:gray', break_boundary=False):
+                reaction='tab:gray', label='w', edge='k', modifier='tab:red', 
+                boundary='tab:green', break_boundary=False):
     """     
     plot reaction network from an SBML string
     
@@ -214,10 +214,16 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
     # add nodes to the figure
     for n in G:
         if n in rid:
-            rec_rad = max(0.01*(len(n)+2), 0.055)
-            c = Circle(pos[n], radius=rec_rad, color=reaction)
-            plt.text(pos[n][0], pos[n][1], n, fontsize=fontsize, 
-                 horizontalalignment='center', verticalalignment='center', color=label)
+            rec_width = 0.05
+            rec_height = 0.05
+            c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
+                               rec_width, rec_height,
+                               boxstyle="round,pad=0.01, rounding_size=0.02",
+                               linewidth=0, color=reaction)
+#            rec_rad = max(0.01*(len(n)+2), 0.055)
+#            c = Circle(pos[n], radius=rec_rad, color=reaction)
+#            plt.text(pos[n][0], pos[n][1], n, fontsize=fontsize, 
+#                 horizontalalignment='center', verticalalignment='center', color=label)
         else:
             # TODO: if the label is too long, increase the height and change line/abbreviate?
             rec_width = max(0.04*(len(n)+2), 0.17)
@@ -228,7 +234,7 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
                 node_color = node
             c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
                                rec_width, rec_height,
-                               boxstyle="round,pad=0.01, rounding_size=0.02",
+                               boxstyle="round,pad=0.01, rounding_size=0.01",
                                linewidth=0, color=node_color)
             plt.text(pos[n][0], pos[n][1], n, 
                      fontsize=fontsize, horizontalalignment='center', 
@@ -248,11 +254,13 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
         
         if u in rid or v in rid:
             if u in rid:
-                X1 = (n1.center[0],n1.center[1])
+                X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
+#                X1 = (n1.center[0],n1.center[1])
             else:
                 X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
             if v in rid:
-                X2 = (n2.center[0],n2.center[1])
+                X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
+#                X2 = (n2.center[0],n2.center[1])
             else:
                 X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
         else:
@@ -268,6 +276,7 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
             if modtype_flat[list(set(uind).intersection(vind))[0]] == 'inhibitor': # inhibition
                 color=modifier
                 arrowstyle='-['
+                X2 = (X2[0]-((X2[0]-X1[0])*0.12), X2[1]-((X2[1]-X1[1])*0.12))
             else: # activation
                 color=modifier
                 arrowstyle='-|>'
