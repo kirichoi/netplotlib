@@ -248,6 +248,7 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
         n1 = G.node[u]['patch']
         n2 = G.node[v]['patch']
         rad = 0.1
+        shrinkB = 2.
         if (u,v) in seen:
             rad = seen.get((u,v)) # TODO: No curvature when there is just a single line between two nodes
             rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
@@ -276,17 +277,21 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
             if modtype_flat[list(set(uind).intersection(vind))[0]] == 'inhibitor': # inhibition
                 color=modifier
                 arrowstyle='-['
-                X2 = (X2[0]-((X2[0]-X1[0])*0.12), X2[1]-((X2[1]-X1[1])*0.12))
+                shrinkB = 7.
             else: # activation
                 color=modifier
                 arrowstyle='-|>'
         else: # reaction node to species node
             color=edge
-            arrowstyle='-|>'
+            if v in rid:
+                arrowstyle='-'
+            else:
+                arrowstyle='-|>'
         e = FancyArrowPatch(X1,
                             X2,
                             patchA=n1,
                             patchB=n2,
+                            shrinkB=shrinkB,
                             arrowstyle=arrowstyle,
                             connectionstyle='arc3,rad=%s'%rad,
                             mutation_scale=10.0,
