@@ -47,7 +47,8 @@ def plotNetworkFromAntimony(model, scale=1.5, fontsize=20, lw=3, node='tab:blue'
 
 def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
                 reaction='tab:gray', label='w', edge='k', modifier='tab:red', 
-                boundary='tab:green', nodelw=0, highlight=[], break_boundary=False):
+                boundary='tab:green', nodeedge='k', nodelw=0, highlight=[], 
+                hlnode='tab:purple', hledge='tab:pink', break_boundary=False):
     """     
     plot reaction network from an SBML string
     
@@ -61,8 +62,11 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
     :param edge: edge color
     :param modifier: modifier edge color
     :param boundary: boundary node color
+    :param nodeedge: node edge color
     :param nodelw: linewidth of node edges
     :param highlight: list of species ids or reaction ids to highlight
+    :param hlnode: node color of highlighted node
+    :param hledge: node edge color of highlighted node
     :param break_boundary: flag for breaking all boundary species into separate nodes
     """
     
@@ -222,12 +226,12 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
                 c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
                                    rec_width, rec_height,
                                    boxstyle="round,pad=0.01, rounding_size=0.01",
-                                   linewidth=nodelw, edgecolor='tab:pink', facecolor='tab:purple')
+                                   linewidth=nodelw, edgecolor=hledge, facecolor=hlnode)
             else:
                 c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
                                rec_width, rec_height,
                                boxstyle="round,pad=0.01, rounding_size=0.01",
-                               linewidth=nodelw, edgecolor='k', facecolor=reaction)
+                               linewidth=nodelw, edgecolor=nodeedge, facecolor=reaction)
         else:
             # TODO: if the label is too long, increase the height and change line/abbreviate?
             rec_width = max(0.04*(len(n)+2), 0.17)
@@ -240,12 +244,12 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
                 c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
                                    rec_width, rec_height,
                                    boxstyle="round,pad=0.01, rounding_size=0.02",
-                                   linewidth=nodelw, edgecolor='tab:pink', facecolor='tab:purple')
+                                   linewidth=nodelw, edgecolor=hledge, facecolor=hlnode)
             else:
                 c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
                                rec_width, rec_height,
                                boxstyle="round,pad=0.01, rounding_size=0.02",
-                               linewidth=nodelw, edgecolor='k', facecolor=node_color)
+                               linewidth=nodelw, edgecolor=nodeedge, facecolor=node_color)
             plt.text(pos[n][0], pos[n][1], n, 
                      fontsize=fontsize, horizontalalignment='center', 
                      verticalalignment='center', color=label)
