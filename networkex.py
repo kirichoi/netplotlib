@@ -11,8 +11,10 @@ import tellurium as te
 import antimony
 import networkx as nx
 from matplotlib.patches import FancyArrowPatch, Rectangle, Circle, FancyBboxPatch
+from matplotlib.path import Path
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import interpolate
 import sympy
 import tesbml
 import itertools
@@ -45,7 +47,7 @@ def plotNetworkFromAntimony(model, scale=1.5, fontsize=20, lw=3, node='tab:blue'
                 modifier=modifier, boundary=boundary, break_boundary=break_boundary)
     
 
-def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
+def plotNetworkFromSBML(model, scale=1.25, fontsize=20, lw=3, node='tab:blue',
                 reaction='tab:gray', label='w', edge='k', modifier='tab:red', 
                 boundary='tab:green', nodeedge='k', nodelw=0, highlight=[], 
                 hlnode='tab:purple', hledge='tab:pink', break_boundary=False):
@@ -193,8 +195,10 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
     pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=scale)
     
     dist_flag = True
+    maxIter = 50
+    maxIter_n = 0
     
-    while dist_flag:
+    while dist_flag and (maxIter_n < maxIter):
         dist_flag = False
         for i in itertools.combinations(speciesId, 2):
             pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
@@ -202,6 +206,7 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
                 dist_flag = True
                 shortest_dist[i[0]][i[1]] = 4
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=scale)
+        maxIter_n += 1
     
     # check the range of x and y positions
     max_width = []
@@ -253,10 +258,46 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
             plt.text(pos[n][0], pos[n][1], n, 
                      fontsize=fontsize, horizontalalignment='center', 
                      verticalalignment='center', color=label)
-        ax.add_patch(c)
         G.node[n]['patch'] = c
     
     # add edges to the figure
+    for i in range(len(rid)):
+        for j in [list(zip(x,prd[i])) for x in itertools.combinations(rct[i],len(prd[i]))][0]:
+            p1 = G.node[j[0]]['patch']
+            p2 = G.node[rid[i]]['patch']
+            p3 = G.node[j[1]]['patch']
+
+            X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
+            X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
+            X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
+            XY = np.vstack((X1, X2, X3))
+            
+            tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
+            intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
+            stackXY = np.vstack((intX, intY))
+            
+            X3top = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height())
+            X3bot = (p3.get_x()+p3.get_width()/2,p3.get_y())
+            X3left = (p3.get_x(),p3.get_y()+p3.get_height()/2)
+            X3right = (p3.get_x()+p3.get_width(),p3.get_y()+p3.get_height()/2)
+            
+            n = -1
+            arrthres_v = .02
+            arrthres_h = .02
+            while ((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY.T[n][0] < (X3right[0]+arrthres_h))
+                and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v))):
+                n -= 1
+           
+            lpath = Path(stackXY.T[3:n])
+            
+            e = FancyArrowPatch(path=lpath,
+                                arrowstyle='-|>',
+                                mutation_scale=10.0,
+                                lw=(1+lw),
+                                color=edge)
+            ax.add_patch(e)
+            
+    # Modifiers
     seen={}
     for (u,v,d) in G.edges(data=True):
         n1 = G.node[u]['patch']
@@ -267,23 +308,9 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
             rad = seen.get((u,v)) # TODO: No curvature when there is just a single line between two nodes
             rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
         
-        if u in rid or v in rid:
-            if u in rid:
-                X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
-            else:
-                X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
-            if v in rid:
-                X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
-            else:
-                X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
-        else:
+        if u not in rid and v in rid and u in mod_flat and v in modtarget_flat: 
             X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
             X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
-        
-        if u not in rid and v in rid and u not in mod_flat and v not in modtarget_flat: # species node to reaction node
-            color=edge
-            arrowstyle='-'
-        elif u not in rid and v in rid and u in mod_flat and v in modtarget_flat: # modifiers
             uind = [i for i, e in enumerate(mod_flat) if e == u]
             vind = [i for i, e in enumerate(modtarget_flat) if e == v]
             if modtype_flat[list(set(uind).intersection(vind))[0]] == 'inhibitor': # inhibition
@@ -293,24 +320,23 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
             else: # activation
                 color=modifier
                 arrowstyle='-|>'
-        else: # reaction node to species node
-            color=edge
-            if v in rid:
-                arrowstyle='-'
-            else:
-                arrowstyle='-|>'
-        e = FancyArrowPatch(X1,
-                            X2,
-                            patchA=n1,
-                            patchB=n2,
-                            shrinkB=shrinkB,
-                            arrowstyle=arrowstyle,
-                            connectionstyle='arc3,rad=%s'%rad,
-                            mutation_scale=10.0,
-                            lw=G[u][v]['weight'],
-                            color=color)
-        seen[(u,v)]=rad
-        ax.add_patch(e)
+            e = FancyArrowPatch(X1,
+                                X2,
+                                patchA=n1,
+                                patchB=n2,
+                                shrinkB=shrinkB,
+                                arrowstyle=arrowstyle,
+                                connectionstyle='arc3,rad=%s'%rad,
+                                mutation_scale=10.0,
+                                lw=G[u][v]['weight'],
+                                color=color)
+            seen[(u,v)]=rad
+            ax.add_patch(e)
+    
+    # Add nodes at last to put it on top
+    allnodes = speciesId + rid # TODO: allow users to turn off reaction nodes
+    for i in range(len(allnodes)):
+        ax.add_patch(G.node[allnodes[i]]['patch'])
     
     # reset width and height
     ax.autoscale()
@@ -320,6 +346,7 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
     plt.axis('equal')
     
     plt.show()
+    
 
 def plotWeightedNetworkFromAntimony(models, scale=1.5, fontsize=20, lw=10, 
                 node='tab:blue', reaction='tab:blue', label='w', edge='k', 
