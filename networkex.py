@@ -50,7 +50,8 @@ def plotNetworkFromAntimony(model, scale=1.5, fontsize=20, lw=3, node='tab:blue'
 def plotNetworkFromSBML(model, scale=1.25, fontsize=20, lw=3, node='tab:blue',
                 reaction='tab:gray', label='w', edge='k', modifier='tab:red', 
                 boundary='tab:green', nodeedge='k', nodelw=0, highlight=[], 
-                hlnode='tab:purple', hledge='tab:pink', break_boundary=False):
+                hlnode='tab:purple', hledge='tab:pink', allowRNode=True, 
+                break_boundary=False):
     """     
     plot reaction network from an SBML string
     
@@ -67,8 +68,9 @@ def plotNetworkFromSBML(model, scale=1.25, fontsize=20, lw=3, node='tab:blue',
     :param nodeedge: node edge color
     :param nodelw: linewidth of node edges
     :param highlight: list of species ids or reaction ids to highlight
-    :param hlnode: node color of highlighted node
-    :param hledge: node edge color of highlighted node
+    :param hlnode: node color of highlighted nodes
+    :param hledge: node edge color of highlighted nodes
+    :param allowRNode: flag for drawing reaction nodes
     :param break_boundary: flag for breaking all boundary species into separate nodes
     """
     
@@ -334,7 +336,10 @@ def plotNetworkFromSBML(model, scale=1.25, fontsize=20, lw=3, node='tab:blue',
             ax.add_patch(e)
     
     # Add nodes at last to put it on top
-    allnodes = speciesId + rid # TODO: allow users to turn off reaction nodes
+    if allowRNode:
+        allnodes = speciesId + rid # TODO: allow users to turn off reaction nodes
+    else:
+        allnodes = speciesId
     for i in range(len(allnodes)):
         ax.add_patch(G.node[allnodes[i]]['patch'])
     
