@@ -1,0 +1,813 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created by XMLPrettyPrinter on 11/7/2015 from pathwayDesigner version.dll -->
+<sbml xmlns = "http://www.sbml.org/sbml/level2" level = "2" version = "1" xmlns:jd2 = "http://www.sys-bio.org/sbml/jd2">
+   <!--                     -->
+   <!--  Model Starts Here  -->
+   <!--                     -->
+   <model id = "Aspartate">
+      <notes>
+         <body xmlns = "http://www.w3.org/1999/xhtml">
+            <p/>
+         </body>
+      </notes>
+      <annotation>
+         <jd2:PathwayDesignerLayout version = "2.0" MajorVersion = "2" MinorVersion = "4" BuildVersion = "54"
+                                    xmlns:jd2 = "http://www.sys-bio.org/sbml/jd2">
+            <jd2:header>
+               <jd2:VersionHeader PathwayVersion = "2.0"/>
+               <jd2:ModelHeader Author = "Mr Unknown" ModelVersion = "0.0" ModelTitle = "No Title"/>
+               <jd2:TimeCourseDetails timeStart = "0" timeEnd = "25" numberOfPoints = "50"/>
+               <jd2:ModifierOptions enableModifierDecorations = "false" enableAutoAddModifiers = "false"/>
+               <jd2:TimeCourseNumerics BDFOrder = "5" AdamsOrder = "12" rtol = "1E-6" atol = "1E-12"
+                                       maxsteps = "10000" initstep = "0" maxstep = "0" minstep = "0"/>
+               <jd2:SteadyStateNumerics MaxIterations = "100" relativeTolerance = "0.0001"/>
+               <jd2:TimeCourseSolverSettings>
+                  <jd2:listOfSettings/>
+               </jd2:TimeCourseSolverSettings>
+               <jd2:SteadyStateSolverSettings>
+                  <jd2:listOfSettings/>
+               </jd2:SteadyStateSolverSettings>
+            </jd2:header>
+            <jd2:JDGraphicsHeader BackGroundColor = "FFFFFFFF"/>
+            <jd2:otherDisplayObjects>
+               <jd2:textObject value = "Amino Acid Biosynthesis - This is not a simulatable model!">
+                  <jd2:font fontName = "Arial" fontSize = "10" fontStyle = ""/>
+                  <jd2:boundingBox x = "74" y = "46" w = "341" h = "16"/>
+               </jd2:textObject>
+            </jd2:otherDisplayObjects>
+            <jd2:listOfCompartments>
+               <jd2:compartment id = "compartment" size = "1" visible = "false">
+                  <jd2:boundingBox x = "0" y = "0" w = "0" h = "0"/>
+                  <jd2:membraneStyle thickness = "12" color = "FF0066FF"/>
+                  <jd2:interiorStyle color = "FF99CCFF"/>
+                  <jd2:text value = "compartment" visible = "true">
+                     <jd2:position rx = "-31" ry = "-16"/>
+                     <jd2:font fontName = "Arial" fontSize = "10" fontStyle = ""/>
+                  </jd2:text>
+               </jd2:compartment>
+            </jd2:listOfCompartments>
+            <jd2:listOfSpecies>
+               <jd2:species id = "Aspartate" boundaryCondition = "false" compartment = "compartment" initialConcentration = "0">
+                  <jd2:visible value = "true"/>
+                  <jd2:positionLocked value = "false"/>
+                  <jd2:sizeLocked value = "false"/>
+                  <jd2:boundingBox x = "30" y = "134"/>
+                  <jd2:displayValue visible = "false">
+                     <jd2:position rx = "0" ry = "0"/>
+                     <jd2:displayStatus value = "dvInitialValue"/>
+                     <jd2:font fontName = "Arial" fontSize = "8" fontColor = "FF000000" fontStyle = ""/>
+                  </jd2:displayValue>
+                  <jd2:text value = "Aspartate" visible = "true">
+                     <jd2:position rx = "2.68001365661621" ry = "7.92578125"/>
+                     <jd2:font fontName = "Arial" fontSize = "10" fontStyle = ""/>
+                  </jd2:text>
+                  <jd2:complex id = "DefaultMolecule" displayName = "untitled" w = "67" h = "32"
+                               boundarySpeciesStyle = "bsVertVice" boundaryStyleColor = "FF0000FF" captionPosition = "npCenter" captionVisible = "true"
+                               aliasBoundaryStyle = "abRectangle" aliasBoundaryColor = "FFFF0000" aliasBoundaryThickness = "3">
+                     <jd2:subunit shape = "suRoundSquare">
+                        <jd2:boundingBox rx = "0" ry = "0" w = "67" h = "32"/>
+                        <jd2:text value = "S1" visible = "false">
+                           <jd2:position rx = "25.5" ry = "8"/>
+                           <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF000000" fontStyle = ""/>
+                        </jd2:text>
+                        <jd2:color scheme = "gtNone" startColor = "FFD4FF7F" endColor = "FF99CC00"/>
+                        <jd2:edgeStyle color = "FF969696" thickness = "1" stroke = "dsSolid"/>
+                     </jd2:subunit>
+                  </jd2:complex>
+               </jd2:species>
+               <jd2:species id = "AspartylPhosphate" boundaryCondition = "false" compartment = "compartment" initialConcentration = "0">
+                  <jd2:visible value = "true"/>
+                  <jd2:positionLocked value = "false"/>
+                  <jd2:sizeLocked value = "false"/>
+                  <jd2:boundingBox x = "185" y = "134"/>
+                  <jd2:displayValue visible = "false">
+                     <jd2:position rx = "0" ry = "0"/>
+                     <jd2:displayStatus value = "dvInitialValue"/>
+                     <jd2:font fontName = "Arial" fontSize = "8" fontColor = "FF000000" fontStyle = ""/>
+                  </jd2:displayValue>
+                  <jd2:text value = "AspartylPhosphate" visible = "true">
+                     <jd2:position rx = "1.13753509521484" ry = "7.92578125"/>
+                     <jd2:font fontName = "Arial" fontSize = "10" fontStyle = ""/>
+                  </jd2:text>
+                  <jd2:complex id = "DefaultMolecule" displayName = "untitled" w = "119" h = "32"
+                               boundarySpeciesStyle = "bsVertVice" boundaryStyleColor = "FF0000FF" captionPosition = "npCenter" captionVisible = "true"
+                               aliasBoundaryStyle = "abRectangle" aliasBoundaryColor = "FFFF0000" aliasBoundaryThickness = "3">
+                     <jd2:subunit shape = "suRoundSquare">
+                        <jd2:boundingBox rx = "0" ry = "0" w = "119" h = "32"/>
+                        <jd2:text value = "S1" visible = "false">
+                           <jd2:position rx = "51.5" ry = "8"/>
+                           <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF000000" fontStyle = ""/>
+                        </jd2:text>
+                        <jd2:color scheme = "gtNone" startColor = "FFD4FF7F" endColor = "FFFFFFFF"/>
+                        <jd2:edgeStyle color = "FF969696" thickness = "1" stroke = "dsSolid"/>
+                     </jd2:subunit>
+                  </jd2:complex>
+               </jd2:species>
+               <jd2:species id = "Homoserine" boundaryCondition = "false" compartment = "compartment" initialConcentration = "0">
+                  <jd2:visible value = "true"/>
+                  <jd2:positionLocked value = "false"/>
+                  <jd2:sizeLocked value = "false"/>
+                  <jd2:boundingBox x = "431" y = "239"/>
+                  <jd2:displayValue visible = "false">
+                     <jd2:position rx = "0" ry = "0"/>
+                     <jd2:displayStatus value = "dvInitialValue"/>
+                     <jd2:font fontName = "Arial" fontSize = "8" fontColor = "FF000000" fontStyle = ""/>
+                  </jd2:displayValue>
+                  <jd2:text value = "Homoserine" visible = "true">
+                     <jd2:position rx = "1.24373626708984" ry = "7.92578125"/>
+                     <jd2:font fontName = "Arial" fontSize = "10" fontStyle = ""/>
+                  </jd2:text>
+                  <jd2:complex id = "DefaultMolecule" displayName = "untitled" w = "79" h = "32"
+                               boundarySpeciesStyle = "bsVertVice" boundaryStyleColor = "FF0000FF" captionPosition = "npCenter" captionVisible = "true"
+                               aliasBoundaryStyle = "abRectangle" aliasBoundaryColor = "FFFF0000" aliasBoundaryThickness = "3">
+                     <jd2:subunit shape = "suRoundSquare">
+                        <jd2:boundingBox rx = "0" ry = "0" w = "79" h = "32"/>
+                        <jd2:text value = "S1" visible = "false">
+                           <jd2:position rx = "31.5" ry = "8"/>
+                           <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF000000" fontStyle = ""/>
+                        </jd2:text>
+                        <jd2:color scheme = "gtNone" startColor = "FFD4FF7F" endColor = "FFFFFFFF"/>
+                        <jd2:edgeStyle color = "FF969696" thickness = "1" stroke = "dsSolid"/>
+                     </jd2:subunit>
+                  </jd2:complex>
+               </jd2:species>
+               <jd2:species id = "Methionine" boundaryCondition = "false" compartment = "compartment" initialConcentration = "0">
+                  <jd2:visible value = "true"/>
+                  <jd2:positionLocked value = "false"/>
+                  <jd2:sizeLocked value = "false"/>
+                  <jd2:boundingBox x = "325" y = "328"/>
+                  <jd2:displayValue visible = "false">
+                     <jd2:position rx = "0" ry = "0"/>
+                     <jd2:displayStatus value = "dvInitialValue"/>
+                     <jd2:font fontName = "Arial" fontSize = "8" fontColor = "FF000000" fontStyle = ""/>
+                  </jd2:displayValue>
+                  <jd2:text value = "Methionine" visible = "true">
+                     <jd2:position rx = "2.58260345458984" ry = "6.92578125"/>
+                     <jd2:font fontName = "Arial" fontSize = "10" fontStyle = ""/>
+                  </jd2:text>
+                  <jd2:complex id = "DefaultMolecule" displayName = "untitled" w = "75" h = "30"
+                               boundarySpeciesStyle = "bsVertVice" boundaryStyleColor = "FF0000FF" captionPosition = "npCenter" captionVisible = "true"
+                               aliasBoundaryStyle = "abRectangle" aliasBoundaryColor = "FFFF0000" aliasBoundaryThickness = "3">
+                     <jd2:subunit shape = "suRoundSquare">
+                        <jd2:boundingBox rx = "0" ry = "0" w = "75" h = "30"/>
+                        <jd2:text value = "S1" visible = "false">
+                           <jd2:position rx = "29.5" ry = "7"/>
+                           <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF000000" fontStyle = ""/>
+                        </jd2:text>
+                        <jd2:color scheme = "gtNone" startColor = "FFD4FF7F" endColor = "FFFFFFFF"/>
+                        <jd2:edgeStyle color = "FF969696" thickness = "1" stroke = "dsSolid"/>
+                     </jd2:subunit>
+                  </jd2:complex>
+               </jd2:species>
+               <jd2:species id = "Threonine" boundaryCondition = "false" compartment = "compartment" initialConcentration = "0">
+                  <jd2:visible value = "true"/>
+                  <jd2:positionLocked value = "false"/>
+                  <jd2:sizeLocked value = "false"/>
+                  <jd2:boundingBox x = "622" y = "240"/>
+                  <jd2:displayValue visible = "false">
+                     <jd2:position rx = "0" ry = "0"/>
+                     <jd2:displayStatus value = "dvInitialValue"/>
+                     <jd2:font fontName = "Arial" fontSize = "8" fontColor = "FF000000" fontStyle = ""/>
+                  </jd2:displayValue>
+                  <jd2:text value = "Threonine" visible = "true">
+                     <jd2:position rx = "3.68831634521484" ry = "7.42578125"/>
+                     <jd2:font fontName = "Arial" fontSize = "10" fontStyle = ""/>
+                  </jd2:text>
+                  <jd2:complex id = "DefaultMolecule" displayName = "untitled" w = "72" h = "31"
+                               boundarySpeciesStyle = "bsVertVice" boundaryStyleColor = "FF0000FF" captionPosition = "npCenter" captionVisible = "true"
+                               aliasBoundaryStyle = "abRectangle" aliasBoundaryColor = "FFFF0000" aliasBoundaryThickness = "3">
+                     <jd2:subunit shape = "suRoundSquare">
+                        <jd2:boundingBox rx = "0" ry = "0" w = "72" h = "31"/>
+                        <jd2:text value = "S1" visible = "false">
+                           <jd2:position rx = "28" ry = "7.5"/>
+                           <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF000000" fontStyle = ""/>
+                        </jd2:text>
+                        <jd2:color scheme = "gtNone" startColor = "FFD4FF7F" endColor = "FFFFFFFF"/>
+                        <jd2:edgeStyle color = "FF969696" thickness = "1" stroke = "dsSolid"/>
+                     </jd2:subunit>
+                  </jd2:complex>
+               </jd2:species>
+               <jd2:species id = "Isoleucine" boundaryCondition = "false" compartment = "compartment" initialConcentration = "0">
+                  <jd2:visible value = "true"/>
+                  <jd2:positionLocked value = "false"/>
+                  <jd2:sizeLocked value = "false"/>
+                  <jd2:boundingBox x = "734" y = "328"/>
+                  <jd2:displayValue visible = "false">
+                     <jd2:position rx = "0" ry = "0"/>
+                     <jd2:displayStatus value = "dvInitialValue"/>
+                     <jd2:font fontName = "Arial" fontSize = "8" fontColor = "FF000000" fontStyle = ""/>
+                  </jd2:displayValue>
+                  <jd2:text value = "Isoleucine" visible = "true">
+                     <jd2:position rx = "10.1851425170898" ry = "7.92578125"/>
+                     <jd2:font fontName = "Arial" fontSize = "10" fontStyle = ""/>
+                  </jd2:text>
+                  <jd2:complex id = "DefaultMolecule" displayName = "untitled" w = "85" h = "32"
+                               boundarySpeciesStyle = "bsVertVice" boundaryStyleColor = "FF0000FF" captionPosition = "npCenter" captionVisible = "true"
+                               aliasBoundaryStyle = "abRectangle" aliasBoundaryColor = "FFFF0000" aliasBoundaryThickness = "3">
+                     <jd2:subunit shape = "suRoundSquare">
+                        <jd2:boundingBox rx = "0" ry = "0" w = "85" h = "32"/>
+                        <jd2:text value = "S1" visible = "false">
+                           <jd2:position rx = "34.5" ry = "8"/>
+                           <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF000000" fontStyle = ""/>
+                        </jd2:text>
+                        <jd2:color scheme = "gtNone" startColor = "FFD4FF7F" endColor = "FFFFFFFF"/>
+                        <jd2:edgeStyle color = "FF969696" thickness = "1" stroke = "dsSolid"/>
+                     </jd2:subunit>
+                  </jd2:complex>
+               </jd2:species>
+               <jd2:species id = "Aspartate_Semialdehyde" boundaryCondition = "false" compartment = "compartment" initialConcentration = "0">
+                  <jd2:visible value = "true"/>
+                  <jd2:positionLocked value = "false"/>
+                  <jd2:sizeLocked value = "false"/>
+                  <jd2:boundingBox x = "352" y = "133"/>
+                  <jd2:displayValue visible = "false">
+                     <jd2:position rx = "0" ry = "0"/>
+                     <jd2:displayStatus value = "dvInitialValue"/>
+                     <jd2:font fontName = "Arial" fontSize = "8" fontColor = "FF000000" fontStyle = ""/>
+                  </jd2:displayValue>
+                  <jd2:text value = "Aspartate_Semialdehyde" visible = "true">
+                     <jd2:position rx = "3.52938079833984" ry = "7.42578125"/>
+                     <jd2:font fontName = "Arial" fontSize = "10" fontStyle = ""/>
+                  </jd2:text>
+                  <jd2:complex id = "DefaultMolecule" displayName = "untitled" w = "161" h = "31"
+                               boundarySpeciesStyle = "bsVertVice" boundaryStyleColor = "FF0000FF" captionPosition = "npCenter" captionVisible = "true"
+                               aliasBoundaryStyle = "abRectangle" aliasBoundaryColor = "FFFF0000" aliasBoundaryThickness = "3">
+                     <jd2:subunit shape = "suRoundSquare">
+                        <jd2:boundingBox rx = "0" ry = "0" w = "161" h = "31"/>
+                        <jd2:text value = "S1" visible = "false">
+                           <jd2:position rx = "72.5" ry = "7.5"/>
+                           <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF000000" fontStyle = ""/>
+                        </jd2:text>
+                        <jd2:color scheme = "gtNone" startColor = "FFD4FF7F" endColor = "FFFFFFFF"/>
+                        <jd2:edgeStyle color = "FF969696" thickness = "1" stroke = "dsSolid"/>
+                     </jd2:subunit>
+                  </jd2:complex>
+               </jd2:species>
+               <jd2:species id = "Lysine" boundaryCondition = "false" compartment = "compartment" initialConcentration = "0">
+                  <jd2:visible value = "true"/>
+                  <jd2:positionLocked value = "false"/>
+                  <jd2:sizeLocked value = "false"/>
+                  <jd2:boundingBox x = "267" y = "219"/>
+                  <jd2:displayValue visible = "false">
+                     <jd2:position rx = "0" ry = "0"/>
+                     <jd2:displayStatus value = "dvInitialValue"/>
+                     <jd2:font fontName = "Arial" fontSize = "8" fontColor = "FF000000" fontStyle = ""/>
+                  </jd2:displayValue>
+                  <jd2:text value = "Lysine" visible = "true">
+                     <jd2:position rx = "2.47933006286621" ry = "7.92578125"/>
+                     <jd2:font fontName = "Arial" fontSize = "10" fontStyle = ""/>
+                  </jd2:text>
+                  <jd2:complex id = "DefaultMolecule" displayName = "untitled" w = "48" h = "32"
+                               boundarySpeciesStyle = "bsVertVice" boundaryStyleColor = "FF0000FF" captionPosition = "npCenter" captionVisible = "true"
+                               aliasBoundaryStyle = "abRectangle" aliasBoundaryColor = "FFFF0000" aliasBoundaryThickness = "3">
+                     <jd2:subunit shape = "suRoundSquare">
+                        <jd2:boundingBox rx = "0" ry = "0" w = "48" h = "32"/>
+                        <jd2:text value = "S1" visible = "false">
+                           <jd2:position rx = "16" ry = "8"/>
+                           <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF000000" fontStyle = ""/>
+                        </jd2:text>
+                        <jd2:color scheme = "gtNone" startColor = "FFD4FF7F" endColor = "FFFFFFFF"/>
+                        <jd2:edgeStyle color = "FF969696" thickness = "1" stroke = "dsSolid"/>
+                     </jd2:subunit>
+                  </jd2:complex>
+               </jd2:species>
+            </jd2:listOfSpecies>
+            <jd2:listOfReactions>
+               <jd2:reaction id = "J0" reversible = "false">
+                  <jd2:listOfReactants>
+                     <jd2:speciesReference species = "Aspartate" stoichiometry = "1"/>
+                  </jd2:listOfReactants>
+                  <jd2:listOfProducts>
+                     <jd2:speciesReference species = "AspartylPhosphate" stoichiometry = "1"/>
+                  </jd2:listOfProducts>
+                  <jd2:listOfModifierEdges>
+                     <jd2:modifierEdge visible = "true">
+                        <jd2:speciesReference species = "Lysine"/>
+                        <jd2:destinationReaction name = "J0" regulatorType = "rtNegative" relativePosition = "0.51412" destinationArcId = "0"
+                                                 destinationLineSegmentId = "0"/>
+                        <jd2:display lineThickness = "2" lineColor = "FFFF0000" lineDashStyle = "dsSolid" negativeMarkerStyle = "rmBar">
+                           <jd2:lineType type = "ltSegmentedLine">
+                              <jd2:pt x = "291" y = "235" type = "modifier" speciesRef = "Lysine"/>
+                              <jd2:pt x = "240" y = "235"/>
+                              <jd2:pt x = "157" y = "182"/>
+                              <jd2:pt x = "156.556503295898" y = "162"/>
+                           </jd2:lineType>
+                        </jd2:display>
+                     </jd2:modifierEdge>
+                     <jd2:modifierEdge visible = "true">
+                        <jd2:speciesReference species = "Threonine"/>
+                        <jd2:destinationReaction name = "J0" regulatorType = "rtNegative" relativePosition = "0.39548" destinationArcId = "0"
+                                                 destinationLineSegmentId = "0"/>
+                        <jd2:display lineThickness = "2" lineColor = "FFFF0000" lineDashStyle = "dsSolid" negativeMarkerStyle = "rmBar">
+                           <jd2:lineType type = "ltSegmentedLine">
+                              <jd2:pt x = "658" y = "255.5" type = "modifier" speciesRef = "Threonine"/>
+                              <jd2:pt x = "658" y = "84"/>
+                              <jd2:pt x = "137" y = "84"/>
+                              <jd2:pt x = "135.081924438477" y = "138"/>
+                           </jd2:lineType>
+                        </jd2:display>
+                     </jd2:modifierEdge>
+                     <jd2:modifierEdge visible = "true">
+                        <jd2:speciesReference species = "Methionine"/>
+                        <jd2:destinationReaction name = "J0" regulatorType = "rtNegative" relativePosition = "0.29379" destinationArcId = "0"
+                                                 destinationLineSegmentId = "0"/>
+                        <jd2:display lineThickness = "2" lineColor = "FFFF0000" lineDashStyle = "dsSolid" negativeMarkerStyle = "rmBar">
+                           <jd2:lineType type = "ltSegmentedLine">
+                              <jd2:pt x = "362.5" y = "343" type = "modifier" speciesRef = "Methionine"/>
+                              <jd2:pt x = "245" y = "344"/>
+                              <jd2:pt x = "117" y = "215"/>
+                              <jd2:pt x = "116.675140380859" y = "162"/>
+                           </jd2:lineType>
+                        </jd2:display>
+                     </jd2:modifierEdge>
+                  </jd2:listOfModifierEdges>
+                  <jd2:kineticLaw type = "builtin">
+                     <jd2:rateEquation value = "imm"/>
+                     <jd2:listOfSymbols>
+                        <jd2:parameter id = "J0_k" value = "0.1"/>
+                     </jd2:listOfSymbols>
+                  </jd2:kineticLaw>
+                  <jd2:display lineColor = "FF339966" lineThickness = "2">
+                     <jd2:arrowTip visible = "true" fillColor = "FF008080" outLineColor = "FF008080" displacement = "6">
+                        <jd2:vertices>
+                           <jd2:pt x = "0" y = "14"/>
+                           <jd2:pt x = "3" y = "7"/>
+                           <jd2:pt x = "0" y = "0"/>
+                           <jd2:pt x = "14" y = "7"/>
+                        </jd2:vertices>
+                     </jd2:arrowTip>
+                     <jd2:lineType type = "ltLine">
+                        <jd2:edge>
+                           <jd2:pt x = "63.5" y = "150" type = "substrate" speciesRef = "Aspartate"/>
+                           <jd2:pt x = "244.5" y = "150" type = "product" speciesRef = "AspartylPhosphate"/>
+                        </jd2:edge>
+                     </jd2:lineType>
+                     <jd2:displayValue visible = "false" showValue = "false" value = "0">
+                        <jd2:position rx = "0" ry = "0"/>
+                        <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF080000" fontStyle = ""/>
+                     </jd2:displayValue>
+                  </jd2:display>
+               </jd2:reaction>
+               <jd2:reaction id = "J1" reversible = "false">
+                  <jd2:listOfReactants>
+                     <jd2:speciesReference species = "AspartylPhosphate" stoichiometry = "1"/>
+                  </jd2:listOfReactants>
+                  <jd2:listOfProducts>
+                     <jd2:speciesReference species = "Aspartate_Semialdehyde" stoichiometry = "1"/>
+                  </jd2:listOfProducts>
+                  <jd2:listOfModifierEdges/>
+                  <jd2:kineticLaw type = "builtin">
+                     <jd2:rateEquation value = "imm"/>
+                     <jd2:listOfSymbols>
+                        <jd2:parameter id = "J1_k" value = "0.1"/>
+                     </jd2:listOfSymbols>
+                  </jd2:kineticLaw>
+                  <jd2:display lineColor = "FF339966" lineThickness = "2">
+                     <jd2:arrowTip visible = "true" fillColor = "FF000000" outLineColor = "FF000000" displacement = "6">
+                        <jd2:vertices>
+                           <jd2:pt x = "0" y = "14"/>
+                           <jd2:pt x = "3" y = "7"/>
+                           <jd2:pt x = "0" y = "0"/>
+                           <jd2:pt x = "14" y = "7"/>
+                        </jd2:vertices>
+                     </jd2:arrowTip>
+                     <jd2:lineType type = "ltLine">
+                        <jd2:edge>
+                           <jd2:pt x = "244.5" y = "150" type = "substrate" speciesRef = "AspartylPhosphate"/>
+                           <jd2:pt x = "432.5" y = "148.5" type = "product" speciesRef = "Aspartate_Semialdehyde"/>
+                        </jd2:edge>
+                     </jd2:lineType>
+                     <jd2:displayValue visible = "false" showValue = "false" value = "0">
+                        <jd2:position rx = "0" ry = "0"/>
+                        <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF080000" fontStyle = ""/>
+                     </jd2:displayValue>
+                  </jd2:display>
+               </jd2:reaction>
+               <jd2:reaction id = "J2" reversible = "false">
+                  <jd2:listOfReactants>
+                     <jd2:speciesReference species = "Aspartate_Semialdehyde" stoichiometry = "1"/>
+                  </jd2:listOfReactants>
+                  <jd2:listOfProducts>
+                     <jd2:speciesReference species = "Homoserine" stoichiometry = "1"/>
+                  </jd2:listOfProducts>
+                  <jd2:listOfModifierEdges>
+                     <jd2:modifierEdge visible = "true">
+                        <jd2:speciesReference species = "Threonine"/>
+                        <jd2:destinationReaction name = "J2" regulatorType = "rtNegative" relativePosition = "0.53448" destinationArcId = "0"
+                                                 destinationLineSegmentId = "0"/>
+                        <jd2:display lineThickness = "2" lineColor = "FFFF0000" lineDashStyle = "dsSolid" negativeMarkerStyle = "rmBar">
+                           <jd2:lineType type = "ltSegmentedLine">
+                              <jd2:pt x = "658" y = "255.5" type = "modifier" speciesRef = "Threonine"/>
+                              <jd2:pt x = "584" y = "211"/>
+                              <jd2:pt x = "516" y = "210"/>
+                              <jd2:pt x = "464.112457275391" y = "209.455093383789"/>
+                           </jd2:lineType>
+                        </jd2:display>
+                     </jd2:modifierEdge>
+                  </jd2:listOfModifierEdges>
+                  <jd2:kineticLaw type = "builtin">
+                     <jd2:rateEquation value = "imm"/>
+                     <jd2:listOfSymbols>
+                        <jd2:parameter id = "J2_k" value = "0.1"/>
+                     </jd2:listOfSymbols>
+                  </jd2:kineticLaw>
+                  <jd2:display lineColor = "FF339966" lineThickness = "2">
+                     <jd2:arrowTip visible = "true" fillColor = "FF008000" outLineColor = "FF008000" displacement = "6">
+                        <jd2:vertices>
+                           <jd2:pt x = "0" y = "14"/>
+                           <jd2:pt x = "3" y = "7"/>
+                           <jd2:pt x = "0" y = "0"/>
+                           <jd2:pt x = "14" y = "7"/>
+                        </jd2:vertices>
+                     </jd2:arrowTip>
+                     <jd2:lineType type = "ltLine">
+                        <jd2:edge>
+                           <jd2:pt x = "432.5" y = "148.5" type = "substrate" speciesRef = "Aspartate_Semialdehyde"/>
+                           <jd2:pt x = "470.5" y = "255" type = "product" speciesRef = "Homoserine"/>
+                        </jd2:edge>
+                     </jd2:lineType>
+                     <jd2:displayValue visible = "false" showValue = "false" value = "0">
+                        <jd2:position rx = "0" ry = "0"/>
+                        <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF080000" fontStyle = ""/>
+                     </jd2:displayValue>
+                  </jd2:display>
+               </jd2:reaction>
+               <jd2:reaction id = "J3" reversible = "false">
+                  <jd2:listOfReactants>
+                     <jd2:speciesReference species = "Homoserine" stoichiometry = "1"/>
+                  </jd2:listOfReactants>
+                  <jd2:listOfProducts>
+                     <jd2:speciesReference species = "Methionine" stoichiometry = "1"/>
+                  </jd2:listOfProducts>
+                  <jd2:listOfModifierEdges>
+                     <jd2:modifierEdge visible = "true">
+                        <jd2:speciesReference species = "Methionine"/>
+                        <jd2:destinationReaction name = "J3" regulatorType = "rtNegative" relativePosition = "0.45324" destinationArcId = "0"
+                                                 destinationLineSegmentId = "0"/>
+                        <jd2:display lineThickness = "2" lineColor = "FFFF0000" lineDashStyle = "dsSolid" negativeMarkerStyle = "rmBar">
+                           <jd2:lineType type = "ltSegmentedLine">
+                              <jd2:pt x = "362.5" y = "343" type = "modifier" speciesRef = "Methionine"/>
+                              <jd2:pt x = "420" y = "344"/>
+                              <jd2:pt x = "438" y = "319"/>
+                              <jd2:pt x = "429.130432128906" y = "304.187713623047"/>
+                           </jd2:lineType>
+                        </jd2:display>
+                     </jd2:modifierEdge>
+                  </jd2:listOfModifierEdges>
+                  <jd2:kineticLaw type = "builtin">
+                     <jd2:rateEquation value = "imm"/>
+                     <jd2:listOfSymbols>
+                        <jd2:parameter id = "J3_k" value = "0.1"/>
+                     </jd2:listOfSymbols>
+                  </jd2:kineticLaw>
+                  <jd2:display lineColor = "FF339966" lineThickness = "2">
+                     <jd2:arrowTip visible = "true" fillColor = "FF008000" outLineColor = "FF008000" displacement = "6">
+                        <jd2:vertices>
+                           <jd2:pt x = "0" y = "14"/>
+                           <jd2:pt x = "3" y = "7"/>
+                           <jd2:pt x = "0" y = "0"/>
+                           <jd2:pt x = "14" y = "7"/>
+                        </jd2:vertices>
+                     </jd2:arrowTip>
+                     <jd2:lineType type = "ltLine">
+                        <jd2:edge>
+                           <jd2:pt x = "470.5" y = "255" type = "substrate" speciesRef = "Homoserine"/>
+                           <jd2:pt x = "362.5" y = "343" type = "product" speciesRef = "Methionine"/>
+                        </jd2:edge>
+                     </jd2:lineType>
+                     <jd2:displayValue visible = "false" showValue = "false" value = "0">
+                        <jd2:position rx = "0" ry = "0"/>
+                        <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF080000" fontStyle = ""/>
+                     </jd2:displayValue>
+                  </jd2:display>
+               </jd2:reaction>
+               <jd2:reaction id = "J4" reversible = "false">
+                  <jd2:listOfReactants>
+                     <jd2:speciesReference species = "Homoserine" stoichiometry = "1"/>
+                  </jd2:listOfReactants>
+                  <jd2:listOfProducts>
+                     <jd2:speciesReference species = "Threonine" stoichiometry = "1"/>
+                  </jd2:listOfProducts>
+                  <jd2:listOfModifierEdges>
+                     <jd2:modifierEdge visible = "true">
+                        <jd2:speciesReference species = "Threonine"/>
+                        <jd2:destinationReaction name = "J4" regulatorType = "rtNegative" relativePosition = "0.45745" destinationArcId = "0"
+                                                 destinationLineSegmentId = "0"/>
+                        <jd2:display lineThickness = "2" lineColor = "FFFF0000" lineDashStyle = "dsSolid" negativeMarkerStyle = "rmBar">
+                           <jd2:lineType type = "ltSegmentedLine">
+                              <jd2:pt x = "658" y = "255.5" type = "modifier" speciesRef = "Threonine"/>
+                              <jd2:pt x = "642" y = "290"/>
+                              <jd2:pt x = "556" y = "290"/>
+                              <jd2:pt x = "556.2392578125" y = "267.228668212891"/>
+                           </jd2:lineType>
+                        </jd2:display>
+                     </jd2:modifierEdge>
+                  </jd2:listOfModifierEdges>
+                  <jd2:kineticLaw type = "builtin">
+                     <jd2:rateEquation value = "imm"/>
+                     <jd2:listOfSymbols>
+                        <jd2:parameter id = "J4_k" value = "0.1"/>
+                     </jd2:listOfSymbols>
+                  </jd2:kineticLaw>
+                  <jd2:display lineColor = "FF339966" lineThickness = "2">
+                     <jd2:arrowTip visible = "true" fillColor = "FF008000" outLineColor = "FF008000" displacement = "6">
+                        <jd2:vertices>
+                           <jd2:pt x = "0" y = "14"/>
+                           <jd2:pt x = "3" y = "7"/>
+                           <jd2:pt x = "0" y = "0"/>
+                           <jd2:pt x = "14" y = "7"/>
+                        </jd2:vertices>
+                     </jd2:arrowTip>
+                     <jd2:lineType type = "ltLine">
+                        <jd2:edge>
+                           <jd2:pt x = "470.5" y = "255" type = "substrate" speciesRef = "Homoserine"/>
+                           <jd2:pt x = "658" y = "255.5" type = "product" speciesRef = "Threonine"/>
+                        </jd2:edge>
+                     </jd2:lineType>
+                     <jd2:displayValue visible = "false" showValue = "false" value = "0">
+                        <jd2:position rx = "0" ry = "0"/>
+                        <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF080000" fontStyle = ""/>
+                     </jd2:displayValue>
+                  </jd2:display>
+               </jd2:reaction>
+               <jd2:reaction id = "J5" reversible = "false">
+                  <jd2:listOfReactants>
+                     <jd2:speciesReference species = "Threonine" stoichiometry = "1"/>
+                  </jd2:listOfReactants>
+                  <jd2:listOfProducts>
+                     <jd2:speciesReference species = "Isoleucine" stoichiometry = "1"/>
+                  </jd2:listOfProducts>
+                  <jd2:listOfModifierEdges>
+                     <jd2:modifierEdge visible = "true">
+                        <jd2:speciesReference species = "Isoleucine"/>
+                        <jd2:destinationReaction name = "J5" regulatorType = "rtNegative" relativePosition = "0.44366" destinationArcId = "0"
+                                                 destinationLineSegmentId = "0"/>
+                        <jd2:display lineThickness = "2" lineColor = "FFFF0000" lineDashStyle = "dsSolid" negativeMarkerStyle = "rmBar">
+                           <jd2:lineType type = "ltSegmentedLine">
+                              <jd2:pt x = "776.5" y = "344" type = "modifier" speciesRef = "Isoleucine"/>
+                              <jd2:pt x = "700" y = "344"/>
+                              <jd2:pt x = "681" y = "321"/>
+                              <jd2:pt x = "703.393432617188" y = "304.378662109375"/>
+                           </jd2:lineType>
+                        </jd2:display>
+                     </jd2:modifierEdge>
+                  </jd2:listOfModifierEdges>
+                  <jd2:kineticLaw type = "builtin">
+                     <jd2:rateEquation value = "imm"/>
+                     <jd2:listOfSymbols>
+                        <jd2:parameter id = "J5_k" value = "0.1"/>
+                     </jd2:listOfSymbols>
+                  </jd2:kineticLaw>
+                  <jd2:display lineColor = "FF339966" lineThickness = "2">
+                     <jd2:arrowTip visible = "true" fillColor = "FF008000" outLineColor = "FF008000" displacement = "6">
+                        <jd2:vertices>
+                           <jd2:pt x = "0" y = "14"/>
+                           <jd2:pt x = "3" y = "7"/>
+                           <jd2:pt x = "0" y = "0"/>
+                           <jd2:pt x = "14" y = "7"/>
+                        </jd2:vertices>
+                     </jd2:arrowTip>
+                     <jd2:lineType type = "ltLine">
+                        <jd2:edge>
+                           <jd2:pt x = "658" y = "255.5" type = "substrate" speciesRef = "Threonine"/>
+                           <jd2:pt x = "776.5" y = "344" type = "product" speciesRef = "Isoleucine"/>
+                        </jd2:edge>
+                     </jd2:lineType>
+                     <jd2:displayValue visible = "false" showValue = "false" value = "0">
+                        <jd2:position rx = "0" ry = "0"/>
+                        <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF080000" fontStyle = ""/>
+                     </jd2:displayValue>
+                  </jd2:display>
+               </jd2:reaction>
+               <jd2:reaction id = "J6" reversible = "false">
+                  <jd2:listOfReactants>
+                     <jd2:speciesReference species = "Aspartate_Semialdehyde" stoichiometry = "1"/>
+                  </jd2:listOfReactants>
+                  <jd2:listOfProducts>
+                     <jd2:speciesReference species = "Lysine" stoichiometry = "1"/>
+                  </jd2:listOfProducts>
+                  <jd2:listOfModifierEdges>
+                     <jd2:modifierEdge visible = "true">
+                        <jd2:speciesReference species = "Lysine"/>
+                        <jd2:destinationReaction name = "J6" regulatorType = "rtNegative" relativePosition = "0.49351" destinationArcId = "0"
+                                                 destinationLineSegmentId = "0"/>
+                        <jd2:display lineThickness = "2" lineColor = "FFFF0000" lineDashStyle = "dsSolid" negativeMarkerStyle = "rmBar">
+                           <jd2:lineType type = "ltSegmentedLine">
+                              <jd2:pt x = "291" y = "235" type = "modifier" speciesRef = "Lysine"/>
+                              <jd2:pt x = "350" y = "234"/>
+                              <jd2:pt x = "374" y = "214"/>
+                              <jd2:pt x = "368.927703857422" y = "201.426803588867"/>
+                           </jd2:lineType>
+                        </jd2:display>
+                     </jd2:modifierEdge>
+                  </jd2:listOfModifierEdges>
+                  <jd2:kineticLaw type = "builtin">
+                     <jd2:rateEquation value = "imm"/>
+                     <jd2:listOfSymbols>
+                        <jd2:parameter id = "J6_k" value = "0.1"/>
+                     </jd2:listOfSymbols>
+                  </jd2:kineticLaw>
+                  <jd2:display lineColor = "FF339966" lineThickness = "2">
+                     <jd2:arrowTip visible = "true" fillColor = "FF008000" outLineColor = "FF008000" displacement = "6">
+                        <jd2:vertices>
+                           <jd2:pt x = "0" y = "14"/>
+                           <jd2:pt x = "3" y = "7"/>
+                           <jd2:pt x = "0" y = "0"/>
+                           <jd2:pt x = "14" y = "7"/>
+                        </jd2:vertices>
+                     </jd2:arrowTip>
+                     <jd2:lineType type = "ltLine">
+                        <jd2:edge>
+                           <jd2:pt x = "432.5" y = "148.5" type = "substrate" speciesRef = "Aspartate_Semialdehyde"/>
+                           <jd2:pt x = "291" y = "235" type = "product" speciesRef = "Lysine"/>
+                        </jd2:edge>
+                     </jd2:lineType>
+                     <jd2:displayValue visible = "false" showValue = "false" value = "0">
+                        <jd2:position rx = "0" ry = "0"/>
+                        <jd2:font fontName = "Arial" fontSize = "10" fontColor = "FF080000" fontStyle = ""/>
+                     </jd2:displayValue>
+                  </jd2:display>
+               </jd2:reaction>
+            </jd2:listOfReactions>
+         </jd2:PathwayDesignerLayout>
+      </annotation>
+      <listOfCompartments>
+         <compartment id = "compartment" size = "1"/>
+      </listOfCompartments>
+      <listOfSpecies>
+         <species id = "Aspartate" boundaryCondition = "false" initialConcentration = "0" compartment = "compartment"/>
+         <species id = "AspartylPhosphate" boundaryCondition = "false" initialConcentration = "0" compartment = "compartment"/>
+         <species id = "Homoserine" boundaryCondition = "false" initialConcentration = "0" compartment = "compartment"/>
+         <species id = "Methionine" boundaryCondition = "false" initialConcentration = "0" compartment = "compartment"/>
+         <species id = "Threonine" boundaryCondition = "false" initialConcentration = "0" compartment = "compartment"/>
+         <species id = "Isoleucine" boundaryCondition = "false" initialConcentration = "0" compartment = "compartment"/>
+         <species id = "Aspartate_Semialdehyde" boundaryCondition = "false" initialConcentration = "0" compartment = "compartment"/>
+         <species id = "Lysine" boundaryCondition = "false" initialConcentration = "0" compartment = "compartment"/>
+      </listOfSpecies>
+      <listOfParameters>
+         <parameter id = "J0_J0_k" value = "0.1"/>
+         <parameter id = "J1_J1_k" value = "0.1"/>
+         <parameter id = "J2_J2_k" value = "0.1"/>
+         <parameter id = "J3_J3_k" value = "0.1"/>
+         <parameter id = "J4_J4_k" value = "0.1"/>
+         <parameter id = "J5_J5_k" value = "0.1"/>
+         <parameter id = "J6_J6_k" value = "0.1"/>
+         <parameter id = "J0_k" value = "0.1"/>
+         <parameter id = "J1_k" value = "0.1"/>
+         <parameter id = "J2_k" value = "0.1"/>
+         <parameter id = "J3_k" value = "0.1"/>
+         <parameter id = "J4_k" value = "0.1"/>
+         <parameter id = "J5_k" value = "0.1"/>
+         <parameter id = "J6_k" value = "0.1"/>
+      </listOfParameters>
+      <listOfReactions>
+         <reaction id = "J0" reversible = "false">
+            <listOfReactants>
+               <speciesReference species = "Aspartate" stoichiometry = "1"/>
+            </listOfReactants>
+            <listOfProducts>
+               <speciesReference species = "AspartylPhosphate" stoichiometry = "1"/>
+            </listOfProducts>
+            <kineticLaw>
+               <math xmlns = "http://www.w3.org/1998/Math/MathML">
+                  <apply>
+                     <times/>
+                     <ci>
+                           J0_J0_k
+                     </ci>
+                     <ci>
+                           Aspartate
+                     </ci>
+                  </apply>
+               </math>
+            </kineticLaw>
+         </reaction>
+         <reaction id = "J1" reversible = "false">
+            <listOfReactants>
+               <speciesReference species = "AspartylPhosphate" stoichiometry = "1"/>
+            </listOfReactants>
+            <listOfProducts>
+               <speciesReference species = "Aspartate_Semialdehyde" stoichiometry = "1"/>
+            </listOfProducts>
+            <kineticLaw>
+               <math xmlns = "http://www.w3.org/1998/Math/MathML">
+                  <apply>
+                     <times/>
+                     <ci>
+                           J1_J1_k
+                     </ci>
+                     <ci>
+                           AspartylPhosphate
+                     </ci>
+                  </apply>
+               </math>
+            </kineticLaw>
+         </reaction>
+         <reaction id = "J2" reversible = "false">
+            <listOfReactants>
+               <speciesReference species = "Aspartate_Semialdehyde" stoichiometry = "1"/>
+            </listOfReactants>
+            <listOfProducts>
+               <speciesReference species = "Homoserine" stoichiometry = "1"/>
+            </listOfProducts>
+            <kineticLaw>
+               <math xmlns = "http://www.w3.org/1998/Math/MathML">
+                  <apply>
+                     <times/>
+                     <ci>
+                           J2_J2_k
+                     </ci>
+                     <ci>
+                           Aspartate_Semialdehyde
+                     </ci>
+                  </apply>
+               </math>
+            </kineticLaw>
+         </reaction>
+         <reaction id = "J3" reversible = "false">
+            <listOfReactants>
+               <speciesReference species = "Homoserine" stoichiometry = "1"/>
+            </listOfReactants>
+            <listOfProducts>
+               <speciesReference species = "Methionine" stoichiometry = "1"/>
+            </listOfProducts>
+            <kineticLaw>
+               <math xmlns = "http://www.w3.org/1998/Math/MathML">
+                  <apply>
+                     <times/>
+                     <ci>
+                           J3_J3_k
+                     </ci>
+                     <ci>
+                           Homoserine
+                     </ci>
+                  </apply>
+               </math>
+            </kineticLaw>
+         </reaction>
+         <reaction id = "J4" reversible = "false">
+            <listOfReactants>
+               <speciesReference species = "Homoserine" stoichiometry = "1"/>
+            </listOfReactants>
+            <listOfProducts>
+               <speciesReference species = "Threonine" stoichiometry = "1"/>
+            </listOfProducts>
+            <kineticLaw>
+               <math xmlns = "http://www.w3.org/1998/Math/MathML">
+                  <apply>
+                     <times/>
+                     <ci>
+                           J4_J4_k
+                     </ci>
+                     <ci>
+                           Homoserine
+                     </ci>
+                  </apply>
+               </math>
+            </kineticLaw>
+         </reaction>
+         <reaction id = "J5" reversible = "false">
+            <listOfReactants>
+               <speciesReference species = "Threonine" stoichiometry = "1"/>
+            </listOfReactants>
+            <listOfProducts>
+               <speciesReference species = "Isoleucine" stoichiometry = "1"/>
+            </listOfProducts>
+            <kineticLaw>
+               <math xmlns = "http://www.w3.org/1998/Math/MathML">
+                  <apply>
+                     <times/>
+                     <ci>
+                           J5_J5_k
+                     </ci>
+                     <ci>
+                           Threonine
+                     </ci>
+                  </apply>
+               </math>
+            </kineticLaw>
+         </reaction>
+         <reaction id = "J6" reversible = "false">
+            <listOfReactants>
+               <speciesReference species = "Aspartate_Semialdehyde" stoichiometry = "1"/>
+            </listOfReactants>
+            <listOfProducts>
+               <speciesReference species = "Lysine" stoichiometry = "1"/>
+            </listOfProducts>
+            <kineticLaw>
+               <math xmlns = "http://www.w3.org/1998/Math/MathML">
+                  <apply>
+                     <times/>
+                     <ci>
+                           J6_J6_k
+                     </ci>
+                     <ci>
+                           Aspartate_Semialdehyde
+                     </ci>
+                  </apply>
+               </math>
+            </kineticLaw>
+         </reaction>
+      </listOfReactions>
+   </model>
+</sbml>

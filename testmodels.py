@@ -29,5 +29,7 @@ class testmodels:
     BRANCHED = content[testfiles.index('test_branched.xml')]
     REVERSIBLE = content[testfiles.index('test_reversible.xml')]
     SYMPY = content[testfiles.index('test_sympy.xml')]
+    FEEDBACK = content[testfiles.index('test_feedback.xml')]
+    ASPARTATE = content[testfiles.index('test_AspartateMetabolism.xml')]
     LIST = _LIST
     
