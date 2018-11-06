@@ -196,7 +196,7 @@ def plotNetworkFromSBML(model, scale=1.5, fontsize=20, lw=3, node='tab:blue',
     
     while dist_flag:
         dist_flag = False
-        for i in itertools.combinations(pos.keys(), 2):
+        for i in itertools.combinations(speciesId, 2):
             pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
             if pos_dist < thres:
                 dist_flag = True
