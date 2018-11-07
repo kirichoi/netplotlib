@@ -28,6 +28,6 @@ net.draw()
 ## Examples
 
 <p align="center">
-  <img src="/images/mapk.png" width="450px" />
-  <img src="/images/weighted.png" width="450px" /> 
+  <img src="/images/mapk.png" width="400px" />
+  <img src="/images/weighted.png" width="400px" /> 
 </p>
