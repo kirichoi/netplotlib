@@ -6,3 +6,4 @@ matplotlib>=2.0.2
 libroadrunner>=1.4.24
 antimony>=2.9.4
 sympy>=1.1.1
+tesbml>=5.15.0

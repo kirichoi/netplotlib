@@ -1,5 +1,5 @@
 """
-List of test models for NetworkEX
+List of test cases for NetworkEX
 
 Kiri Choi 
 """

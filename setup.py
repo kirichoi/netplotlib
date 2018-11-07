@@ -14,9 +14,10 @@ with open(os.path.join(os.path.dirname(__file__), 'VERSION.txt'), 'r') as f:
 setup(name='networkex',
       version=_version,
       author='Kiri Choi',
-      description='NetworkEX: A simple extension for NetworkX for SBML and Antimony',
+      description='NetworkEX: A simple extension to NetworkX for visualizing reaction network models',
       packages=[
           'networkex',
+		  'networkex.testcases',
       ],
       package_data={
           'networkex.testcases': ['*.xml']
@@ -30,5 +31,6 @@ setup(name='networkex',
         'libroadrunner>=1.4.24',
         'antimony>=2.9.4',
         'sympy>=1.1.1',
+        'tesbml>=5.15.0',
         ]
       )
