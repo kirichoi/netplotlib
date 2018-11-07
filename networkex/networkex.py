@@ -16,8 +16,6 @@ from scipy import interpolate
 import sympy
 import tesbml
 import itertools
-from testmodels import testmodels as ts
-
 
 class NetworkEX():
     

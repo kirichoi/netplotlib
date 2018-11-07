@@ -14,3 +14,12 @@ except:
 		version = f.read().rstrip()
 
 __version__ = version
+
+from .networkex import (
+    NetworkEX,
+    NetworkEXEnsemble
+)
+
+from .testmodels import (
+    testmodels
+)
