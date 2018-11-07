@@ -672,14 +672,6 @@ class NetworkEXEnsemble():
                      fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
                      verticalalignment='center')
                 
-#                if self.edgeLabel:
-#                    edgeLabels = {}
-#                    for i in range(len(allRxn)):
-#                        for j in range(len(allRxn[i][1])):
-#                            edgeLabels[(rid[i], allRxn[i][1][j])] = round(count[i], 3)
-#                            
-#                    nx.draw_networkx_edge_labels(G, pos, edge_labels=edgeLabels, font_size=self.edgeLabellw)
-                
         # Modifiers
         seen={}
         for (u,v,d) in G.edges(data=True):
