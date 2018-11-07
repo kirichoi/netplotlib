@@ -377,7 +377,7 @@ class NetworkEX():
 
 
 
-class NetworkExEnsemble():
+class NetworkEXEnsemble():
     
     def __init__(self, models):
         """
@@ -396,7 +396,7 @@ class NetworkExEnsemble():
                 try:
                     self.rrInstances.append(te.loadAntimonyModel(m))
                 except:
-                    raise Exception("Input does not seem to be a valid SBML or Antimony string")
+                    raise Exception("Input does not seem to be a valid list of SBML or Antimony string")
                     
         self.reset()
     
@@ -525,7 +525,6 @@ class NetworkExEnsemble():
                 else:
                     count[allRxn.index([rct[t], prd[t]])] += 1
         
-        print(rid)
         count = count/np.sum(len(self.rrInstances))
     
         # initialize directional graph
