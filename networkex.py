@@ -79,6 +79,144 @@ class NetworkEX():
         self.drawReactionNode = True
         self.breakBoundary = False
 
+
+    def getLayout(self):
+        """
+        Return the layout of the model
+        """
+        numBnd = self.rrInstance.getNumBoundarySpecies()
+        numFlt = self.rrInstance.getNumFloatingSpecies()
+        boundaryId = self.rrInstance.getBoundarySpeciesIds()
+        floatingId = self.rrInstance.getFloatingSpeciesIds()
+        speciesId = boundaryId + floatingId
+        rid = self.rrInstance.getReactionIds()
+        
+        # prepare symbols for sympy
+        boundaryId_sympy = [] 
+        floatingId_sympy = []
+        
+        # Fix issues with reserved characters
+        for i in range(numBnd):
+            if boundaryId[i] == 'S':
+                boundaryId_sympy.append('_S')
+            else:
+                boundaryId_sympy.append(boundaryId[i])
+        
+        for i in range(numFlt):
+            if floatingId[i] == 'S':
+                floatingId_sympy.append('_S')
+            else:
+                floatingId_sympy.append(floatingId[i])
+        
+        paramIdsStr = ' '.join(self.rrInstance.getGlobalParameterIds())
+        floatingIdsStr = ' '.join(floatingId_sympy)
+        boundaryIdsStr = ' '.join(boundaryId_sympy)
+        comparmentIdsStr = ' '.join(self.rrInstance.getCompartmentIds())
+        
+        allIds = paramIdsStr + ' ' + floatingIdsStr + ' ' + boundaryIdsStr + ' ' + comparmentIdsStr
+        
+        avsym = sympy.symbols(allIds)
+        
+        # extract reactant, product, modifiers, and kinetic laws
+        rct = []
+        prd = []
+        mod = []
+        mod_target = []
+        kineticLaw = []
+        mod_type = []
+        
+        doc = tesbml.readSBMLFromString(self.rrInstance.getSBML())
+        sbmlmodel = doc.getModel()
+    
+        for slr in sbmlmodel.getListOfReactions():
+            temprct = []
+            tempprd = []
+            tempmod = []
+            
+            sbmlreaction = sbmlmodel.getReaction(slr.getId())
+            for sr in range(sbmlreaction.getNumReactants()):
+                sbmlrct = sbmlreaction.getReactant(sr)
+                temprct.append(sbmlrct.getSpecies())
+            for sp in range(sbmlreaction.getNumProducts()):
+                sbmlprd = sbmlreaction.getProduct(sp)
+                tempprd.append(sbmlprd.getSpecies())
+            for sm in range(sbmlreaction.getNumModifiers()):
+                sbmlmod = sbmlreaction.getModifier(sm)
+                tempmod.append(sbmlmod.getSpecies())
+            kl = sbmlreaction.getKineticLaw()
+            
+            rct.append(temprct)
+            prd.append(tempprd)
+            mod.append(tempmod)
+            
+            # Update kinetic law according to change in species name
+            kl_split = kl.getFormula().split(' ')
+            for i in range(len(kl_split)):
+                if kl_split[i] == 'S':
+                    kl_split[i] = '_S'
+                else:
+                    pass
+            
+            kineticLaw.append(' '.join(kl_split))
+        
+        # use sympy for analyzing modifiers weSmart
+        for ml in range(len(mod)):
+            mod_type_temp = []
+            expression = kineticLaw[ml]
+            n,d = sympy.fraction(expression)
+            for ml_i in range(len(mod[ml])):
+                if n.has(mod[ml][ml_i]):
+                    mod_type_temp.append('activator')
+                elif d.has(mod[ml][ml_i]):
+                    mod_type_temp.append('inhibitor')
+                else:
+                    continue
+            mod_type.append(mod_type_temp)
+        
+        for i in range(len(mod)):
+            mod_target_temp = []
+            if len(mod[i]) > 0:
+                mod_target_temp.append(rid[i])
+            mod_target.append(mod_target_temp)
+        
+        # initialize directional graph
+        G = nx.DiGraph()
+    
+        # add edges
+        # TODO: Separate boundary species?
+        for i in range(sbmlmodel.getNumReactions()):
+            for k in range(len(rct[i])):
+                G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
+            for j in range(len(prd[i])):
+                G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
+                        
+            if len(mod[i]) > 0:
+                if mod_type[i][0] == 'inhibitor':
+                    G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
+                elif mod_type[i][0] == 'activator':
+                    G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
+            
+        # calcutate positions
+        thres = 0.1
+        shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
+        pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+        
+        dist_flag = True
+        maxIter = 50
+        maxIter_n = 0
+        
+        while dist_flag and (maxIter_n < maxIter):
+            dist_flag = False
+            for i in itertools.combinations(speciesId, 2):
+                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                if pos_dist < thres:
+                    dist_flag = True
+                    shortest_dist[i[0]][i[1]] = 4
+            pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+            maxIter_n += 1
+            
+        return pos
+    
     
     def draw(self):
         """
@@ -428,7 +566,149 @@ class NetworkEXEnsemble():
         self.edgeTransparency = False
     
     
-    def drawFrequencyWeightedDiagram(self):
+    def getLayout(self):
+        """
+        Return the layout
+        """
+        allRxn = []
+        count = []
+        rid = []
+        mod = []
+        mod_target = []
+        mod_type = []
+        rid_ind = 0
+        
+        if len(self.weights) > 0:
+            if len(self.weights) != len(self.rrInstances):
+                raise Exception("The dimension of weights provides does not match "
+                                "the number of models given")
+    
+        for rind, r in enumerate(self.rrInstances):
+            rct = []
+            prd = []
+            mod_m = []
+            mod_target_m = []
+            kineticLaw = []
+            mod_type_m = []
+            
+            # prepare symbols for sympy
+            paramIdsStr = ' '.join(r.getGlobalParameterIds())
+            floatingIdsStr = ' '.join(r.getFloatingSpeciesIds())
+            boundaryIdsStr = ' '.join(r.getBoundarySpeciesIds())
+            comparmentIdsStr = ' '.join(r.getCompartmentIds())
+            
+            allIds = paramIdsStr + ' ' + floatingIdsStr + ' ' + boundaryIdsStr + ' ' + comparmentIdsStr
+            
+            avsym = sympy.symbols(allIds)
+            
+            doc = tesbml.readSBMLFromString(r.getSBML())
+            sbmlmodel = doc.getModel()
+        
+            for slr in sbmlmodel.getListOfReactions():
+                temprct = []
+                tempprd = []
+                tempmod = []
+                
+                sbmlreaction = sbmlmodel.getReaction(slr.getId())
+                for sr in range(sbmlreaction.getNumReactants()):
+                    sbmlrct = sbmlreaction.getReactant(sr)
+                    temprct.append(sbmlrct.getSpecies())
+                for sp in range(sbmlreaction.getNumProducts()):
+                    sbmlprd = sbmlreaction.getProduct(sp)
+                    tempprd.append(sbmlprd.getSpecies())
+                for sm in range(sbmlreaction.getNumModifiers()):
+                    sbmlmod = sbmlreaction.getModifier(sm)
+                    tempmod.append(sbmlmod.getSpecies())
+                kl = sbmlreaction.getKineticLaw()
+                
+                rct.append(temprct)
+                prd.append(tempprd)
+                mod_m.append(tempmod)
+                kineticLaw.append(kl.getFormula())
+            
+            # use sympy for analyzing modifiers weSmart
+            for ml in range(len(mod_m)):
+                mod_type_temp = []
+                expression = kineticLaw[ml]
+                n,d = sympy.fraction(expression)
+                for ml_i in range(len(mod_m[ml])):
+                    if n.has(mod_m[ml][ml_i]):
+                        mod_type_temp.append('activator')
+                    elif d.has(mod_m[ml][ml_i]):
+                        mod_type_temp.append('inhibitor')
+                    else:
+                        continue
+                mod_type_m.append(mod_type_temp)
+            
+            for i in range(len(mod_m)):
+                mod_target_temp = []
+                if len(mod_m[i]) > 0:
+                    mod_target_temp.append(rid[i])
+                mod_target_m.append(mod_target_temp)
+                
+            mod_flat = [item for sublist in mod_m for item in sublist]
+            modtype_flat = [item for sublist in mod_type_m for item in sublist]
+            modtarget_flat = [item for sublist in mod_target_m for item in sublist]
+            
+            for t in range(sbmlmodel.getNumReactions()):
+                if [rct[t], prd[t]] not in allRxn:
+                    allRxn.append([rct[t], prd[t]])
+                    if len(self.weights) > 0:
+                        count.append(1*self.weights[rind])
+                    else:
+                        count.append(1)
+                    rid.append("J" + str(rid_ind))
+                    mod.append(mod_flat)
+                    mod_type.append(modtype_flat)
+                    mod_target.append(modtarget_flat)
+                    rid_ind += 1
+                else:
+                    if len(self.weights) > 0:
+                        count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
+                    else:
+                        count[allRxn.index([rct[t], prd[t]])] += 1
+                    
+        count = np.divide(count, len(self.rrInstances))
+    
+        # initialize directional graph
+        G = nx.DiGraph()
+    
+        # add edges
+        for i in range(len(allRxn)):
+            for k in range(len(allRxn[i][0])):
+                G.add_edges_from([(allRxn[i][0][k], rid[i])], weight=(count[i]*self.edgelw))
+            for j in range(len(allRxn[i][1])):
+                G.add_edges_from([(rid[i], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+                        
+            if len(mod[i]) > 0:
+                if mod_type[i][0] == 'inhibitor':
+                    G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
+                elif mod_type[i][0] == 'activator':
+                    G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
+    
+        # calcutate positions
+        thres = 0.1
+        shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
+        pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+        
+        dist_flag = True
+        maxIter = 50
+        maxIter_n = 0
+        
+        while dist_flag and (maxIter_n < maxIter):
+            dist_flag = False
+            for i in itertools.combinations(pos.keys(), 2):
+                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                if pos_dist < thres:
+                    dist_flag = True
+                    shortest_dist[i[0]][i[1]] = 4
+            pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+            maxIter_n += 1
+        
+        return pos
+    
+    
+    def drawWeightedDiagram(self):
         """     
         Draw weighted reaction network based on frequency of reactions
         

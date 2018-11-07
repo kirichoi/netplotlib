@@ -22,7 +22,7 @@ for i in range(len(list_models)):
     _LIST.append(sbmlstr.read())
     sbmlstr.close()
 
-class testmodels:
+class testmodels():
 
     BIOMD0000000010 = content[testfiles.index('test_BIOMD0000000010.xml')]
     BIBI = content[testfiles.index('test_bibi.xml')]
@@ -33,3 +33,5 @@ class testmodels:
     ASPARTATE = content[testfiles.index('test_AspartateMetabolism.xml')]
     LIST = _LIST
     
+        
+        
