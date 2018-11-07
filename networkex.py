@@ -400,6 +400,7 @@ class NetworkEXEnsemble():
                     
         self.reset()
     
+    
     def reset(self):
         """
         Resets all properties
@@ -423,6 +424,7 @@ class NetworkEXEnsemble():
         self.edgeLabelFontSize = 12
         self.drawReactionNode = True
         self.breakBoundary = False
+        self.weights = []
     
     
     def drawFrequencyWeightedDiagram(self):
@@ -439,8 +441,13 @@ class NetworkEXEnsemble():
         mod_target = []
         mod_type = []
         rid_ind = 0
+        
+        if len(self.weights) > 0:
+            if len(self.weights) != len(self.rrInstances):
+                raise Exception("The dimension of weights provides does not match "
+                                "the number of models given")
     
-        for r in self.rrInstances:
+        for rind, r in enumerate(self.rrInstances):
             rct = []
             prd = []
             mod_m = []
@@ -516,16 +523,22 @@ class NetworkEXEnsemble():
             for t in range(sbmlmodel.getNumReactions()):
                 if [rct[t], prd[t]] not in allRxn:
                     allRxn.append([rct[t], prd[t]])
-                    count.append(1)
+                    if len(self.weights) > 0:
+                        count.append(1*self.weights[rind])
+                    else:
+                        count.append(1)
                     rid.append("J" + str(rid_ind))
                     mod.append(mod_flat)
                     mod_type.append(modtype_flat)
                     mod_target.append(modtarget_flat)
                     rid_ind += 1
                 else:
-                    count[allRxn.index([rct[t], prd[t]])] += 1
-        
-        count = count/np.sum(len(self.rrInstances))
+                    if len(self.weights) > 0:
+                        count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
+                    else:
+                        count[allRxn.index([rct[t], prd[t]])] += 1
+                    
+        count = np.divide(count, len(self.rrInstances))
     
         # initialize directional graph
         G = nx.DiGraph()
