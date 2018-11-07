@@ -407,7 +407,7 @@ class NetworkExEnsemble():
     
         self.scale = 1.25
         self.fontsize = 20
-        self.edgelw = 3
+        self.edgelw = 10
         self.nodeColor = 'tab:blue'
         self.reactionNodeColor = 'tab:gray'
         self.labelColor = 'w'
@@ -419,6 +419,8 @@ class NetworkExEnsemble():
         self.highlight = []
         self.hlNodeColor = 'tab:purple'
         self.hlNodeEdgeColor = 'tab:pink'
+        self.edgeLabel = True
+        self.edgeLabelFontSize = 12
         self.drawReactionNode = True
         self.breakBoundary = False
     
@@ -523,29 +525,29 @@ class NetworkExEnsemble():
                 else:
                     count[allRxn.index([rct[t], prd[t]])] += 1
         
-        count = count/np.sum(len(models))
+        print(rid)
+        count = count/np.sum(len(self.rrInstances))
     
         # initialize directional graph
         G = nx.DiGraph()
     
         # add edges
-        # TODO: Separate boundary species?
         for i in range(len(allRxn)):
             for k in range(len(allRxn[i][0])):
-                G.add_edges_from([(allRxn[i][0][k], rid[i])], weight=(count[i]*lw))
+                G.add_edges_from([(allRxn[i][0][k], rid[i])], weight=(count[i]*self.edgelw))
             for j in range(len(allRxn[i][1])):
-                G.add_edges_from([(rid[i], allRxn[i][1][j])], weight=(count[i]*lw))
+                G.add_edges_from([(rid[i], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
                         
             if len(mod[i]) > 0:
                 if mod_type[i][0] == 'inhibitor':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*lw))
+                    G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
                 elif mod_type[i][0] == 'activator':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*lw))
+                    G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
     
         # calcutate positions
         thres = 0.1
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
-        pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=scale)
+        pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
         
         dist_flag = True
         
@@ -556,7 +558,7 @@ class NetworkExEnsemble():
                 if pos_dist < thres:
                     dist_flag = True
                     shortest_dist[i[0]][i[1]] = 4
-            pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=scale)
+            pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             
         # check the range of x and y positions
         max_width = []
@@ -575,87 +577,154 @@ class NetworkExEnsemble():
         # add nodes to the figure
         for n in G:
             if n in rid:
-                rec_rad = max(0.01*(len(n)+2), 0.055)
-                c = Circle(pos[n], radius=rec_rad, color=reaction)
-                plt.text(pos[n][0], pos[n][1], n, fontsize=fontsize, 
-                     horizontalalignment='center', verticalalignment='center', color=label)
+                rec_width = 0.05
+                rec_height = 0.05
+                if n in self.highlight:
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
+                                        rec_width, 
+                                        rec_height,
+                                        boxstyle="round,pad=0.01, rounding_size=0.01",
+                                        linewidth=self.nodeEdgelw, 
+                                        edgecolor=self.hlNodeEdgeColor, 
+                                        facecolor=self.hlNodeColor)
+                else:
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
+                                   rec_width, 
+                                   rec_height,
+                                   boxstyle="round,pad=0.01, rounding_size=0.01",
+                                   linewidth=self.nodeEdgelw, 
+                                   edgecolor=self.nodeEdgeColor, 
+                                   facecolor=self.reactionNodeColor)
             else:
                 # TODO: if the label is too long, increase the height and change line/abbreviate?
                 rec_width = max(0.04*(len(n)+2), 0.17)
                 rec_height = 0.12
                 if n in boundaryId:
-                    node_color = boundary
+                    node_color = self.boundaryColor
                 else:
-                    node_color = node
-                c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
-                                   rec_width, rec_height,
+                    node_color = self.nodeColor
+                if n in self.highlight:
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
+                                       rec_width, 
+                                       rec_height,
+                                       boxstyle="round,pad=0.01, rounding_size=0.02",
+                                       linewidth=self.nodeEdgelw, 
+                                       edgecolor=self.hlNodeEdgeColor, 
+                                       facecolor=self.hlNodeColor)
+                else:
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
+                                   rec_width, 
+                                   rec_height,
                                    boxstyle="round,pad=0.01, rounding_size=0.02",
-                                   linewidth=0, color=node_color)
+                                   linewidth=self.nodeEdgelw, 
+                                   edgecolor=self.nodeEdgeColor, 
+                                   facecolor=node_color)
                 plt.text(pos[n][0], pos[n][1], n, 
-                         fontsize=fontsize, horizontalalignment='center', 
-                         verticalalignment='center', color=label)
-            ax.add_patch(c)
+                         fontsize=self.fontsize, horizontalalignment='center', 
+                         verticalalignment='center', color=self.labelColor)
             G.node[n]['patch'] = c
         
         # add edges to the figure
+        for i in range(len(allRxn)):
+            for j in [list(zip(x,allRxn[i][1])) for x in itertools.combinations(allRxn[i][0],len(allRxn[i][1]))][0]:
+                p1 = G.node[j[0]]['patch']
+                p2 = G.node[rid[i]]['patch']
+                p3 = G.node[j[1]]['patch']
+    
+                X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
+                X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
+                X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
+                XY = np.vstack((X1, X2, X3))
+                
+                tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
+                intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
+                stackXY = np.vstack((intX, intY))
+                
+                X3top = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height())
+                X3bot = (p3.get_x()+p3.get_width()/2,p3.get_y())
+                X3left = (p3.get_x(),p3.get_y()+p3.get_height()/2)
+                X3right = (p3.get_x()+p3.get_width(),p3.get_y()+p3.get_height()/2)
+                
+                n = -1
+                arrthres_v = .02
+                arrthres_h = .02
+                while ((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY.T[n][0] < (X3right[0]+arrthres_h))
+                    and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v))):
+                    n -= 1
+               
+                lpath = Path(stackXY.T[3:n])
+                
+                e = FancyArrowPatch(path=lpath,
+                                    arrowstyle='-|>',
+                                    mutation_scale=10.0,
+                                    lw=(count[i]*self.edgelw),
+                                    color=self.reactionColor)
+                ax.add_patch(e)
+                
+            # Edge labels
+            if self.edgeLabel:
+                c = FancyBboxPatch((stackXY.T[50,0]-0.0325, stackXY.T[50,1]+0.005),
+                                   0.125, 
+                                   0.05,
+                                   boxstyle="round,pad=0.01, rounding_size=0.01",
+                                   color='w')
+                ax.add_patch(c)
+                plt.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(count[i], 3), 
+                     fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
+                     verticalalignment='center')
+                
+#                if self.edgeLabel:
+#                    edgeLabels = {}
+#                    for i in range(len(allRxn)):
+#                        for j in range(len(allRxn[i][1])):
+#                            edgeLabels[(rid[i], allRxn[i][1][j])] = round(count[i], 3)
+#                            
+#                    nx.draw_networkx_edge_labels(G, pos, edge_labels=edgeLabels, font_size=self.edgeLabellw)
+                
+        # Modifiers
         seen={}
         for (u,v,d) in G.edges(data=True):
             n1 = G.node[u]['patch']
             n2 = G.node[v]['patch']
             rad = 0.1
+            shrinkB = 5.
             if (u,v) in seen:
                 rad = seen.get((u,v)) # TODO: No curvature when there is just a single line between two nodes
                 rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
             
-            if u in rid or v in rid:
-                if u in rid:
-                    X1 = (n1.center[0],n1.center[1])
-                else:
-                    X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
-                if v in rid:
-                    X2 = (n2.center[0],n2.center[1])
-                else:
-                    X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
-            else:
+            if u not in rid and v in rid and u in mod_flat and v in modtarget_flat: 
                 X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
                 X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
-            
-            if u not in rid and v in rid and u not in mod_flat and v not in modtarget_flat: # species node to reaction node
-                color=edge
-                arrowstyle='-'
-            elif u not in rid and v in rid and u in mod_flat and v in modtarget_flat: # modifiers
                 uind = [i for i, e in enumerate(mod_flat) if e == u]
                 vind = [i for i, e in enumerate(modtarget_flat) if e == v]
                 if modtype_flat[list(set(uind).intersection(vind))[0]] == 'inhibitor': # inhibition
-                    color=modifier
+                    color=self.modifierColor
                     arrowstyle='-['
+                    shrinkB = 10.
                 else: # activation
-                    color=modifier
+                    color=self.modifierColor
                     arrowstyle='-|>'
-            else: # reaction node to species node
-                color=edge
-                arrowstyle='-|>'
-            e = FancyArrowPatch(X1,
-                                X2,
-                                patchA=n1,
-                                patchB=n2,
-                                arrowstyle=arrowstyle,
-                                connectionstyle='arc3,rad=%s'%rad,
-                                mutation_scale=10.0,
-                                lw=G[u][v]['weight'],
-                                alpha=G[u][v]['weight']/lw,
-                                color=color)
-            seen[(u,v)]=rad
-            ax.add_patch(e)
-    
-        # Edge labels
-        edgeLabels = {}
-        for i in range(len(allRxn)):
-            for j in range(len(allRxn[i][1])):
-                edgeLabels[(rid[i], allRxn[i][1][j])] = round(count[i], 3)
-                
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=edgeLabels, font_size=12)
-    
+                e = FancyArrowPatch(X1,
+                                    X2,
+                                    patchA=n1,
+                                    patchB=n2,
+                                    shrinkB=shrinkB,
+                                    arrowstyle=arrowstyle,
+                                    connectionstyle='arc3,rad=%s'%rad,
+                                    mutation_scale=10.0,
+                                    lw=G[u][v]['weight'],
+                                    color=color)
+                seen[(u,v)]=rad
+                ax.add_patch(e)
+        
+        # Add nodes at last to put it on top
+        if self.drawReactionNode:
+            allnodes = speciesId + rid # TODO: allow users to turn off reaction nodes
+        else:
+            allnodes = speciesId
+        for i in range(len(allnodes)):
+            ax.add_patch(G.node[allnodes[i]]['patch'])
+        
         # reset width and height
         ax.autoscale()
         fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5)
