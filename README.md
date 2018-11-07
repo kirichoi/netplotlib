@@ -27,6 +27,7 @@ net.draw()
 
 ## Examples
 
-<img align="left" width="450px" id="windows" src="https://github.com/kirichoi/NetworkEX/blob/master/images/mapk.png">
-
-<img align="left" width="450px" id="windows" src="https://github.com/kirichoi/NetworkEX/blob/master/images/weighted.png">
+<p align="center">
+  <img src="/images/mapk.png" width="450px" />
+  <img src="/images/weighted.png" width="450px" /> 
+</p>
