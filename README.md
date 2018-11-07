@@ -5,7 +5,7 @@ Copyright 2018- Kiri Choi
 
 ## Introduction
 
-NetworkEX is a simple extension to NetworkX and matplotlib to draw reaction network diagrams from SBML or Antimony strings with ease. NetworkEX also supports drawing weighted reaction network diagrams from an ensemble of models based on reaction frequency or user-supplied weights.
+NetworkEX is a simple extension to [NetworkX](https://networkx.github.io/) and [matplotlib](https://matplotlib.org/) to draw reaction network diagrams from SBML or Antimony strings with ease. NetworkEX also supports drawing weighted reaction network diagrams from an ensemble of models based on reaction frequency or user-supplied weights.
 
 ```{python}
 import networkex as nex
