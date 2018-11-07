@@ -8,7 +8,7 @@ Created on Sat Oct 20 21:48:16 2018
 from setuptools import setup
 import os
 
-with open(os.path.join(os.path.dirname(__file__), 'VERSION.txt'), 'r') as f:
+with open(os.path.join(os.path.dirname(__file__), 'networkex/VERSION.txt'), 'r') as f:
     _version = f.read().rstrip()
 
 setup(name='networkex',
@@ -20,7 +20,8 @@ setup(name='networkex',
 		  'networkex.testcases',
       ],
       package_data={
-          'networkex.testcases': ['*.xml']
+          'networkex.testcases': ['*.xml'],
+		  'networkex': ['*.txt'],
       },
       install_requires=[
         'tellurium>=2.1.0',
