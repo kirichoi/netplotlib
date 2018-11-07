@@ -425,6 +425,7 @@ class NetworkEXEnsemble():
         self.drawReactionNode = True
         self.breakBoundary = False
         self.weights = []
+        self.edgeTransparency = False
     
     
     def drawFrequencyWeightedDiagram(self):
@@ -666,10 +667,16 @@ class NetworkEXEnsemble():
                
                 lpath = Path(stackXY.T[3:n])
                 
+                if self.edgeTransparency:
+                    alpha = count[i]
+                else:
+                    alpha = None
+
                 e = FancyArrowPatch(path=lpath,
                                     arrowstyle='-|>',
                                     mutation_scale=10.0,
                                     lw=(count[i]*self.edgelw),
+                                    alpha=alpha,
                                     color=self.reactionColor)
                 ax.add_patch(e)
                 
@@ -708,6 +715,12 @@ class NetworkEXEnsemble():
                 else: # activation
                     color=self.modifierColor
                     arrowstyle='-|>'
+                
+                if self.edgeTransparency:
+                    alpha = count[i]
+                else:
+                    alpha = None
+                
                 e = FancyArrowPatch(X1,
                                     X2,
                                     patchA=n1,
@@ -717,6 +730,7 @@ class NetworkEXEnsemble():
                                     connectionstyle='arc3,rad=%s'%rad,
                                     mutation_scale=10.0,
                                     lw=G[u][v]['weight'],
+                                    alpha=alpha,
                                     color=color)
                 seen[(u,v)]=rad
                 ax.add_patch(e)
