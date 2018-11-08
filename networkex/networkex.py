@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Simple module to visualize reaction networks and weighted reaction networks
-from ensemble of models.
-
-Kiri Choi (c) 2018
-"""
 
 from __future__ import absolute_import
 
