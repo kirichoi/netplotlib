@@ -6,6 +6,9 @@ from ensemble of models.
 Kiri Choi (c) 2018
 """
 
+from __future__ import absolute_import
+
+import os
 import tellurium as te
 import networkx as nx
 from matplotlib.patches import FancyArrowPatch, Circle, FancyBboxPatch
@@ -16,6 +19,17 @@ from scipy import interpolate
 import sympy
 import tesbml
 import itertools
+
+def getVersion():
+    
+    try:
+    	with open(os.path.join(os.path.dirname(__file__), '..', 'VERSION.txt'), 'r') as f:
+    		version = f.read().rstrip()
+    except:
+    	with open(os.path.join(os.path.dirname(__file__), 'VERSION.txt'), 'r') as f:
+    		version = f.read().rstrip()
+    
+    __version__ = version
 
 class NetworkEX():
     
