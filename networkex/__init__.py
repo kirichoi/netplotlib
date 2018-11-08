@@ -7,9 +7,12 @@ Created on Sat Oct 13 17:00:10 2018
 
 from .networkex import (
     NetworkEX,
-    NetworkEXEnsemble
+    NetworkEXEnsemble,
+    getVersion
 )
 
 from .testmodels import (
     testmodels
 )
+
+__version__ = getVersion()

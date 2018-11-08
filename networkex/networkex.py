@@ -21,6 +21,9 @@ import tesbml
 import itertools
 
 def getVersion():
+    """
+    Return version
+    """
     
     try:
     	with open(os.path.join(os.path.dirname(__file__), '..', 'VERSION.txt'), 'r') as f:
@@ -29,7 +32,8 @@ def getVersion():
     	with open(os.path.join(os.path.dirname(__file__), 'VERSION.txt'), 'r') as f:
     		version = f.read().rstrip()
     
-    __version__ = version
+    return version
+
 
 class NetworkEX():
     
