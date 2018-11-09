@@ -1,7 +1,7 @@
 # NetworkEX
 A simple extension to NetworkX for visualizing reaction network models.
 
-Copyright 2018- Kiri Choi
+Copyright 2018 Kiri Choi
 
 ## Introduction
 
