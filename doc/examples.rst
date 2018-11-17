@@ -15,12 +15,14 @@ Feedback Loop
 .. image:: ../images/feedback.png
     :width: 55%
 
+    
 MAPK Cascade
 ------------
     
 .. image:: ../images/mapk.png
     :width: 55%
 
+    
 Network Ensemble
 ----------------
 
