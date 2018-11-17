@@ -16,8 +16,12 @@ NetworkEX is a simple extension to NetworkX and matplotlib to draw reaction netw
     :width: 45%
     
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 10
    
+   installation.rst
+   start.rst
+   examples.rst
+   API.rst
 
 
 Indices and tables
