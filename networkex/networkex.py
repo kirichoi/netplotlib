@@ -49,24 +49,7 @@ class NetworkEX():
                 
         self.reset()
     
-    """        :param scale: scaling factor for layout algorithm
-        :param fontsize: fontsize for labels
-        :param lw: linewidth of edges
-        :param node: node color
-        :param reaction: reaction node color
-        :param label: label color
-        :param edge: edge color
-        :param modifier: modifier edge color
-        :param boundary: boundary node color
-        :param nodeedge: node edge color
-        :param nodelw: linewidth of node edges
-        :param highlight: list of species ids or reaction ids to highlight
-        :param hlnode: node color of highlighted nodes
-        :param hledge: node edge color of highlighted nodes
-        :param allowRNode: flag for drawing reaction nodes
-        :param break_boundary: flag for breaking all boundary species into separate nodes"""
-    
-    
+
     def reset(self):
         """
         Resets all properties
