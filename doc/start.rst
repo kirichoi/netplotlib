@@ -2,7 +2,7 @@
 Quick Start
 ===========
 
-To start using NetworkEX, install the package or use Telluirum. 
+To start using NetworkEX, `install the package using pip<https://networkex.readthedocs.io/en/latest/installation.html>`_ or use `Tellurium<http://tellurium.analogmachine.org/>`_. 
 
 Simple Example
 --------------
@@ -31,7 +31,7 @@ Next, create an NetworkEX object.
 
     net = nex.NetworkEX(AntimonyStr)
     
-To generate network diagrams, simply run draw().
+To generate network diagrams, simply run `draw()<https://networkex.readthedocs.io/en/latest/API.html#networkex.NetworkEX.draw>`_.
 
 .. code-block:: python
 
@@ -62,7 +62,7 @@ NetworkEX object has various properties for configuring the network diagram.
 - drawReactionNode: flag for drawing reaction nodes
 - breakBoundary: flag for breaking all boundary species into separate nodes
 
-You can define these properties and run draw() to generate customized network diagrams. For example, by running the following code, you can generate a network diagram with node edges, species S1 highlighted, and reaction nodes removed.
+You can define these properties and run `draw()<https://networkex.readthedocs.io/en/latest/API.html#networkex.NetworkEX.draw>`_ to generate customized network diagrams. For example, by running the following code, you can generate a network diagram with node edges, species S1 highlighted, and reaction nodes removed.
 
 .. code-block:: python
 

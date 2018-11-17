@@ -8,5 +8,5 @@ NetworkEX is available through PyPI. To install, run:
 
     $ pip install networkex
     
-NetworkEX is also available by default in Tellurium environment.
+NetworkEX is also available by default in `Tellurium<http://tellurium.analogmachine.org/>`_.
     
