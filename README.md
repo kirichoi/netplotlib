@@ -25,6 +25,10 @@ net = nex.NetworkEX(AntimonyStr)
 net.draw()
 ```
 
+## Documentation
+
+Documentation is available at https://networkex.readthedocs.io/en/latest
+
 ## Examples
 
 <p align="center">
