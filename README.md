@@ -25,6 +25,14 @@ net = nex.NetworkEX(AntimonyStr)
 net.draw()
 ```
 
+## Installation
+
+To install, run the following command:
+
+```
+pip install networkex
+```
+
 ## Documentation
 
 Documentation is available at https://networkex.readthedocs.io/en/latest
