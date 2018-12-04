@@ -2,16 +2,16 @@
 Quick Start
 ===========
 
-To start using NetworkEX, `install the package using pip <https://networkex.readthedocs.io/en/latest/installation.html>`_ or use `Tellurium <http://tellurium.analogmachine.org/>`_. 
+To start using netplotlib, `install the package using pip <https://netplotlib.readthedocs.io/en/latest/installation.html>`_ or use `Tellurium <http://tellurium.analogmachine.org/>`_. 
 
 Simple Example
 --------------
 
-This section demonstrates how to load in a model and draw network diagrams. To start with, lets import networkex package and define a model. Here, we use a simple feed forward loop as an example.
+This section demonstrates how to load in a model and draw network diagrams. To start with, lets import netplotlib package and define a model. Here, we use a simple feed forward loop as an example.
 
 .. code-block:: python
 
-    import networkex as nex
+    import netplotlib as npl
 
     AntimonyStr = '''
     $Xi -> S1; k0*Xi
@@ -25,13 +25,13 @@ This section demonstrates how to load in a model and draw network diagrams. To s
     k3 = 0.51; k4 = 0.22
     '''
     
-Next, create an NetworkEX object.
+Next, create an Network object.
 
 .. code-block:: python
 
-    net = nex.NetworkEX(AntimonyStr)
+    net = npl.Network(AntimonyStr)
     
-To generate network diagrams, simply run `draw() <https://networkex.readthedocs.io/en/latest/API.html#networkex.NetworkEX.draw>`_.
+To generate network diagrams, simply run `draw() <https://netplotlib.readthedocs.io/en/latest/API.html#netplotlib.Network.draw>`_.
 
 .. code-block:: python
 
@@ -43,7 +43,7 @@ To generate network diagrams, simply run `draw() <https://networkex.readthedocs.
 Advanced Configuration
 ----------------------
 
-NetworkEX object has various properties for configuring the network diagram. 
+Network object has various properties for configuring the network diagram. 
 
 - scale: scaling factor for layout algorithm
 - fontsize: fontsize for labels
@@ -62,7 +62,7 @@ NetworkEX object has various properties for configuring the network diagram.
 - drawReactionNode: flag for drawing reaction nodes
 - breakBoundary: flag for breaking all boundary species into separate nodes
 
-You can define these properties and run `draw() <https://networkex.readthedocs.io/en/latest/API.html#networkex.NetworkEX.draw>`_ to generate customized network diagrams. For example, by running the following code, you can generate a network diagram with node edges, species S1 highlighted, and reaction nodes removed.
+You can define these properties and run `draw() <https://netplotlib.readthedocs.io/en/latest/API.html#netplotlib.Network.draw>`_ to generate customized network diagrams. For example, by running the following code, you can generate a network diagram with node edges, species S1 highlighted, and reaction nodes removed.
 
 .. code-block:: python
 
@@ -77,6 +77,6 @@ You can define these properties and run `draw() <https://networkex.readthedocs.i
 Test Cases
 ----------
 
-NetworkEX comes with set of test cases. All test cases are available under networkex.testmodels submodule.
+Netplotlib comes with set of test cases. All test cases are available under netplotlib.testmodels submodule.
 
 

@@ -1,16 +1,16 @@
 =============
-NetworkEX API
+netplotlib API
 =============
 
 --------------
 Single Network
 --------------
 
-.. method:: networkex.NetworkEX(model)
+.. method:: netplotlib.Network(model)
 
     :param model: SBML or Antimony string of a model
         
-    An instance of NetworkEX object accepts following properties:
+    An instance of Network object accepts following properties:
     
         - scale: scaling factor for layout algorithm
         - fontsize: fontsize for labels
@@ -29,15 +29,15 @@ Single Network
         - drawReactionNode: flag for drawing reaction nodes
         - breakBoundary: flag for breaking all boundary species into separate nodes
     
-    .. method:: NetworkEX.draw()
+    .. method:: Network.draw()
     
         Draw network diagram
         
-    .. method:: NetworkEX.getLayout()
+    .. method:: Network.getLayout()
     
         Return the layout
         
-    .. method:: NetworkEX.reset()
+    .. method:: Network.reset()
     
         Resets all propertiess
     
@@ -46,11 +46,11 @@ Single Network
 Network Ensemble
 ----------------
 
-.. method:: networkex.NetworkEXEnsemble(models)
+.. method:: netplotlib.NetworkEnsemble(models)
 
     :param models: list of SBML or Antimony strings of models
         
-    An instance of NetworkEXEnsemble object accepts following properties:
+    An instance of NetworkEnsemble object accepts following properties:
     
         - scale: scaling factor for layout algorithm
         - fontsize: fontsize for labels
@@ -69,15 +69,15 @@ Network Ensemble
         - drawReactionNode: flag for drawing reaction nodes
         - breakBoundary: flag for breaking all boundary species into separate nodes
     
-    .. method:: NetworkEX.draw()
+    .. method:: Network.draw()
     
         Draw weighted reaction network based on frequency of reactions
         
-    .. method:: NetworkEX.getLayout()
+    .. method:: Network.getLayout()
     
         Return the layout
         
-    .. method:: NetworkEX.reset()
+    .. method:: Network.reset()
     
         Resets all propertiess
 
@@ -86,5 +86,5 @@ Network Ensemble
 Miscellaneous
 -------------
 
-.. autofunction:: networkex.networkex.getVersion
+.. autofunction:: netplotlib.netplotlib.getVersion
 
