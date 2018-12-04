@@ -8,20 +8,20 @@ Created on Sat Oct 20 21:48:16 2018
 from setuptools import setup
 import os
 
-with open(os.path.join(os.path.dirname(__file__), 'networkex/VERSION.txt'), 'r') as f:
+with open(os.path.join(os.path.dirname(__file__), 'netplotlib/VERSION.txt'), 'r') as f:
     _version = f.read().rstrip()
 
-setup(name='networkex',
+setup(name='netplotlib',
       version=_version,
       author='Kiri Choi',
-      description='NetworkEX: A simple extension to NetworkX for visualizing reaction network models',
+      description='netplotlib: A simple package for visualizing reaction network models',
       packages=[
-          'networkex',
-		  'networkex.testcases',
+          'netplotlib',
+		  'netplotlib.testcases',
       ],
       package_data={
-          'networkex.testcases': ['*.xml'],
-		  'networkex': ['*.txt'],
+          'netplotlib.testcases': ['*.xml'],
+		  'netplotlib': ['*.txt'],
       },
       install_requires=[
         'tellurium>=2.1.0',

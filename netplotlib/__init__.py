@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from .networkex import (
-    NetworkEX,
-    NetworkEXEnsemble,
+from .netplotlib import (
+    Network,
+    NetworkEnsemble,
     getVersion
 )
 

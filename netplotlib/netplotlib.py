@@ -29,11 +29,11 @@ def getVersion():
     return version
 
 
-class NetworkEX():
+class Network():
     
     def __init__(self, model):
         """
-        Creates a new NetworkEX object. 
+        Creates a new Network object. 
         
         :param model: SBML or Antimony string of a model
         :type name: str
@@ -508,11 +508,11 @@ class NetworkEX():
 
 
 
-class NetworkEXEnsemble():
+class NetworkEnsemble():
     
     def __init__(self, models):
         """
-        Creates a new NetworkEXEnsemble object. 
+        Creates a new NetworkEnsemble object. 
         
         :param models: list of SBML or Antimony strings of models
         :type name: list

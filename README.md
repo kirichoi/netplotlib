@@ -1,14 +1,14 @@
-# NetworkEX
-A simple extension to NetworkX for visualizing reaction network models.
+# netplotlib
+A simple package for visualizing reaction network models
 
 Copyright 2018 Kiri Choi
 
 ## Introduction
 
-NetworkEX is a simple extension to [NetworkX](https://networkx.github.io/) and [matplotlib](https://matplotlib.org/) to draw reaction network diagrams from SBML or Antimony strings with ease. NetworkEX also supports drawing weighted reaction network diagrams from an ensemble of models based on reaction frequency or user-supplied weights.
+Netplotlib is a simple extension to [NetworkX](https://networkx.github.io/) and [matplotlib](https://matplotlib.org/) to draw reaction network diagrams from SBML or Antimony strings with ease. Netplotlib also supports drawing weighted reaction network diagrams from an ensemble of models based on reaction frequency or user-supplied weights.
 
 ```{python}
-import networkex as nex
+import netplotlib as npl
 
 AntimonyStr = '''
 $Xi -> S1; k0*Xi
@@ -21,7 +21,7 @@ Xi = 3; Xo = 2
 k0 = 0.46; k1 = 0.73; k2 = 0.64;
 k3 = 0.51; k4 = 0.22
 '''
-net = nex.NetworkEX(AntimonyStr)
+net = npl.Network(AntimonyStr)
 net.draw()
 ```
 
@@ -30,12 +30,12 @@ net.draw()
 To install, run the following command:
 
 ```
-pip install networkex
+pip install netplotlib
 ```
 
 ## Documentation
 
-Documentation is available at https://networkex.readthedocs.io/en/latest
+Documentation is available at https://netplotlib.readthedocs.io/en/latest
 
 ## Examples
 
