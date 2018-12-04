@@ -20,6 +20,8 @@ class testmodels():
 
     BIOMD0000000010 = content[testfiles.index('test_BIOMD0000000010.xml')]
     BIBI = content[testfiles.index('test_bibi.xml')]
+    UNIBI = content[testfiles.index('test_unibi.xml')]
+    BIUNI = content[testfiles.index('test_biuni.xml')]
     BRANCHED = content[testfiles.index('test_branched.xml')]
     REVERSIBLE = content[testfiles.index('test_reversible.xml')]
     SYMPY = content[testfiles.index('test_sympy.xml')]
