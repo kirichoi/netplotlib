@@ -27,6 +27,7 @@ class testmodels():
     SYMPY = content[testfiles.index('test_sympy.xml')]
     FEEDBACK = content[testfiles.index('test_feedback.xml')]
     ASPARTATE = content[testfiles.index('test_AspartateMetabolism.xml')]
+    UNDEF = content[testfiles.index('test_undefBoundary.xml')]
     LIST = _LIST
     
         

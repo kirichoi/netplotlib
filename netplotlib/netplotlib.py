@@ -277,8 +277,14 @@ class Network():
                 tempmod.append(sbmlmod.getSpecies())
             kl = sbmlreaction.getKineticLaw()
             
-            rct.append(temprct)
-            prd.append(tempprd)
+            if len(temprct) == 0:
+                rct.append(['Input'])
+            else:
+                rct.append(temprct)
+            if len(tempprd) == 0:
+                prd.append(['Output'])
+            else:
+                prd.append(tempprd)
             mod.append(tempmod)
             
             # Update kinetic law according to change in species name
@@ -321,10 +327,17 @@ class Network():
         # add edges
         # TODO: Separate boundary species?
         for i in range(sbmlmodel.getNumReactions()):
-            for k in range(len(rct[i])):
-                G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
-            for j in range(len(prd[i])):
-                G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
+            if len(rct[i]) == 0:
+                G.add_edges_from([('Input', rid[i])], weight=(1+self.edgelw))
+            else:
+                for k in range(len(rct[i])):
+                    G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
+            
+            if len(prd[i]) == 0:
+                G.add_edges_from([(rid[i], 'Output')], weight=(1+self.edgelw))
+            else:
+                for j in range(len(prd[i])):
+                    G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
                         
             if len(mod[i]) > 0:
                 if mod_type[i][0] == 'inhibitor':
@@ -390,7 +403,7 @@ class Network():
                 # TODO: if the label is too long, increase the height and change line/abbreviate?
                 rec_width = max(0.04*(len(n)+2), 0.17)
                 rec_height = 0.12
-                if n in boundaryId:
+                if (n in boundaryId) or (n == 'Input') or (n == 'Output'):
                     node_color = self.boundaryColor
                 else:
                     node_color = self.nodeColor
@@ -573,9 +586,14 @@ class Network():
         
         # Add nodes at last to put it on top
         if self.drawReactionNode:
-            allnodes = speciesId + rid # TODO: allow users to turn off reaction nodes
+            allnodes = speciesId + rid  # TODO: allow users to turn off reaction nodes
         else:
             allnodes = speciesId
+        
+        if 'Input' in G.node:
+            allnodes += ['Input']
+        if 'Output' in G.node:
+            allnodes += ['Output']
         for i in range(len(allnodes)):
             ax.add_patch(G.node[allnodes[i]]['patch'])
         
