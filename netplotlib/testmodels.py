@@ -9,11 +9,11 @@ for i in testfiles:
     content.append(sbmlstr.read())
     sbmlstr.close()
 
-list_models = [s for s in testfiles if "test_list" in s]
-_LIST = []
+list_models = [s for s in testfiles if "test_list1" in s]
+_LIST1 = []
 for i in range(len(list_models)):
     sbmlstr = open(os.path.join(dir_path, list_models[i]), 'r')
-    _LIST.append(sbmlstr.read())
+    _LIST1.append(sbmlstr.read())
     sbmlstr.close()
 
 class testmodels():
@@ -31,7 +31,7 @@ class testmodels():
     STOCH1 = content[testfiles.index('test_stoch1.xml')]
     STOCH2 = content[testfiles.index('test_stoch2.xml')]
     STOCH3 = content[testfiles.index('test_stoch3.xml')]
-    LIST = _LIST
+    LIST1 = _LIST1
     
         
         

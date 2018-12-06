@@ -327,8 +327,6 @@ class Network():
             for i in range(len(kl_split)):
                 if kl_split[i] == 'S':
                     kl_split[i] = '_S'
-                else:
-                    pass
             
             kineticLaw.append(' '.join(kl_split))
         
@@ -382,17 +380,11 @@ class Network():
     
         # add edges
         for i in range(sbmlmodel.getNumReactions()):
-            if len(rct[i]) == 0:
-                G.add_edges_from([('Input', rid[i])], weight=(1+self.edgelw))
-            else:
-                for k in range(len(rct[i])):
-                    G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
+            for k in range(len(rct[i])):
+                G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
             
-            if len(prd[i]) == 0:
-                G.add_edges_from([(rid[i], 'Output')], weight=(1+self.edgelw))
-            else:
-                for j in range(len(prd[i])):
-                    G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
+            for j in range(len(prd[i])):
+                G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
                         
             if len(mod[i]) > 0:
                 if mod_type[i][0] == 'inhibitor':
@@ -944,11 +936,30 @@ class NetworkEnsemble():
             boundaryId = r.getBoundarySpeciesIds()
             floatingId = r.getFloatingSpeciesIds()
             speciesId = boundaryId + floatingId
+            rid_temp = r.getReactionIds()
+            stoch = r.getFullStoichiometryMatrix()
+            stoch_row = stoch.rownames
             
             # prepare symbols for sympy
+            boundaryId_sympy = [] 
+            floatingId_sympy = []
+            
+            # Fix issues with reserved characters
+            for i in range(numBnd):
+                if boundaryId[i] == 'S':
+                    boundaryId_sympy.append('_S')
+                else:
+                    boundaryId_sympy.append(boundaryId[i])
+            
+            for i in range(numFlt):
+                if floatingId[i] == 'S':
+                    floatingId_sympy.append('_S')
+                else:
+                    floatingId_sympy.append(floatingId[i])
+                    
             paramIdsStr = ' '.join(r.getGlobalParameterIds())
-            floatingIdsStr = ' '.join(r.getFloatingSpeciesIds())
-            boundaryIdsStr = ' '.join(r.getBoundarySpeciesIds())
+            floatingIdsStr = ' '.join(floatingId_sympy)
+            boundaryIdsStr = ' '.join(boundaryId_sympy)
             comparmentIdsStr = ' '.join(r.getCompartmentIds())
             
             allIds = paramIdsStr + ' ' + floatingIdsStr + ' ' + boundaryIdsStr + ' ' + comparmentIdsStr
@@ -975,10 +986,23 @@ class NetworkEnsemble():
                     tempmod.append(sbmlmod.getSpecies())
                 kl = sbmlreaction.getKineticLaw()
                 
-                rct.append(temprct)
-                prd.append(tempprd)
+                if len(temprct) == 0:
+                    rct.append(['Input'])
+                else:
+                    rct.append(temprct)
+                if len(tempprd) == 0:
+                    prd.append(['Output'])
+                else:
+                    prd.append(tempprd)
                 mod_m.append(tempmod)
-                kineticLaw.append(kl.getFormula())
+                
+                # Update kinetic law according to change in species name
+                kl_split = kl.getFormula().split(' ')
+                for i in range(len(kl_split)):
+                    if kl_split[i] == 'S':
+                        kl_split[i] = '_S'
+                
+                kineticLaw.append(' '.join(kl_split))
             
             # use sympy for analyzing modifiers weSmart
             for ml in range(len(mod_m)):
@@ -997,12 +1021,33 @@ class NetworkEnsemble():
             for i in range(len(mod_m)):
                 mod_target_temp = []
                 if len(mod_m[i]) > 0:
-                    mod_target_temp.append(rid[i])
+                    mod_target_temp.append(rid_temp[i]) #FIXME: issue with rids
                 mod_target_m.append(mod_target_temp)
                 
             mod_flat = [item for sublist in mod_m for item in sublist]
             modtype_flat = [item for sublist in mod_type_m for item in sublist]
             modtarget_flat = [item for sublist in mod_target_m for item in sublist]
+            
+            if self.breakBoundary:
+                speciesId = []
+                boundaryId_temp = []
+                bc = 0
+                for i in range(len(rid_temp)):
+                    for j in range(len(rct[i])):
+                        if rct[i][j] in boundaryId:
+                            rct[i][j] = rct[i][j] + '_' + str(bc)
+                            speciesId.append(rct[i][j])
+                            boundaryId_temp.append(rct[i][j])
+                            bc += 1
+                    for k in range(len(prd[i])):
+                        if prd[i][k] in boundaryId:
+                            prd[i][k] = prd[i][k] + '_' + str(bc)
+                            speciesId.append(prd[i][k])
+                            boundaryId_temp.append(prd[i][k])
+                            bc += 1
+                for i in range(numFlt):
+                    speciesId.append(floatingId[i])
+                boundaryId = boundaryId_temp
             
             for t in range(sbmlmodel.getNumReactions()):
                 if [rct[t], prd[t]] not in allRxn:
@@ -1046,15 +1091,18 @@ class NetworkEnsemble():
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
         
         dist_flag = True
+        maxIter = 50
+        maxIter_n = 0
         
-        while dist_flag:
+        while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
-            for i in itertools.combinations(pos.keys(), 2):
+            for i in itertools.combinations(speciesId, 2):
                 pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
                 if pos_dist < thres:
                     dist_flag = True
                     shortest_dist[i[0]][i[1]] = 4
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+            maxIter_n += 1
             
         # check the range of x and y positions
         max_width = []
@@ -1095,7 +1143,7 @@ class NetworkEnsemble():
                 # TODO: if the label is too long, increase the height and change line/abbreviate?
                 rec_width = max(0.04*(len(n)+2), 0.17)
                 rec_height = 0.12
-                if n in boundaryId:
+                if (n in boundaryId) or (n == 'Input') or (n == 'Output'):
                     node_color = self.boundaryColor
                 else:
                     node_color = self.nodeColor
@@ -1223,6 +1271,11 @@ class NetworkEnsemble():
             allnodes = speciesId + rid # TODO: allow users to turn off reaction nodes
         else:
             allnodes = speciesId
+            
+        if 'Input' in G.node:
+            allnodes += ['Input']
+        if 'Output' in G.node:
+            allnodes += ['Output']
         for i in range(len(allnodes)):
             ax.add_patch(G.node[allnodes[i]]['patch'])
         
