@@ -138,8 +138,14 @@ class Network():
                 tempmod.append(sbmlmod.getSpecies())
             kl = sbmlreaction.getKineticLaw()
             
-            rct.append(temprct)
-            prd.append(tempprd)
+            if len(temprct) == 0:
+                rct.append(['Input'])
+            else:
+                rct.append(temprct)
+            if len(tempprd) == 0:
+                prd.append(['Output'])
+            else:
+                prd.append(tempprd)
             mod.append(tempmod)
             
             # Update kinetic law according to change in species name
@@ -172,16 +178,43 @@ class Network():
                 mod_target_temp.append(rid[i])
             mod_target.append(mod_target_temp)
         
+        if self.breakBoundary:
+            speciesId = []
+            boundaryId_temp = []
+            bc = 0
+            for i in range(len(rid)):
+                for j in range(len(rct[i])):
+                    if rct[i][j] in boundaryId:
+                        rct[i][j] = rct[i][j] + '_' + str(bc)
+                        speciesId.append(rct[i][j])
+                        boundaryId_temp.append(rct[i][j])
+                        bc += 1
+                for k in range(len(prd[i])):
+                    if prd[i][k] in boundaryId:
+                        prd[i][k] = prd[i][k] + '_' + str(bc)
+                        speciesId.append(prd[i][k])
+                        boundaryId_temp.append(prd[i][k])
+                        bc += 1
+            for i in range(numFlt):
+                speciesId.append(floatingId[i])
+            boundaryId = boundaryId_temp
+                
         # initialize directional graph
         G = nx.DiGraph()
     
         # add edges
-        # TODO: Separate boundary species?
         for i in range(sbmlmodel.getNumReactions()):
-            for k in range(len(rct[i])):
-                G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
-            for j in range(len(prd[i])):
-                G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
+            if len(rct[i]) == 0:
+                G.add_edges_from([('Input', rid[i])], weight=(1+self.edgelw))
+            else:
+                for k in range(len(rct[i])):
+                    G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
+            
+            if len(prd[i]) == 0:
+                G.add_edges_from([(rid[i], 'Output')], weight=(1+self.edgelw))
+            else:
+                for j in range(len(prd[i])):
+                    G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
                         
             if len(mod[i]) > 0:
                 if mod_type[i][0] == 'inhibitor':
@@ -224,7 +257,6 @@ class Network():
         rid = self.rrInstance.getReactionIds()
         stoch = self.rrInstance.getFullStoichiometryMatrix()
         stoch_row = stoch.rownames
-        stoch_col = stoch.colnames
         
         # prepare symbols for sympy
         boundaryId_sympy = [] 
