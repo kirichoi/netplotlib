@@ -222,6 +222,9 @@ class Network():
         floatingId = self.rrInstance.getFloatingSpeciesIds()
         speciesId = boundaryId + floatingId
         rid = self.rrInstance.getReactionIds()
+        stoch = self.rrInstance.getFullStoichiometryMatrix()
+        stoch_row = stoch.rownames
+        stoch_col = stoch.colnames
         
         # prepare symbols for sympy
         boundaryId_sympy = [] 
@@ -346,7 +349,6 @@ class Network():
         G = nx.DiGraph()
     
         # add edges
-        # TODO: Separate boundary species?
         for i in range(sbmlmodel.getNumReactions()):
             if len(rct[i]) == 0:
                 G.add_edges_from([('Input', rid[i])], weight=(1+self.edgelw))
@@ -504,6 +506,25 @@ class Network():
                             ax.add_patch(e1)
                             ax.add_patch(e2)
                             
+                            if j[k][0] in floatingId:
+                                if (np.abs(stoch[stoch_row.index(j[k][0])][i]) > 1):
+                                    # position calculation
+                                    slope = (lpath1.vertices[0][1] - lpath1.vertices[20][1])/(lpath1.vertices[0][0] - lpath1.vertices[20][0])
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                                    y_prime = -slope*x_prime
+                                    plt.text(x_prime+lpath1.vertices[20][0], y_prime+lpath1.vertices[20][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
+                                             fontsize=self.fontsize, horizontalalignment='center', 
+                                             verticalalignment='center', color=self.reactionColor)
+                            
+                            if j[k][1] in floatingId:
+                                if (np.abs(stoch[stoch_row.index(j[k][1])][i]) > 1):
+                                    slope = (lpath2.vertices[0][1] - lpath2.vertices[-20][1])/(lpath2.vertices[0][0] - lpath2.vertices[-20][0])
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                                    y_prime = -slope*x_prime
+                                    plt.text(x_prime+lpath2.vertices[-20][0], y_prime+lpath2.vertices[-20][1], int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
+                                             fontsize=self.fontsize, horizontalalignment='center', 
+                                             verticalalignment='center', color=self.reactionColor)
+                            
                         else: # Uni-Uni
                             XY = np.vstack((X1, X2, X3))
                             
@@ -531,7 +552,25 @@ class Network():
                                                 lw=(1+self.edgelw),
                                                 color=self.reactionColor)
                             ax.add_patch(e)
-                
+                        
+                            if j[k][0] in floatingId:
+                                if (np.abs(stoch[stoch_row.index(j[k][0])][i]) > 1):
+                                    slope = (lpath.vertices[0][1] - lpath.vertices[20][1])/(lpath.vertices[0][0] - lpath.vertices[20][0])
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                                    y_prime = -slope*x_prime
+                                    plt.text(x_prime+lpath.vertices[20][0], y_prime+lpath.vertices[20][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
+                                             fontsize=self.fontsize, horizontalalignment='center', 
+                                             verticalalignment='center', color=self.reactionColor)
+                            
+                            if j[k][1] in floatingId:
+                                if (np.abs(stoch[stoch_row.index(j[k][1])][i]) > 1):
+                                    slope = (lpath.vertices[0][1] - lpath.vertices[-30][1])/(lpath.vertices[0][0] - lpath.vertices[-30][0])
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                                    y_prime = -slope*x_prime
+                                    plt.text(x_prime+lpath.vertices[-30][0], y_prime+lpath.vertices[-30][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
+                                             fontsize=self.fontsize, horizontalalignment='center', 
+                                             verticalalignment='center', color=self.reactionColor)
+                    
             else: # BIBI or larger
                 for j in [list(zip(x,prd[i])) for x in itertools.combinations(rct[i],len(prd[i]))][0]:
                     p1 = G.node[j[0]]['patch']
@@ -568,6 +607,23 @@ class Network():
                                         lw=(1+self.edgelw),
                                         color=self.reactionColor)
                     ax.add_patch(e)
+                    
+                    if j[0] in floatingId:
+                        if (np.abs(stoch[stoch_row.index(j[0])][i]) > 1):
+                            slope = (lpath.vertices[0][1] - lpath.vertices[10][1])/(lpath.vertices[0][0] - lpath.vertices[10][0])
+                            x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                            y_prime = -slope*x_prime
+                            plt.text(x_prime+lpath.vertices[10][0], y_prime+lpath.vertices[10][1], int(np.abs(stoch[stoch_row.index(j[0])][i])), 
+                                     fontsize=self.fontsize, horizontalalignment='center', 
+                                     verticalalignment='center', color=self.reactionColor)
+                    if j[1] in floatingId:
+                        if (np.abs(stoch[stoch_row.index(j[1])][i]) > 1):
+                            slope = (lpath.vertices[0][1] - lpath.vertices[-20][1])/(lpath.vertices[0][0] - lpath.vertices[-20][0])
+                            x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                            y_prime = -slope*x_prime
+                            plt.text(x_prime+lpath.vertices[-20][0], y_prime+lpath.vertices[-20][1], int(np.abs(stoch[stoch_row.index(j[1])][i])), 
+                                     fontsize=self.fontsize, horizontalalignment='center', 
+                                     verticalalignment='center', color=self.reactionColor)
                     
         # Modifiers
         seen={}

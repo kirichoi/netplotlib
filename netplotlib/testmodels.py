@@ -28,6 +28,9 @@ class testmodels():
     FEEDBACK = content[testfiles.index('test_feedback.xml')]
     ASPARTATE = content[testfiles.index('test_AspartateMetabolism.xml')]
     UNDEF = content[testfiles.index('test_undefBoundary.xml')]
+    STOCH1 = content[testfiles.index('test_stoch1.xml')]
+    STOCH2 = content[testfiles.index('test_stoch2.xml')]
+    STOCH3 = content[testfiles.index('test_stoch3.xml')]
     LIST = _LIST
     
         
