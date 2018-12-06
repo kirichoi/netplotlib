@@ -321,6 +321,27 @@ class Network():
         modtype_flat = [item for sublist in mod_type for item in sublist]
         modtarget_flat = [item for sublist in mod_target for item in sublist]
         
+        if self.breakBoundary:
+            speciesId = []
+            boundaryId_temp = []
+            bc = 0
+            for i in range(len(rid)):
+                for j in range(len(rct[i])):
+                    if rct[i][j] in boundaryId:
+                        rct[i][j] = rct[i][j] + '_' + str(bc)
+                        speciesId.append(rct[i][j])
+                        boundaryId_temp.append(rct[i][j])
+                        bc += 1
+                for k in range(len(prd[i])):
+                    if prd[i][k] in boundaryId:
+                        prd[i][k] = prd[i][k] + '_' + str(bc)
+                        speciesId.append(prd[i][k])
+                        boundaryId_temp.append(prd[i][k])
+                        bc += 1
+            for i in range(numFlt):
+                speciesId.append(floatingId[i])
+            boundaryId = boundaryId_temp
+                
         # initialize directional graph
         G = nx.DiGraph()
     
