@@ -15,6 +15,7 @@ setup(name='netplotlib',
       version=_version,
       author='Kiri Choi',
       description='netplotlib: A simple package for visualizing reaction network models',
+      long_description='netplotlib is a simple extension to NetworkX and matplotlib to draw reaction network diagrams from SBML or Antimony strings with ease. netplotlib also supports drawing weighted reaction network diagrams from an ensemble of models based on reaction frequency or user-supplied weights.',
       packages=[
           'netplotlib',
 		  'netplotlib.testcases',
