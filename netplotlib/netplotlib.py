@@ -81,7 +81,7 @@ class Network():
         numFlt = self.rrInstance.getNumFloatingSpecies()
         boundaryId = self.rrInstance.getBoundarySpeciesIds()
         floatingId = self.rrInstance.getFloatingSpeciesIds()
-        speciesId = boundaryId + floatingId
+#        speciesId = boundaryId + floatingId
         rid = self.rrInstance.getReactionIds()
         
         # prepare symbols for sympy
@@ -354,19 +354,23 @@ class Network():
         modtype_flat = [item for sublist in mod_type for item in sublist]
         modtarget_flat = [item for sublist in mod_target for item in sublist]
         
+        speciesId = list(rct + prd)
+        speciesId = [item for sublist in speciesId for item in sublist]
+        speciesId = list(set(speciesId))
+        
         if self.breakBoundary:
             speciesId = []
             boundaryId_temp = []
             bc = 0
             for i in range(len(rid)):
                 for j in range(len(rct[i])):
-                    if rct[i][j] in boundaryId:
+                    if rct[i][j] in boundaryId + ['Input', 'Output']:
                         rct[i][j] = rct[i][j] + '_' + str(bc)
                         speciesId.append(rct[i][j])
                         boundaryId_temp.append(rct[i][j])
                         bc += 1
                 for k in range(len(prd[i])):
-                    if prd[i][k] in boundaryId:
+                    if prd[i][k] in boundaryId + ['Input', 'Output']:
                         prd[i][k] = prd[i][k] + '_' + str(bc)
                         speciesId.append(prd[i][k])
                         boundaryId_temp.append(prd[i][k])
@@ -397,19 +401,35 @@ class Network():
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
         
-        dist_flag = True
         maxIter = 50
+        s_dist_flag = True
         maxIter_n = 0
         
-        while dist_flag and (maxIter_n < maxIter):
-            dist_flag = False
+        while s_dist_flag and (maxIter_n < maxIter):
+            s_dist_flag = False
             for i in itertools.combinations(speciesId, 2):
                 pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
                 if pos_dist < thres:
-                    dist_flag = True
+                    s_dist_flag = True
                     shortest_dist[i[0]][i[1]] = 4
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
+        
+        r_dist_flag = True
+        maxIter_n = 0
+        
+        while r_dist_flag and (maxIter_n < maxIter):
+            r_dist_flag = False
+            for i in itertools.combinations(rid, 2):
+                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                if pos_dist < thres:
+                    r_dist_flag = True
+                    shortest_dist[i[0]][i[1]] = 4
+            pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+            maxIter_n += 1        
+
+#        if dist_flag:
+#            pos = nx.spring_layout(G, pos=pos, scale=self.scale)
         
         # check the range of x and y positions
         max_width = []
