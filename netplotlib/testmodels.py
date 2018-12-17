@@ -18,19 +18,26 @@ for i in range(len(list_models)):
 
 class testmodels():
 
-    BIOMD0000000010 = content[testfiles.index('test_BIOMD0000000010.xml')]
+    ASPARTATE = content[testfiles.index('test_AspartateMetabolism.xml')]
     BIBI = content[testfiles.index('test_bibi.xml')]
-    UNIBI = content[testfiles.index('test_unibi.xml')]
+    MAPKCASCADE1 = content[testfiles.index('test_BIOMD0000000010.xml')]
+    REPRESSILATOR = content[testfiles.index('test_BIOMD0000000012.xml')]
+    EGFMAPK = content[testfiles.index('test_BIOMD0000000019.xml')]
+    EGFINSULIN = content[testfiles.index('test_BIOMD0000000223.xml')]
     BIUNI = content[testfiles.index('test_biuni.xml')]
     BRANCHED = content[testfiles.index('test_branched.xml')]
-    REVERSIBLE = content[testfiles.index('test_reversible.xml')]
-    SYMPY = content[testfiles.index('test_sympy.xml')]
+    CONSERVEDCYCLE = content[testfiles.index('test_conservedcycle.xml')]
     FEEDBACK = content[testfiles.index('test_feedback.xml')]
-    ASPARTATE = content[testfiles.index('test_AspartateMetabolism.xml')]
-    UNDEF = content[testfiles.index('test_undefBoundary.xml')]
+    GALACTOSE = content[testfiles.index('test_galactose.xml')]
+    GLYCOLYSIS = content[testfiles.index('test_glycolysis.xml')]
+    REVERSIBLE = content[testfiles.index('test_reversible.xml')]
     STOCH1 = content[testfiles.index('test_stoch1.xml')]
     STOCH2 = content[testfiles.index('test_stoch2.xml')]
     STOCH3 = content[testfiles.index('test_stoch3.xml')]
+    SYMPY = content[testfiles.index('test_sympy.xml')]
+    TWOCYCLES = content[testfiles.index('test_twocycles.xml')]
+    UNDEF = content[testfiles.index('test_undefBoundary.xml')]
+    UNIBI = content[testfiles.index('test_unibi.xml')]
     LIST1 = _LIST1
     
         
