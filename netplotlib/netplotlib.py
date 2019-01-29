@@ -412,8 +412,9 @@ class Network():
                     G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
             
         # calcutate positions
-        thres = 0.1
+        thres = 0.2
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
+#        shortest_dist = dict(nx.all_pairs_shortest_path_length(G))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
         
         maxIter = 50
@@ -422,14 +423,11 @@ class Network():
         
         while s_dist_flag and (maxIter_n < maxIter):
             s_dist_flag = False
-            try:
-                for i in itertools.combinations(speciesId, 2):
-                    pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
-                    if pos_dist < thres:
-                        s_dist_flag = True
-                        shortest_dist[i[0]][i[1]] = 4
-            except:
-                pass
+            for i in itertools.combinations(speciesId, 2):
+                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                if pos_dist < thres:
+                    s_dist_flag = True
+                    shortest_dist[i[0]][i[1]] = 4
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
         
@@ -438,14 +436,11 @@ class Network():
         
         while r_dist_flag and (maxIter_n < maxIter):
             r_dist_flag = False
-            try:
-                for i in itertools.combinations(rid, 2):
-                    pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
-                    if pos_dist < thres:
-                        r_dist_flag = True
-                        shortest_dist[i[0]][i[1]] = 2
-            except:
-                pass
+            for i in itertools.combinations(rid, 2):
+                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                if pos_dist < thres:
+                    r_dist_flag = True
+                    shortest_dist[i[0]][i[1]] = 2
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
 
@@ -493,8 +488,12 @@ class Network():
                          verticalalignment='center', color=self.labelColor)
             else:
                 # TODO: if the label is too long, increase the height and change line/abbreviate?
-                rec_width = max(0.045*(len(n)+1), 0.17)
-                rec_height = 0.12
+                if len(n) > 10:
+                    rec_width = max(0.045*((len(n)/2)+1), 0.13)
+                    rec_height = 0.20
+                else:
+                    rec_width = max(0.045*(len(n)+1), 0.13)
+                    rec_height = 0.11
                 if (n in boundaryId) or (n == 'Input') or (n == 'Output'):
                     node_color = self.boundaryColor
                 else:
@@ -515,9 +514,14 @@ class Network():
                                    linewidth=self.nodeEdgelw, 
                                    edgecolor=self.nodeEdgeColor, 
                                    facecolor=node_color)
-                plt.text(pos[n][0], pos[n][1], n, 
-                         fontsize=self.fontsize, horizontalalignment='center', 
-                         verticalalignment='center', color=self.labelColor)
+                if len(n) > 10:
+                    plt.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
+                             fontsize=self.fontsize, horizontalalignment='center', 
+                             verticalalignment='center', color=self.labelColor)
+                else:
+                    plt.text(pos[n][0], pos[n][1], n, 
+                             fontsize=self.fontsize, horizontalalignment='center', 
+                             verticalalignment='center', color=self.labelColor)
             G.node[n]['patch'] = c
         
         # add edges to the figure
@@ -588,10 +592,10 @@ class Network():
                             
                             if j[k][1] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][1])][i]) > 1):
-                                    slope = (lpath2.vertices[0][1] - lpath2.vertices[-20][1])/(lpath2.vertices[0][0] - lpath2.vertices[-30][0])
+                                    slope = (lpath2.vertices[0][1] - lpath2.vertices[-20][1])/(lpath2.vertices[0][0] - lpath2.vertices[-20][0])
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath2.vertices[-30][0], y_prime+lpath2.vertices[-30][1], int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
+                                    plt.text(x_prime+lpath2.vertices[-20][0], y_prime+lpath2.vertices[-20][1], int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
                                              fontsize=self.fontsize, horizontalalignment='center', 
                                              verticalalignment='center', color=self.reactionColor)
                             
@@ -635,10 +639,10 @@ class Network():
                             
                             if j[k][1] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][1])][i]) > 1):
-                                    slope = (lpath.vertices[0][1] - lpath.vertices[-30][1])/(lpath.vertices[0][0] - lpath.vertices[-30][0])
+                                    slope = (lpath.vertices[0][1] - lpath.vertices[-20][1])/(lpath.vertices[0][0] - lpath.vertices[-20][0])
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath.vertices[-30][0], y_prime+lpath.vertices[-30][1], int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
+                                    plt.text(x_prime+lpath.vertices[-20][0], y_prime+lpath.vertices[-20][1], int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
                                              fontsize=self.fontsize, horizontalalignment='center', 
                                              verticalalignment='center', color=self.reactionColor)
                     
