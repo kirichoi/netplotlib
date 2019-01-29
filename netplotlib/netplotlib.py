@@ -314,12 +314,12 @@ class Network():
             if len(temprct) == 0:
                 rct.append(['Input'])
             else:
-                rct.append(temprct)
+                rct.append(sorted(temprct, key=lambda v: (v.upper(), v[0].islower())))
             if len(tempprd) == 0:
                 prd.append(['Output'])
             else:
-                prd.append(tempprd)
-            mod.append(tempmod)
+                prd.append(sorted(tempprd, key=lambda v: (v.upper(), v[0].islower())))
+            mod.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
             
             # Update kinetic law according to change in species name
             kl_split = kl.getFormula().split(' ')
@@ -329,13 +329,24 @@ class Network():
             
             kineticLaw.append(' '.join(kl_split))
         
+        print("rct:")
+        print(rct)
+        print("\n")
+        print("prd:")
+        print(prd)
+        print("\n")
+        print("kl:")
         print(kineticLaw)
+        print("\n")
         
         # use sympy for analyzing modifiers weSmart
         for ml in range(len(mod)):
             mod_type_temp = []
             expression = kineticLaw[ml]
             n,d = sympy.fraction(expression)
+            print(n)
+            print(d)
+            print("")
             for ml_i in range(len(mod[ml])):
                 if n.has(mod[ml][ml_i]):
                     mod_type_temp.append('activator')
@@ -355,6 +366,7 @@ class Network():
         modtype_flat = [item for sublist in mod_type for item in sublist]
         modtarget_flat = [item for sublist in mod_target for item in sublist]
         
+        print("mod:")
         print(modtype_flat)
         
         speciesId = list(rct + prd)
@@ -481,7 +493,7 @@ class Network():
                          verticalalignment='center', color=self.labelColor)
             else:
                 # TODO: if the label is too long, increase the height and change line/abbreviate?
-                rec_width = max(0.04*(len(n)+2), 0.17)
+                rec_width = max(0.045*(len(n)+1), 0.17)
                 rec_height = 0.12
                 if (n in boundaryId) or (n == 'Input') or (n == 'Output'):
                     node_color = self.boundaryColor
@@ -522,7 +534,7 @@ class Network():
                         X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
                         X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
                         
-                        if (len(rct[i]) > len(prd[i])) or (len(rct[i]) < len(prd[i])): # Uni-Bi or Bi-Uni
+                        if (len(np.unique(rct[i])) > len(prd[i])) or (len(rct[i]) < len(np.unique(prd[i]))): # Uni-Bi or Bi-Uni
                             XY1 = np.vstack((X1, X2))
                             XY2 = np.vstack((X2, X3))
                             
@@ -542,7 +554,8 @@ class Network():
                             arrthres_v = .02
                             arrthres_h = .02
                             while (((stackXY2.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY2.T[n][0] < (X3right[0]+arrthres_h))
-                                and (stackXY2.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY2.T[n][1] < (X3top[1]+arrthres_v))) and (np.abs(n) < np.shape(stackXY2)[1] - 10)):
+                                and (stackXY2.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY2.T[n][1] < (X3top[1]+arrthres_v))) 
+                                and (np.abs(n) < np.shape(stackXY2)[1] - 10)):
                                 n -= 1
                            
                             lpath1 = Path(stackXY1.T)
@@ -575,10 +588,10 @@ class Network():
                             
                             if j[k][1] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][1])][i]) > 1):
-                                    slope = (lpath2.vertices[0][1] - lpath2.vertices[-20][1])/(lpath2.vertices[0][0] - lpath2.vertices[-20][0])
+                                    slope = (lpath2.vertices[0][1] - lpath2.vertices[-20][1])/(lpath2.vertices[0][0] - lpath2.vertices[-30][0])
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath2.vertices[-20][0], y_prime+lpath2.vertices[-20][1], int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
+                                    plt.text(x_prime+lpath2.vertices[-30][0], y_prime+lpath2.vertices[-30][1], int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
                                              fontsize=self.fontsize, horizontalalignment='center', 
                                              verticalalignment='center', color=self.reactionColor)
                             
@@ -598,7 +611,8 @@ class Network():
                             arrthres_v = .02
                             arrthres_h = .02
                             while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY.T[n][0] < (X3right[0]+arrthres_h))
-                                and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v)))  and (np.abs(n) < np.shape(stackXY)[1] - 10)):
+                                and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v)))  
+                                and (np.abs(n) < np.shape(stackXY)[1] - 10)):
                                 n -= 1
                            
                             lpath = Path(stackXY.T[3:n])
@@ -624,7 +638,7 @@ class Network():
                                     slope = (lpath.vertices[0][1] - lpath.vertices[-30][1])/(lpath.vertices[0][0] - lpath.vertices[-30][0])
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath.vertices[-30][0], y_prime+lpath.vertices[-30][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
+                                    plt.text(x_prime+lpath.vertices[-30][0], y_prime+lpath.vertices[-30][1], int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
                                              fontsize=self.fontsize, horizontalalignment='center', 
                                              verticalalignment='center', color=self.reactionColor)
                     
@@ -652,8 +666,9 @@ class Network():
                     n = -1
                     arrthres_v = .02
                     arrthres_h = .02
-                    while ((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY.T[n][0] < (X3right[0]+arrthres_h))
-                        and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v))):
+                    while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY.T[n][0] < (X3right[0]+arrthres_h))
+                        and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v)))
+                        and (np.abs(n) < np.shape(stackXY)[1] - 10)):
                         n -= 1
                    
                     lpath = Path(stackXY.T[3:n])
