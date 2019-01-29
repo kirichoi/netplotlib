@@ -61,6 +61,7 @@ class Network():
         self.nodeColor = 'tab:blue'
         self.reactionNodeColor = 'tab:gray'
         self.labelColor = 'w'
+        self.labelReactionIds = False
         self.reactionColor = 'k'
         self.modifierColor = 'tab:red'
         self.boundaryColor = 'tab:green'
@@ -81,7 +82,6 @@ class Network():
         numFlt = self.rrInstance.getNumFloatingSpecies()
         boundaryId = self.rrInstance.getBoundarySpeciesIds()
         floatingId = self.rrInstance.getFloatingSpeciesIds()
-#        speciesId = boundaryId + floatingId
         rid = self.rrInstance.getReactionIds()
         
         # prepare symbols for sympy
@@ -253,7 +253,6 @@ class Network():
         numFlt = self.rrInstance.getNumFloatingSpecies()
         boundaryId = self.rrInstance.getBoundarySpeciesIds()
         floatingId = self.rrInstance.getFloatingSpeciesIds()
-        speciesId = boundaryId + floatingId
         rid = self.rrInstance.getReactionIds()
         stoch = self.rrInstance.getFullStoichiometryMatrix()
         stoch_row = stoch.rownames
@@ -330,6 +329,8 @@ class Network():
             
             kineticLaw.append(' '.join(kl_split))
         
+        print(kineticLaw)
+        
         # use sympy for analyzing modifiers weSmart
         for ml in range(len(mod)):
             mod_type_temp = []
@@ -354,12 +355,14 @@ class Network():
         modtype_flat = [item for sublist in mod_type for item in sublist]
         modtarget_flat = [item for sublist in mod_target for item in sublist]
         
+        print(modtype_flat)
+        
         speciesId = list(rct + prd)
         speciesId = [item for sublist in speciesId for item in sublist]
         speciesId = list(set(speciesId))
         
         if self.breakBoundary:
-            speciesId = []
+#            speciesId = []
             boundaryId_temp = []
             bc = 0
             for i in range(len(rid)):
@@ -375,8 +378,8 @@ class Network():
                         speciesId.append(prd[i][k])
                         boundaryId_temp.append(prd[i][k])
                         bc += 1
-            for i in range(numFlt):
-                speciesId.append(floatingId[i])
+#            for i in range(numFlt):
+#                speciesId.append(floatingId[i])
             boundaryId = boundaryId_temp
                 
         # initialize directional graph
@@ -407,11 +410,14 @@ class Network():
         
         while s_dist_flag and (maxIter_n < maxIter):
             s_dist_flag = False
-            for i in itertools.combinations(speciesId, 2):
-                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
-                if pos_dist < thres:
-                    s_dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 4
+            try:
+                for i in itertools.combinations(speciesId, 2):
+                    pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                    if pos_dist < thres:
+                        s_dist_flag = True
+                        shortest_dist[i[0]][i[1]] = 4
+            except:
+                pass
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
         
@@ -420,13 +426,16 @@ class Network():
         
         while r_dist_flag and (maxIter_n < maxIter):
             r_dist_flag = False
-            for i in itertools.combinations(rid, 2):
-                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
-                if pos_dist < thres:
-                    r_dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 4
+            try:
+                for i in itertools.combinations(rid, 2):
+                    pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                    if pos_dist < thres:
+                        r_dist_flag = True
+                        shortest_dist[i[0]][i[1]] = 2
+            except:
+                pass
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-            maxIter_n += 1        
+            maxIter_n += 1
 
 #        if dist_flag:
 #            pos = nx.spring_layout(G, pos=pos, scale=self.scale)
@@ -466,6 +475,10 @@ class Network():
                                    linewidth=self.nodeEdgelw, 
                                    edgecolor=self.nodeEdgeColor, 
                                    facecolor=self.reactionNodeColor)
+                if self.labelReactionIds:
+                    plt.text(pos[n][0], pos[n][1], n, 
+                         fontsize=self.fontsize, horizontalalignment='center', 
+                         verticalalignment='center', color=self.labelColor)
             else:
                 # TODO: if the label is too long, increase the height and change line/abbreviate?
                 rec_width = max(0.04*(len(n)+2), 0.17)
@@ -528,8 +541,8 @@ class Network():
                             n = -1
                             arrthres_v = .02
                             arrthres_h = .02
-                            while ((stackXY2.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY2.T[n][0] < (X3right[0]+arrthres_h))
-                                and (stackXY2.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY2.T[n][1] < (X3top[1]+arrthres_v))):
+                            while (((stackXY2.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY2.T[n][0] < (X3right[0]+arrthres_h))
+                                and (stackXY2.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY2.T[n][1] < (X3top[1]+arrthres_v))) and (np.abs(n) < np.shape(stackXY2)[1] - 10)):
                                 n -= 1
                            
                             lpath1 = Path(stackXY1.T)
@@ -584,8 +597,8 @@ class Network():
                             n = -1
                             arrthres_v = .02
                             arrthres_h = .02
-                            while ((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY.T[n][0] < (X3right[0]+arrthres_h))
-                                and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v))):
+                            while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY.T[n][0] < (X3right[0]+arrthres_h))
+                                and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v)))  and (np.abs(n) < np.shape(stackXY)[1] - 10)):
                                 n -= 1
                            
                             lpath = Path(stackXY.T[3:n])
@@ -685,6 +698,12 @@ class Network():
                 X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
                 uind = [i for i, e in enumerate(mod_flat) if e == u]
                 vind = [i for i, e in enumerate(modtarget_flat) if e == v]
+                
+#                print(uind)
+#                print(vind)
+#                print(np.array(mod_flat)[np.array(uind)])
+#                print(np.array(modtarget_flat)[np.array(vind)])
+                
                 if modtype_flat[list(set(uind).intersection(vind))[0]] == 'inhibitor': # inhibition
                     color=self.modifierColor
                     arrowstyle='-['
@@ -726,8 +745,8 @@ class Network():
         plt.axis('equal')
         
         plt.show()
-        
 
+        return speciesId, rid, pos, shortest_dist
 
 
 class NetworkEnsemble():
@@ -765,6 +784,7 @@ class NetworkEnsemble():
         self.nodeColor = 'tab:blue'
         self.reactionNodeColor = 'tab:gray'
         self.labelColor = 'w'
+        self.labelReactionIds = False
         self.reactionColor = 'k'
         self.modifierColor = 'tab:red'
         self.boundaryColor = 'tab:green'
