@@ -56,7 +56,7 @@ class Network():
         """
     
         self.scale = 1.25
-        self.fontsize = 20
+        self.fontsize = 10
         self.edgelw = 3
         self.nodeColor = 'tab:blue'
         self.reactionNodeColor = 'tab:gray'
@@ -329,24 +329,11 @@ class Network():
             
             kineticLaw.append(' '.join(kl_split))
         
-        print("rct:")
-        print(rct)
-        print("\n")
-        print("prd:")
-        print(prd)
-        print("\n")
-        print("kl:")
-        print(kineticLaw)
-        print("\n")
-        
         # use sympy for analyzing modifiers weSmart
         for ml in range(len(mod)):
             mod_type_temp = []
             expression = kineticLaw[ml]
             n,d = sympy.fraction(expression)
-            print(n)
-            print(d)
-            print("")
             for ml_i in range(len(mod[ml])):
                 if n.has(mod[ml][ml_i]):
                     mod_type_temp.append('activator')
@@ -357,24 +344,18 @@ class Network():
             mod_type.append(mod_type_temp)
         
         for i in range(len(mod)):
-            mod_target_temp = []
             if len(mod[i]) > 0:
-                mod_target_temp.append(rid[i])
-            mod_target.append(mod_target_temp)
+                mod_target.append(np.repeat(rid[i], len(mod[i])).tolist())
         
         mod_flat = [item for sublist in mod for item in sublist]
         modtype_flat = [item for sublist in mod_type for item in sublist]
         modtarget_flat = [item for sublist in mod_target for item in sublist]
-        
-        print("mod:")
-        print(modtype_flat)
         
         speciesId = list(rct + prd)
         speciesId = [item for sublist in speciesId for item in sublist]
         speciesId = list(set(speciesId))
         
         if self.breakBoundary:
-#            speciesId = []
             boundaryId_temp = []
             bc = 0
             for i in range(len(rid)):
@@ -390,8 +371,6 @@ class Network():
                         speciesId.append(prd[i][k])
                         boundaryId_temp.append(prd[i][k])
                         bc += 1
-#            for i in range(numFlt):
-#                speciesId.append(floatingId[i])
             boundaryId = boundaryId_temp
                 
         # initialize directional graph
@@ -406,18 +385,15 @@ class Network():
                 G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
                         
             if len(mod[i]) > 0:
-                if mod_type[i][0] == 'inhibitor':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
-                elif mod_type[i][0] == 'activator':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
+                for l in range(len(mod[i])):
+                    G.add_edges_from([(mod[i][l], rid[i])], weight=(1+self.edgelw))
             
         # calcutate positions
         thres = 0.2
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
-#        shortest_dist = dict(nx.all_pairs_shortest_path_length(G))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
         
-        maxIter = 50
+        maxIter = 5
         s_dist_flag = True
         maxIter_n = 0
         
@@ -436,7 +412,7 @@ class Network():
         
         while r_dist_flag and (maxIter_n < maxIter):
             r_dist_flag = False
-            for i in itertools.combinations(rid, 2):
+            for i in itertools.combinations(speciesId + rid, 2):
                 pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
                 if pos_dist < thres:
                     r_dist_flag = True
@@ -464,8 +440,8 @@ class Network():
         # add nodes to the figure
         for n in G:
             if n in rid:
-                rec_width = 0.05
-                rec_height = 0.05
+                rec_width = 0.05*(self.fontsize/20)
+                rec_height = 0.05*(self.fontsize/20)
                 if n in self.highlight:
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
                                         rec_width, 
@@ -487,17 +463,18 @@ class Network():
                          fontsize=self.fontsize, horizontalalignment='center', 
                          verticalalignment='center', color=self.labelColor)
             else:
-                # TODO: if the label is too long, increase the height and change line/abbreviate?
                 if len(n) > 10:
-                    rec_width = max(0.045*((len(n)/2)+1), 0.13)
-                    rec_height = 0.20
+                    rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
+                    rec_height = 0.20*(self.fontsize/20)
                 else:
-                    rec_width = max(0.045*(len(n)+1), 0.13)
-                    rec_height = 0.11
+                    rec_width = max(0.045*(len(n)+1), 0.13)*(self.fontsize/20)
+                    rec_height = 0.11*(self.fontsize/20)
+                    
                 if (n in boundaryId) or (n == 'Input') or (n == 'Output'):
                     node_color = self.boundaryColor
                 else:
                     node_color = self.nodeColor
+                    
                 if n in self.highlight:
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
                                        rec_width, 
@@ -508,12 +485,12 @@ class Network():
                                        facecolor=self.hlNodeColor)
                 else:
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
-                                   rec_width, 
-                                   rec_height,
-                                   boxstyle="round,pad=0.01, rounding_size=0.02",
-                                   linewidth=self.nodeEdgelw, 
-                                   edgecolor=self.nodeEdgeColor, 
-                                   facecolor=node_color)
+                                       rec_width, 
+                                       rec_height,
+                                       boxstyle="round,pad=0.01, rounding_size=0.02",
+                                       linewidth=self.nodeEdgelw, 
+                                       edgecolor=self.nodeEdgeColor, 
+                                       facecolor=node_color)
                 if len(n) > 10:
                     plt.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
                              fontsize=self.fontsize, horizontalalignment='center', 
@@ -583,10 +560,10 @@ class Network():
                             if j[k][0] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][0])][i]) > 1):
                                     # position calculation
-                                    slope = (lpath1.vertices[0][1] - lpath1.vertices[20][1])/(lpath1.vertices[0][0] - lpath1.vertices[20][0])
+                                    slope = (lpath1.vertices[0][1] - lpath1.vertices[10][1])/(lpath1.vertices[0][0] - lpath1.vertices[10][0])
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath1.vertices[20][0], y_prime+lpath1.vertices[20][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
+                                    plt.text(x_prime+lpath1.vertices[10][0], y_prime+lpath1.vertices[10][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
                                              fontsize=self.fontsize, horizontalalignment='center', 
                                              verticalalignment='center', color=self.reactionColor)
                             
@@ -630,10 +607,10 @@ class Network():
                         
                             if j[k][0] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][0])][i]) > 1):
-                                    slope = (lpath.vertices[0][1] - lpath.vertices[20][1])/(lpath.vertices[0][0] - lpath.vertices[20][0])
+                                    slope = (lpath.vertices[0][1] - lpath.vertices[10][1])/(lpath.vertices[0][0] - lpath.vertices[10][0])
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath.vertices[20][0], y_prime+lpath.vertices[20][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
+                                    plt.text(x_prime+lpath.vertices[10][0], y_prime+lpath.vertices[10][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
                                              fontsize=self.fontsize, horizontalalignment='center', 
                                              verticalalignment='center', color=self.reactionColor)
                             
@@ -703,47 +680,42 @@ class Network():
                     
         # Modifiers
         seen={}
-        for (u,v,d) in G.edges(data=True):
-            n1 = G.node[u]['patch']
-            n2 = G.node[v]['patch']
+        for i, e in enumerate(mod_flat):
+            n1 = G.node[e]['patch']
+            n2 = G.node[modtarget_flat[i]]['patch']
             rad = 0.1
             shrinkB = 5.
-            if (u,v) in seen:
-                rad = seen.get((u,v)) # TODO: No curvature when there is just a single line between two nodes
-                rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
             
-            if u not in rid and v in rid and u in mod_flat and v in modtarget_flat: 
-                X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
-                X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
-                uind = [i for i, e in enumerate(mod_flat) if e == u]
-                vind = [i for i, e in enumerate(modtarget_flat) if e == v]
+            if (e,modtarget_flat[i]) in seen:
+                rad = seen.get((e,modtarget_flat[i])) # TODO: No curvature when there is just a single line between two nodes
+                rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
                 
-#                print(uind)
-#                print(vind)
-#                print(np.array(mod_flat)[np.array(uind)])
-#                print(np.array(modtarget_flat)[np.array(vind)])
-                
-                if modtype_flat[list(set(uind).intersection(vind))[0]] == 'inhibitor': # inhibition
-                    color=self.modifierColor
-                    arrowstyle='-['
-                    shrinkB = 10.
-                else: # activation
-                    color=self.modifierColor
-                    arrowstyle='-|>'
-                e = FancyArrowPatch(X1,
-                                    X2,
-                                    patchA=n1,
-                                    patchB=n2,
-                                    shrinkB=shrinkB,
-                                    arrowstyle=arrowstyle,
-                                    connectionstyle='arc3,rad=%s'%rad,
-                                    mutation_scale=10.0,
-                                    lw=G[u][v]['weight'],
-                                    color=color)
-                seen[(u,v)]=rad
-                ax.add_patch(e)
+            X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
+            X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
+            
+            if modtype_flat[i] == 'inhibitor': # inhibition
+                color=self.modifierColor
+                arrowstyle='-['
+                shrinkB = 10.
+            else: # activation
+                color=self.modifierColor
+                arrowstyle='-|>'
+            e = FancyArrowPatch(X1,
+                                X2,
+                                patchA=n1,
+                                patchB=n2,
+                                shrinkB=shrinkB,
+                                arrowstyle=arrowstyle,
+                                connectionstyle='arc3,rad=%s'%rad,
+                                mutation_scale=10.0,
+                                lw=G[e][modtarget_flat[i]]['weight'],
+                                color=color)
+            seen[(e,modtarget_flat[i])]=rad
+            ax.add_patch(e)
+            ax.add_patch(n1)
         
-        # Add nodes at last to put it on top
+        
+        # Add reaction nodes at last to put it on top
         if self.drawReactionNode:
             allnodes = speciesId + rid
         else:
@@ -764,9 +736,7 @@ class Network():
         plt.axis('equal')
         
         plt.show()
-
-        return speciesId, rid, pos, shortest_dist
-
+        
 
 class NetworkEnsemble():
     
