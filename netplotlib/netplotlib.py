@@ -246,9 +246,11 @@ class Network():
         return pos
     
     
-    def draw(self):
+    def draw(self, show=True):
         """
         Draw network diagram
+        
+        :param show: flag to show the diagram
         """
         
         numBnd = self.rrInstance.getNumBoundarySpecies()
@@ -716,7 +718,6 @@ class Network():
             ax.add_patch(e)
             ax.add_patch(n1)
         
-        
         # Add reaction nodes at last to put it on top
         if self.drawReactionNode:
             allnodes = speciesId + rid
@@ -737,7 +738,11 @@ class Network():
         plt.axis('off')
         plt.axis('equal')
         
-        plt.show()
+        
+        if show:
+            plt.show()
+        
+        plt.close()
         
 
 class NetworkEnsemble():
