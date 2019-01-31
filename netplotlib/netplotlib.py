@@ -141,20 +141,18 @@ class Network():
             if len(temprct) == 0:
                 rct.append(['Input'])
             else:
-                rct.append(temprct)
+                rct.append(sorted(temprct, key=lambda v: (v.upper(), v[0].islower())))
             if len(tempprd) == 0:
                 prd.append(['Output'])
             else:
-                prd.append(tempprd)
-            mod.append(tempmod)
+                prd.append(sorted(tempprd, key=lambda v: (v.upper(), v[0].islower())))
+            mod.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
             
             # Update kinetic law according to change in species name
             kl_split = kl.getFormula().split(' ')
             for i in range(len(kl_split)):
                 if kl_split[i] == 'S':
                     kl_split[i] = '_S'
-                else:
-                    pass
             
             kineticLaw.append(' '.join(kl_split))
         
@@ -173,30 +171,29 @@ class Network():
             mod_type.append(mod_type_temp)
         
         for i in range(len(mod)):
-            mod_target_temp = []
             if len(mod[i]) > 0:
-                mod_target_temp.append(rid[i])
-            mod_target.append(mod_target_temp)
+                mod_target.append(np.repeat(rid[i], len(mod[i])).tolist())
+        
+        speciesId = list(rct + prd)
+        speciesId = [item for sublist in speciesId for item in sublist]
+        speciesId = list(set(speciesId))
         
         if self.breakBoundary:
-            speciesId = []
             boundaryId_temp = []
             bc = 0
             for i in range(len(rid)):
                 for j in range(len(rct[i])):
-                    if rct[i][j] in boundaryId:
+                    if rct[i][j] in boundaryId + ['Input', 'Output']:
                         rct[i][j] = rct[i][j] + '_' + str(bc)
                         speciesId.append(rct[i][j])
                         boundaryId_temp.append(rct[i][j])
                         bc += 1
                 for k in range(len(prd[i])):
-                    if prd[i][k] in boundaryId:
+                    if prd[i][k] in boundaryId + ['Input', 'Output']:
                         prd[i][k] = prd[i][k] + '_' + str(bc)
                         speciesId.append(prd[i][k])
                         boundaryId_temp.append(prd[i][k])
                         bc += 1
-            for i in range(numFlt):
-                speciesId.append(floatingId[i])
             boundaryId = boundaryId_temp
                 
         # initialize directional graph
@@ -204,40 +201,45 @@ class Network():
     
         # add edges
         for i in range(sbmlmodel.getNumReactions()):
-            if len(rct[i]) == 0:
-                G.add_edges_from([('Input', rid[i])], weight=(1+self.edgelw))
-            else:
-                for k in range(len(rct[i])):
-                    G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
+            for k in range(len(rct[i])):
+                G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
             
-            if len(prd[i]) == 0:
-                G.add_edges_from([(rid[i], 'Output')], weight=(1+self.edgelw))
-            else:
-                for j in range(len(prd[i])):
-                    G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
+            for j in range(len(prd[i])):
+                G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
                         
             if len(mod[i]) > 0:
-                if mod_type[i][0] == 'inhibitor':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
-                elif mod_type[i][0] == 'activator':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
+                for l in range(len(mod[i])):
+                    G.add_edges_from([(mod[i][l], rid[i])], weight=(1+self.edgelw))
             
         # calcutate positions
-        thres = 0.1
+        thres = 0.2
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
         
-        dist_flag = True
-        maxIter = 50
+        maxIter = 5
+        s_dist_flag = True
         maxIter_n = 0
         
-        while dist_flag and (maxIter_n < maxIter):
-            dist_flag = False
+        while s_dist_flag and (maxIter_n < maxIter):
+            s_dist_flag = False
             for i in itertools.combinations(speciesId, 2):
                 pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
                 if pos_dist < thres:
-                    dist_flag = True
+                    s_dist_flag = True
                     shortest_dist[i[0]][i[1]] = 4
+            pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+            maxIter_n += 1
+        
+        r_dist_flag = True
+        maxIter_n = 0
+        
+        while r_dist_flag and (maxIter_n < maxIter):
+            r_dist_flag = False
+            for i in itertools.combinations(speciesId + rid, 2):
+                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                if pos_dist < thres:
+                    r_dist_flag = True
+                    shortest_dist[i[0]][i[1]] = 2
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
             
