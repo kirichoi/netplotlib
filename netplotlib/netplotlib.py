@@ -738,11 +738,20 @@ class Network():
         plt.axis('off')
         plt.axis('equal')
         
-        
-        if show:
-            plt.show()
-        
         plt.close()
+        if  show:
+            return fig
+
+
+    def savefig(self, path):
+        """
+        Save network diagram to specified location
+        
+        :param path: path to save the diagram
+        """
+        
+        fig = self.draw()
+        fig.savefig(path)
         
 
 class NetworkEnsemble():
