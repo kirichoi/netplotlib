@@ -1,7 +1,12 @@
 # netplotlib
+
+[![Documentation Status](https://readthedocs.org/projects/netplotlib/badge/?version=latest)](http://netplotlib.readthedocs.org/en/latest/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/netplotlib.svg)](https://badge.fury.io/py/netplotlib)
+
 A simple package for visualizing reaction network models
 
-Copyright 2018 Kiri Choi
+Copyright 2019 Kiri Choi
 
 ## Introduction
 

@@ -56,11 +56,12 @@ class Network():
         """
     
         self.scale = 1.25
-        self.fontsize = 20
+        self.fontsize = 10
         self.edgelw = 3
         self.nodeColor = 'tab:blue'
         self.reactionNodeColor = 'tab:gray'
         self.labelColor = 'w'
+        self.labelReactionIds = False
         self.reactionColor = 'k'
         self.modifierColor = 'tab:red'
         self.boundaryColor = 'tab:green'
@@ -81,7 +82,6 @@ class Network():
         numFlt = self.rrInstance.getNumFloatingSpecies()
         boundaryId = self.rrInstance.getBoundarySpeciesIds()
         floatingId = self.rrInstance.getFloatingSpeciesIds()
-        speciesId = boundaryId + floatingId
         rid = self.rrInstance.getReactionIds()
         
         # prepare symbols for sympy
@@ -141,20 +141,18 @@ class Network():
             if len(temprct) == 0:
                 rct.append(['Input'])
             else:
-                rct.append(temprct)
+                rct.append(sorted(temprct, key=lambda v: (v.upper(), v[0].islower())))
             if len(tempprd) == 0:
                 prd.append(['Output'])
             else:
-                prd.append(tempprd)
-            mod.append(tempmod)
+                prd.append(sorted(tempprd, key=lambda v: (v.upper(), v[0].islower())))
+            mod.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
             
             # Update kinetic law according to change in species name
             kl_split = kl.getFormula().split(' ')
             for i in range(len(kl_split)):
                 if kl_split[i] == 'S':
                     kl_split[i] = '_S'
-                else:
-                    pass
             
             kineticLaw.append(' '.join(kl_split))
         
@@ -169,34 +167,33 @@ class Network():
                 elif d.has(mod[ml][ml_i]):
                     mod_type_temp.append('inhibitor')
                 else:
-                    continue
+                    mod_type_temp.append('modifier')
             mod_type.append(mod_type_temp)
         
         for i in range(len(mod)):
-            mod_target_temp = []
             if len(mod[i]) > 0:
-                mod_target_temp.append(rid[i])
-            mod_target.append(mod_target_temp)
+                mod_target.append(np.repeat(rid[i], len(mod[i])).tolist())
+        
+        speciesId = list(rct + prd)
+        speciesId = [item for sublist in speciesId for item in sublist]
+        speciesId = list(set(speciesId))
         
         if self.breakBoundary:
-            speciesId = []
             boundaryId_temp = []
             bc = 0
             for i in range(len(rid)):
                 for j in range(len(rct[i])):
-                    if rct[i][j] in boundaryId:
+                    if rct[i][j] in boundaryId + ['Input', 'Output']:
                         rct[i][j] = rct[i][j] + '_' + str(bc)
                         speciesId.append(rct[i][j])
                         boundaryId_temp.append(rct[i][j])
                         bc += 1
                 for k in range(len(prd[i])):
-                    if prd[i][k] in boundaryId:
+                    if prd[i][k] in boundaryId + ['Input', 'Output']:
                         prd[i][k] = prd[i][k] + '_' + str(bc)
                         speciesId.append(prd[i][k])
                         boundaryId_temp.append(prd[i][k])
                         bc += 1
-            for i in range(numFlt):
-                speciesId.append(floatingId[i])
             boundaryId = boundaryId_temp
                 
         # initialize directional graph
@@ -204,36 +201,30 @@ class Network():
     
         # add edges
         for i in range(sbmlmodel.getNumReactions()):
-            if len(rct[i]) == 0:
-                G.add_edges_from([('Input', rid[i])], weight=(1+self.edgelw))
-            else:
-                for k in range(len(rct[i])):
-                    G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
+            for k in range(len(rct[i])):
+                G.add_edges_from([(rct[i][k], rid[i])], weight=(1+self.edgelw))
             
-            if len(prd[i]) == 0:
-                G.add_edges_from([(rid[i], 'Output')], weight=(1+self.edgelw))
-            else:
-                for j in range(len(prd[i])):
-                    G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
+            for j in range(len(prd[i])):
+                G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
                         
             if len(mod[i]) > 0:
-                if mod_type[i][0] == 'inhibitor':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
-                elif mod_type[i][0] == 'activator':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
+                for l in range(len(mod[i])):
+                    G.add_edges_from([(mod[i][l], rid[i])], weight=(1+self.edgelw))
             
         # calcutate positions
-        thres = 0.1
+        thres = 0.3
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
         
+        maxIter = 5
+        maxIter_n = 0
+        
         dist_flag = True
-        maxIter = 50
         maxIter_n = 0
         
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
-            for i in itertools.combinations(speciesId, 2):
+            for i in itertools.combinations(speciesId + rid, 2):
                 pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
                 if pos_dist < thres:
                     dist_flag = True
@@ -244,16 +235,17 @@ class Network():
         return pos
     
     
-    def draw(self):
+    def draw(self, show=True):
         """
         Draw network diagram
+        
+        :param show: flag to show the diagram
         """
         
         numBnd = self.rrInstance.getNumBoundarySpecies()
         numFlt = self.rrInstance.getNumFloatingSpecies()
         boundaryId = self.rrInstance.getBoundarySpeciesIds()
         floatingId = self.rrInstance.getFloatingSpeciesIds()
-        speciesId = boundaryId + floatingId
         rid = self.rrInstance.getReactionIds()
         stoch = self.rrInstance.getFullStoichiometryMatrix()
         stoch_row = stoch.rownames
@@ -288,6 +280,7 @@ class Network():
         rct = []
         prd = []
         mod = []
+        r_type = []
         mod_target = []
         kineticLaw = []
         mod_type = []
@@ -315,12 +308,12 @@ class Network():
             if len(temprct) == 0:
                 rct.append(['Input'])
             else:
-                rct.append(temprct)
+                rct.append(sorted(temprct, key=lambda v: (v.upper(), v[0].islower())))
             if len(tempprd) == 0:
                 prd.append(['Output'])
             else:
-                prd.append(tempprd)
-            mod.append(tempmod)
+                prd.append(sorted(tempprd, key=lambda v: (v.upper(), v[0].islower())))
+            mod.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
             
             # Update kinetic law according to change in species name
             kl_split = kl.getFormula().split(' ')
@@ -341,38 +334,43 @@ class Network():
                 elif d.has(mod[ml][ml_i]):
                     mod_type_temp.append('inhibitor')
                 else:
-                    continue
+                    mod_type_temp.append('modifier')
             mod_type.append(mod_type_temp)
-        
+            
+            # In case all products are in rate law, assume it is a reversible reaction
+            if all(ext in str(n) for ext in prd[ml]):
+                r_type.append('reversible')
+            else:
+                r_type.append('irreversible')
+            
         for i in range(len(mod)):
-            mod_target_temp = []
             if len(mod[i]) > 0:
-                mod_target_temp.append(rid[i])
-            mod_target.append(mod_target_temp)
+                mod_target.append(np.repeat(rid[i], len(mod[i])).tolist())
         
         mod_flat = [item for sublist in mod for item in sublist]
         modtype_flat = [item for sublist in mod_type for item in sublist]
         modtarget_flat = [item for sublist in mod_target for item in sublist]
         
+        speciesId = list(rct + prd)
+        speciesId = [item for sublist in speciesId for item in sublist]
+        speciesId = list(set(speciesId))
+        
         if self.breakBoundary:
-            speciesId = []
             boundaryId_temp = []
             bc = 0
             for i in range(len(rid)):
                 for j in range(len(rct[i])):
-                    if rct[i][j] in boundaryId:
+                    if rct[i][j] in boundaryId + ['Input', 'Output']:
                         rct[i][j] = rct[i][j] + '_' + str(bc)
                         speciesId.append(rct[i][j])
                         boundaryId_temp.append(rct[i][j])
                         bc += 1
                 for k in range(len(prd[i])):
-                    if prd[i][k] in boundaryId:
+                    if prd[i][k] in boundaryId + ['Input', 'Output']:
                         prd[i][k] = prd[i][k] + '_' + str(bc)
                         speciesId.append(prd[i][k])
                         boundaryId_temp.append(prd[i][k])
                         bc += 1
-            for i in range(numFlt):
-                speciesId.append(floatingId[i])
             boundaryId = boundaryId_temp
                 
         # initialize directional graph
@@ -387,23 +385,21 @@ class Network():
                 G.add_edges_from([(rid[i], prd[i][j])], weight=(1+self.edgelw))
                         
             if len(mod[i]) > 0:
-                if mod_type[i][0] == 'inhibitor':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
-                elif mod_type[i][0] == 'activator':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(1+self.edgelw))
+                for l in range(len(mod[i])):
+                    G.add_edges_from([(mod[i][l], rid[i])], weight=(1+self.edgelw))
             
         # calcutate positions
-        thres = 0.1
+        thres = 0.3
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
         
-        dist_flag = True
-        maxIter = 50
+        maxIter = 5
         maxIter_n = 0
+        dist_flag = True
         
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
-            for i in itertools.combinations(speciesId, 2):
+            for i in itertools.combinations(speciesId + rid, 2):
                 pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
                 if pos_dist < thres:
                     dist_flag = True
@@ -428,10 +424,11 @@ class Network():
         # add nodes to the figure
         for n in G:
             if n in rid:
-                rec_width = 0.05
-                rec_height = 0.05
+                rec_width = 0.05*(self.fontsize/20)
+                rec_height = 0.05*(self.fontsize/20)
                 if n in self.highlight:
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                        pos[n][1]-rec_height/2),
                                         rec_width, 
                                         rec_height,
                                         boxstyle="round,pad=0.01, rounding_size=0.01",
@@ -439,40 +436,61 @@ class Network():
                                         edgecolor=self.hlNodeEdgeColor, 
                                         facecolor=self.hlNodeColor)
                 else:
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
-                                   rec_width, 
-                                   rec_height,
-                                   boxstyle="round,pad=0.01, rounding_size=0.01",
-                                   linewidth=self.nodeEdgelw, 
-                                   edgecolor=self.nodeEdgeColor, 
-                                   facecolor=self.reactionNodeColor)
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                        pos[n][1]-rec_height/2), 
+                                        rec_width, 
+                                        rec_height,
+                                        boxstyle="round,pad=0.01, rounding_size=0.01",
+                                        linewidth=self.nodeEdgelw, 
+                                        edgecolor=self.nodeEdgeColor, 
+                                        facecolor=self.reactionNodeColor)
+                if self.labelReactionIds:
+                    plt.text(pos[n][0], 
+                             pos[n][1], 
+                             n, 
+                             fontsize=self.fontsize, 
+                             horizontalalignment='center', 
+                             verticalalignment='center', 
+                             color=self.labelColor)
             else:
-                # TODO: if the label is too long, increase the height and change line/abbreviate?
-                rec_width = max(0.04*(len(n)+2), 0.17)
-                rec_height = 0.12
+                if len(n) > 10:
+                    rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
+                    rec_height = 0.20*(self.fontsize/20)
+                else:
+                    rec_width = max(0.045*(len(n)+1), 0.13)*(self.fontsize/20)
+                    rec_height = 0.11*(self.fontsize/20)
+                    
                 if (n in boundaryId) or (n == 'Input') or (n == 'Output'):
                     node_color = self.boundaryColor
                 else:
                     node_color = self.nodeColor
+                    
                 if n in self.highlight:
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
-                                       rec_width, 
-                                       rec_height,
-                                       boxstyle="round,pad=0.01, rounding_size=0.02",
-                                       linewidth=self.nodeEdgelw, 
-                                       edgecolor=self.hlNodeEdgeColor, 
-                                       facecolor=self.hlNodeColor)
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                        pos[n][1]-rec_height/2),
+                                        rec_width, 
+                                        rec_height,
+                                        boxstyle="round,pad=0.01, rounding_size=0.02",
+                                        linewidth=self.nodeEdgelw, 
+                                        edgecolor=self.hlNodeEdgeColor, 
+                                        facecolor=self.hlNodeColor)
                 else:
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
-                                   rec_width, 
-                                   rec_height,
-                                   boxstyle="round,pad=0.01, rounding_size=0.02",
-                                   linewidth=self.nodeEdgelw, 
-                                   edgecolor=self.nodeEdgeColor, 
-                                   facecolor=node_color)
-                plt.text(pos[n][0], pos[n][1], n, 
-                         fontsize=self.fontsize, horizontalalignment='center', 
-                         verticalalignment='center', color=self.labelColor)
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                        pos[n][1]-rec_height/2), 
+                                        rec_width, 
+                                        rec_height,
+                                        boxstyle="round,pad=0.01, rounding_size=0.02",
+                                        linewidth=self.nodeEdgelw, 
+                                        edgecolor=self.nodeEdgeColor, 
+                                        facecolor=node_color)
+                if len(n) > 10:
+                    plt.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
+                             fontsize=self.fontsize, horizontalalignment='center', 
+                             verticalalignment='center', color=self.labelColor)
+                else:
+                    plt.text(pos[n][0], pos[n][1], n, 
+                             fontsize=self.fontsize, horizontalalignment='center', 
+                             verticalalignment='center', color=self.labelColor)
             G.node[n]['patch'] = c
         
         # add edges to the figure
@@ -489,34 +507,54 @@ class Network():
                         X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
                         X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
                         
-                        if (len(rct[i]) > len(prd[i])) or (len(rct[i]) < len(prd[i])): # Uni-Bi or Bi-Uni
+                        if ((len(np.unique(rct[i])) > len(prd[i])) or 
+                            (len(rct[i]) < len(np.unique(prd[i])))): # Uni-Bi or Bi-Uni
                             XY1 = np.vstack((X1, X2))
                             XY2 = np.vstack((X2, X3))
                             
-                            tck1, u1 = interpolate.splprep([XY1[:,0], XY1[:,1]], k=1)
-                            intX1, intY1 = interpolate.splev(np.linspace(0, 1, 100), tck1, der=0)
+                            tck1, u1 = interpolate.splprep([XY1[:,0], XY1[:,1]], 
+                                                           k=1)
+                            intX1, intY1 = interpolate.splev(np.linspace(0, 1, 100),
+                                                             tck1, 
+                                                             der=0)
                             stackXY1 = np.vstack((intX1, intY1))
-                            tck2, u2 = interpolate.splprep([XY2[:,0], XY2[:,1]], k=1)
-                            intX2, intY2 = interpolate.splev(np.linspace(0, 1, 100), tck2, der=0)
+                            tck2, u2 = interpolate.splprep([XY2[:,0], XY2[:,1]], 
+                                                           k=1)
+                            intX2, intY2 = interpolate.splev(np.linspace(0, 1, 100), 
+                                                             tck2, 
+                                                             der=0)
                             stackXY2 = np.vstack((intX2, intY2))
                             
-                            X3top = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height())
-                            X3bot = (p3.get_x()+p3.get_width()/2,p3.get_y())
-                            X3left = (p3.get_x(),p3.get_y()+p3.get_height()/2)
-                            X3right = (p3.get_x()+p3.get_width(),p3.get_y()+p3.get_height()/2)
+                            X3top = (p3.get_x()+p3.get_width()/2,
+                                     p3.get_y()+p3.get_height())
+                            X3bot = (p3.get_x()+p3.get_width()/2,
+                                     p3.get_y())
+                            X3left = (p3.get_x(),
+                                      p3.get_y()+p3.get_height()/2)
+                            X3right = (p3.get_x()+p3.get_width(),
+                                       p3.get_y()+p3.get_height()/2)
                             
                             n = -1
                             arrthres_v = .02
                             arrthres_h = .02
-                            while ((stackXY2.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY2.T[n][0] < (X3right[0]+arrthres_h))
-                                and (stackXY2.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY2.T[n][1] < (X3top[1]+arrthres_v))):
+                            while (((stackXY2.T[n][0] > (X3left[0]-arrthres_h)) and
+                                    (stackXY2.T[n][0] < (X3right[0]+arrthres_h)) and
+                                    (stackXY2.T[n][1] > (X3bot[1]-arrthres_v)) and 
+                                    (stackXY2.T[n][1] < (X3top[1]+arrthres_v))) and
+                                    (np.abs(n) < np.shape(stackXY2)[1] - 10)):
                                 n -= 1
                            
                             lpath1 = Path(stackXY1.T)
                             lpath2 = Path(stackXY2.T[3:n])
                             
+                            if r_type[i] == 'reversible':
+                                arrowstyle = '<|-'
+                                lpath1 = Path(stackXY1.T[-n:-3])
+                            else:
+                                arrowstyle = '-'
+                            
                             e1 = FancyArrowPatch(path=lpath1,
-                                                arrowstyle='-',
+                                                arrowstyle=arrowstyle,
                                                 mutation_scale=10.0,
                                                 lw=(1+self.edgelw),
                                                 color=self.reactionColor)
@@ -533,21 +571,31 @@ class Network():
                             if j[k][0] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][0])][i]) > 1):
                                     # position calculation
-                                    slope = (lpath1.vertices[0][1] - lpath1.vertices[20][1])/(lpath1.vertices[0][0] - lpath1.vertices[20][0])
-                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                                    slope = ((lpath1.vertices[0][1] - lpath1.vertices[10][1])/
+                                             (lpath1.vertices[0][0] - lpath1.vertices[10][0]))
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath1.vertices[20][0], y_prime+lpath1.vertices[20][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
-                                             fontsize=self.fontsize, horizontalalignment='center', 
-                                             verticalalignment='center', color=self.reactionColor)
+                                    plt.text(x_prime+lpath1.vertices[10][0], 
+                                             y_prime+lpath1.vertices[10][1], 
+                                             int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
+                                             fontsize=self.fontsize, 
+                                             horizontalalignment='center', 
+                                             verticalalignment='center', 
+                                             color=self.reactionColor)
                             
                             if j[k][1] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][1])][i]) > 1):
-                                    slope = (lpath2.vertices[0][1] - lpath2.vertices[-20][1])/(lpath2.vertices[0][0] - lpath2.vertices[-20][0])
-                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                                    slope = ((lpath2.vertices[0][1] - lpath2.vertices[-20][1])/
+                                             (lpath2.vertices[0][0] - lpath2.vertices[-20][0]))
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath2.vertices[-20][0], y_prime+lpath2.vertices[-20][1], int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
-                                             fontsize=self.fontsize, horizontalalignment='center', 
-                                             verticalalignment='center', color=self.reactionColor)
+                                    plt.text(x_prime+lpath2.vertices[-20][0], 
+                                             y_prime+lpath2.vertices[-20][1], 
+                                             int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
+                                             fontsize=self.fontsize, 
+                                             horizontalalignment='center', 
+                                             verticalalignment='center', 
+                                             color=self.reactionColor)
                             
                         else: # Uni-Uni
                             XY = np.vstack((X1, X2, X3))
@@ -556,22 +604,35 @@ class Network():
                             intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
                             stackXY = np.vstack((intX, intY))
                             
-                            X3top = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height())
-                            X3bot = (p3.get_x()+p3.get_width()/2,p3.get_y())
-                            X3left = (p3.get_x(),p3.get_y()+p3.get_height()/2)
-                            X3right = (p3.get_x()+p3.get_width(),p3.get_y()+p3.get_height()/2)
+                            X3top = (p3.get_x()+p3.get_width()/2,
+                                     p3.get_y()+p3.get_height())
+                            X3bot = (p3.get_x()+p3.get_width()/2,
+                                     p3.get_y())
+                            X3left = (p3.get_x(),
+                                      p3.get_y()+p3.get_height()/2)
+                            X3right = (p3.get_x()+p3.get_width(),
+                                       p3.get_y()+p3.get_height()/2)
                             
                             n = -1
                             arrthres_v = .02
                             arrthres_h = .02
-                            while ((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY.T[n][0] < (X3right[0]+arrthres_h))
-                                and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v))):
+                            while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and 
+                                    (stackXY.T[n][0] < (X3right[0]+arrthres_h)) and
+                                    (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and 
+                                    (stackXY.T[n][1] < (X3top[1]+arrthres_v))) and
+                                        (np.abs(n) < np.shape(stackXY)[1] - 10)):
                                 n -= 1
                            
                             lpath = Path(stackXY.T[3:n])
                             
+                            if r_type[i] == 'reversible':
+                                arrowstyle = '<|-|>'
+                                lpath = Path(stackXY.T[-n:n])
+                            else:
+                                arrowstyle = '-|>'
+                            
                             e = FancyArrowPatch(path=lpath,
-                                                arrowstyle='-|>',
+                                                arrowstyle=arrowstyle,
                                                 mutation_scale=10.0,
                                                 lw=(1+self.edgelw),
                                                 color=self.reactionColor)
@@ -579,24 +640,39 @@ class Network():
                         
                             if j[k][0] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][0])][i]) > 1):
-                                    slope = (lpath.vertices[0][1] - lpath.vertices[20][1])/(lpath.vertices[0][0] - lpath.vertices[20][0])
-                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                                    slope = ((lpath.vertices[0][1] - lpath.vertices[10][1])/
+                                             (lpath.vertices[0][0] - lpath.vertices[10][0]))
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath.vertices[20][0], y_prime+lpath.vertices[20][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
-                                             fontsize=self.fontsize, horizontalalignment='center', 
-                                             verticalalignment='center', color=self.reactionColor)
+                                    plt.text(x_prime+lpath.vertices[10][0], 
+                                             y_prime+lpath.vertices[10][1], 
+                                             int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
+                                             fontsize=self.fontsize, 
+                                             horizontalalignment='center', 
+                                             verticalalignment='center', 
+                                             color=self.reactionColor)
                             
                             if j[k][1] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][1])][i]) > 1):
-                                    slope = (lpath.vertices[0][1] - lpath.vertices[-30][1])/(lpath.vertices[0][0] - lpath.vertices[-30][0])
-                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                                    slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
+                                             (lpath.vertices[0][0] - lpath.vertices[-20][0]))
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath.vertices[-30][0], y_prime+lpath.vertices[-30][1], int(np.abs(stoch[stoch_row.index(j[k][0])][i])), 
-                                             fontsize=self.fontsize, horizontalalignment='center', 
-                                             verticalalignment='center', color=self.reactionColor)
+                                    plt.text(x_prime+lpath.vertices[-20][0], 
+                                             y_prime+lpath.vertices[-20][1],
+                                             int(np.abs(stoch[stoch_row.index(j[k][1])][i])), 
+                                             fontsize=self.fontsize, 
+                                             horizontalalignment='center', 
+                                             verticalalignment='center',
+                                             color=self.reactionColor)
                     
             else: # BIBI or larger
-                for j in [list(zip(x,prd[i])) for x in itertools.combinations(rct[i],len(prd[i]))][0]:
+                if len(rct[i]) < len(prd[i]):
+                    rVal = len(rct[i])
+                else:
+                    rVal = len(prd[i])
+                    
+                for j in [list(zip(x,prd[i])) for x in itertools.combinations(rct[i],rVal)][0]:
                     p1 = G.node[j[0]]['patch']
                     p2 = G.node[rid[i]]['patch']
                     p3 = G.node[j[1]]['patch']
@@ -611,22 +687,35 @@ class Network():
                     intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
                     stackXY = np.vstack((intX, intY))
                     
-                    X3top = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height())
-                    X3bot = (p3.get_x()+p3.get_width()/2,p3.get_y())
-                    X3left = (p3.get_x(),p3.get_y()+p3.get_height()/2)
-                    X3right = (p3.get_x()+p3.get_width(),p3.get_y()+p3.get_height()/2)
+                    X3top = (p3.get_x()+p3.get_width()/2,
+                             p3.get_y()+p3.get_height())
+                    X3bot = (p3.get_x()+p3.get_width()/2,
+                             p3.get_y())
+                    X3left = (p3.get_x(),
+                              p3.get_y()+p3.get_height()/2)
+                    X3right = (p3.get_x()+p3.get_width(),
+                               p3.get_y()+p3.get_height()/2)
                     
                     n = -1
                     arrthres_v = .02
                     arrthres_h = .02
-                    while ((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY.T[n][0] < (X3right[0]+arrthres_h))
-                        and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v))):
+                    while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and
+                            (stackXY.T[n][0] < (X3right[0]+arrthres_h)) and
+                            (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and 
+                            (stackXY.T[n][1] < (X3top[1]+arrthres_v))) and
+                            (np.abs(n) < np.shape(stackXY)[1] - 10)):
                         n -= 1
                    
                     lpath = Path(stackXY.T[3:n])
                     
+                    if r_type[i] == 'reversible':
+                        arrowstyle = '<|-|>'
+                        lpath = Path(stackXY.T[-n:n])
+                    else:
+                        arrowstyle = '-|>'
+                    
                     e = FancyArrowPatch(path=lpath,
-                                        arrowstyle='-|>',
+                                        arrowstyle=arrowstyle,
                                         mutation_scale=10.0,
                                         lw=(1+self.edgelw),
                                         color=self.reactionColor)
@@ -634,58 +723,77 @@ class Network():
                     
                     if j[0] in floatingId:
                         if (np.abs(stoch[stoch_row.index(j[0])][i]) > 1):
-                            slope = (lpath.vertices[0][1] - lpath.vertices[10][1])/(lpath.vertices[0][0] - lpath.vertices[10][0])
-                            x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                            slope = ((lpath.vertices[0][1] - lpath.vertices[15][1])/
+                                     (lpath.vertices[0][0] - lpath.vertices[15][0]))
+                            x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                             y_prime = -slope*x_prime
-                            plt.text(x_prime+lpath.vertices[10][0], y_prime+lpath.vertices[10][1], int(np.abs(stoch[stoch_row.index(j[0])][i])), 
-                                     fontsize=self.fontsize, horizontalalignment='center', 
-                                     verticalalignment='center', color=self.reactionColor)
+                            plt.text(x_prime+lpath.vertices[15][0], 
+                                     y_prime+lpath.vertices[15][1], 
+                                     int(np.abs(stoch[stoch_row.index(j[0])][i])), 
+                                     fontsize=self.fontsize, 
+                                     horizontalalignment='center', 
+                                     verticalalignment='center', 
+                                     color=self.reactionColor)
                     if j[1] in floatingId:
                         if (np.abs(stoch[stoch_row.index(j[1])][i]) > 1):
-                            slope = (lpath.vertices[0][1] - lpath.vertices[-20][1])/(lpath.vertices[0][0] - lpath.vertices[-20][0])
-                            x_prime = np.sqrt(0.01/(1 + np.square(slope)))
+                            slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
+                                     (lpath.vertices[0][0] - lpath.vertices[-20][0]))
+                            x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                             y_prime = -slope*x_prime
-                            plt.text(x_prime+lpath.vertices[-20][0], y_prime+lpath.vertices[-20][1], int(np.abs(stoch[stoch_row.index(j[1])][i])), 
-                                     fontsize=self.fontsize, horizontalalignment='center', 
-                                     verticalalignment='center', color=self.reactionColor)
+                            plt.text(x_prime+lpath.vertices[-20][0], 
+                                     y_prime+lpath.vertices[-20][1], 
+                                     int(np.abs(stoch[stoch_row.index(j[1])][i])), 
+                                     fontsize=self.fontsize,
+                                     horizontalalignment='center', 
+                                     verticalalignment='center', 
+                                     color=self.reactionColor)
                     
         # Modifiers
         seen={}
-        for (u,v,d) in G.edges(data=True):
-            n1 = G.node[u]['patch']
-            n2 = G.node[v]['patch']
+        for i, e in enumerate(mod_flat):
+            n1 = G.node[e]['patch']
+            n2 = G.node[modtarget_flat[i]]['patch']
             rad = 0.1
             shrinkB = 5.
-            if (u,v) in seen:
-                rad = seen.get((u,v)) # TODO: No curvature when there is just a single line between two nodes
-                rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
             
-            if u not in rid and v in rid and u in mod_flat and v in modtarget_flat: 
-                X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
-                X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
-                uind = [i for i, e in enumerate(mod_flat) if e == u]
-                vind = [i for i, e in enumerate(modtarget_flat) if e == v]
-                if modtype_flat[list(set(uind).intersection(vind))[0]] == 'inhibitor': # inhibition
-                    color=self.modifierColor
-                    arrowstyle='-['
-                    shrinkB = 10.
-                else: # activation
-                    color=self.modifierColor
-                    arrowstyle='-|>'
-                e = FancyArrowPatch(X1,
-                                    X2,
-                                    patchA=n1,
-                                    patchB=n2,
-                                    shrinkB=shrinkB,
-                                    arrowstyle=arrowstyle,
-                                    connectionstyle='arc3,rad=%s'%rad,
-                                    mutation_scale=10.0,
-                                    lw=G[u][v]['weight'],
-                                    color=color)
-                seen[(u,v)]=rad
-                ax.add_patch(e)
+            if (e,modtarget_flat[i]) in seen:
+                rad = seen.get((e,modtarget_flat[i])) # TODO: No curvature when there is just a single line between two nodes
+                rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
+                
+            X1 = (n1.get_x()+n1.get_width()/2,
+                  n1.get_y()+n1.get_height()/2)
+            X2 = (n2.get_x()+n2.get_width()/2,
+                  n2.get_y()+n2.get_height()/2)
+            
+            if modtype_flat[i] == 'inhibitor': # inhibition
+                color = self.modifierColor
+                arrowstyle = '-['
+                shrinkB = 10.
+                linestyle = '-'
+            elif modtype_flat[i] == 'activator': # activation
+                color = self.modifierColor
+                arrowstyle = '-|>'
+                linestyle = '-'
+            elif modtype_flat[i] == 'modifier': # Unknown modifier
+                color = self.modifierColor
+                arrowstyle = '-|>'
+                linestyle = ':'
+            e = FancyArrowPatch(X1,
+                                X2,
+                                patchA=n1,
+                                patchB=n2,
+                                shrinkB=shrinkB,
+                                arrowstyle=arrowstyle,
+                                connectionstyle='arc3,rad=%s'%rad,
+                                mutation_scale=10.0,
+                                lw=G[e][modtarget_flat[i]]['weight'],
+                                color=color,
+                                linestyle=linestyle)
+            seen[(e,modtarget_flat[i])]=rad
+            ax.add_patch(e)
+            ax.add_patch(n1)
         
-        # Add nodes at last to put it on top
+        # Add reaction nodes at last to put it on top
         if self.drawReactionNode:
             allnodes = speciesId + rid
         else:
@@ -705,10 +813,21 @@ class Network():
         plt.axis('off')
         plt.axis('equal')
         
-        plt.show()
+        plt.close()
+        if  show:
+            return fig
+
+
+    def savefig(self, path):
+        """
+        Save network diagram to specified location
         
-
-
+        :param path: path to save the diagram
+        """
+        
+        fig = self.draw()
+        fig.savefig(path)
+        
 
 class NetworkEnsemble():
     
@@ -740,11 +859,12 @@ class NetworkEnsemble():
         """
     
         self.scale = 1.25
-        self.fontsize = 20
+        self.fontsize = 10
         self.edgelw = 10
         self.nodeColor = 'tab:blue'
         self.reactionNodeColor = 'tab:gray'
         self.labelColor = 'w'
+        self.labelReactionIds = False
         self.reactionColor = 'k'
         self.modifierColor = 'tab:red'
         self.boundaryColor = 'tab:green'
@@ -754,17 +874,18 @@ class NetworkEnsemble():
         self.hlNodeColor = 'tab:purple'
         self.hlNodeEdgeColor = 'tab:pink'
         self.edgeLabel = True
-        self.edgeLabelFontSize = 12
+        self.edgeLabelFontSize = 10
         self.drawReactionNode = True
         self.breakBoundary = False
         self.weights = []
         self.edgeTransparency = False
-    
+        
     
     def getLayout(self):
         """
         Return the layout
         """
+        # extract reactant, product, modifiers, and kinetic laws
         allRxn = []
         count = []
         rid = []
@@ -779,18 +900,10 @@ class NetworkEnsemble():
                                 "the number of models given")
     
         for rind, r in enumerate(self.rrInstances):
-            rct = []
-            prd = []
-            mod_m = []
-            mod_target_m = []
-            kineticLaw = []
-            mod_type_m = []
-            
             numBnd = r.getNumBoundarySpecies()
             numFlt = r.getNumFloatingSpecies()
             boundaryId = r.getBoundarySpeciesIds()
             floatingId = r.getFloatingSpeciesIds()
-            speciesId = boundaryId + floatingId
             rid_temp = r.getReactionIds()
             
             # prepare symbols for sympy
@@ -819,6 +932,14 @@ class NetworkEnsemble():
             
             avsym = sympy.symbols(allIds)
             
+            # extract reactant, product, modifiers, and kinetic laws
+            rct = []
+            prd = []
+            mod_m = []
+            mod_target_m = []
+            kineticLaw = []
+            mod_type_m = []
+            
             doc = tesbml.readSBMLFromString(r.getSBML())
             sbmlmodel = doc.getModel()
         
@@ -842,12 +963,12 @@ class NetworkEnsemble():
                 if len(temprct) == 0:
                     rct.append(['Input'])
                 else:
-                    rct.append(temprct)
+                    rct.append(sorted(temprct, key=lambda v: (v.upper(), v[0].islower())))
                 if len(tempprd) == 0:
                     prd.append(['Output'])
                 else:
-                    prd.append(tempprd)
-                mod_m.append(tempmod)
+                    prd.append(sorted(tempprd, key=lambda v: (v.upper(), v[0].islower())))
+                mod_m.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
                 
                 # Update kinetic law according to change in species name
                 kl_split = kl.getFormula().split(' ')
@@ -868,38 +989,37 @@ class NetworkEnsemble():
                     elif d.has(mod_m[ml][ml_i]):
                         mod_type_temp.append('inhibitor')
                     else:
-                        continue
+                        mod_type_temp.append('modifier')
                 mod_type_m.append(mod_type_temp)
             
             for i in range(len(mod_m)):
-                mod_target_temp = []
                 if len(mod_m[i]) > 0:
-                    mod_target_temp.append(rid_temp[i]) #FIXME: issue with rids
-                mod_target_m.append(mod_target_temp)
+                    mod_target_m.append(np.repeat(rid_temp[i], len(mod_m[i])).tolist())
                 
             mod_flat = [item for sublist in mod_m for item in sublist]
             modtype_flat = [item for sublist in mod_type_m for item in sublist]
             modtarget_flat = [item for sublist in mod_target_m for item in sublist]
             
+            speciesId = list(rct + prd)
+            speciesId = [item for sublist in speciesId for item in sublist]
+            speciesId = list(set(speciesId))
+            
             if self.breakBoundary:
-                speciesId = []
                 boundaryId_temp = []
                 bc = 0
                 for i in range(len(rid_temp)):
                     for j in range(len(rct[i])):
-                        if rct[i][j] in boundaryId:
+                        if rct[i][j] in boundaryId + ['Input', 'Output']:
                             rct[i][j] = rct[i][j] + '_' + str(bc)
                             speciesId.append(rct[i][j])
                             boundaryId_temp.append(rct[i][j])
                             bc += 1
                     for k in range(len(prd[i])):
-                        if prd[i][k] in boundaryId:
+                        if prd[i][k] in boundaryId + ['Input', 'Output']:
                             prd[i][k] = prd[i][k] + '_' + str(bc)
                             speciesId.append(prd[i][k])
                             boundaryId_temp.append(prd[i][k])
                             bc += 1
-                for i in range(numFlt):
-                    speciesId.append(floatingId[i])
                 boundaryId = boundaryId_temp
             
             for t in range(sbmlmodel.getNumReactions()):
@@ -929,27 +1049,26 @@ class NetworkEnsemble():
         for i in range(len(allRxn)):
             for k in range(len(allRxn[i][0])):
                 G.add_edges_from([(allRxn[i][0][k], rid[i])], weight=(count[i]*self.edgelw))
+                
             for j in range(len(allRxn[i][1])):
                 G.add_edges_from([(rid[i], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
                         
             if len(mod[i]) > 0:
-                if mod_type[i][0] == 'inhibitor':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
-                elif mod_type[i][0] == 'activator':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
+                G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
     
         # calcutate positions
-        thres = 0.1
+        thres = 0.3
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
         
-        dist_flag = True
-        maxIter = 50
+        maxIter = 5
         maxIter_n = 0
+        
+        dist_flag = True
         
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
-            for i in itertools.combinations(speciesId, 2):
+            for i in itertools.combinations(speciesId + rid, 2):
                 pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
                 if pos_dist < thres:
                     dist_flag = True
@@ -960,10 +1079,13 @@ class NetworkEnsemble():
         return pos
     
     
-    def drawWeightedDiagram(self):
+    def drawWeightedDiagram(self, show=True):
         """     
         Draw weighted reaction network based on frequency of reactions
         
+        :param show: flag to show the diagram
+        :returns allRxn: list of all reactions in the list of models presented as a pair of reactants and products
+        :returns count: normalized count of reactions in allRxn throughout the list of models
         """
         
         # extract reactant, product, modifiers, and kinetic laws
@@ -981,18 +1103,10 @@ class NetworkEnsemble():
                                 "the number of models given")
     
         for rind, r in enumerate(self.rrInstances):
-            rct = []
-            prd = []
-            mod_m = []
-            mod_target_m = []
-            kineticLaw = []
-            mod_type_m = []
-            
             numBnd = r.getNumBoundarySpecies()
             numFlt = r.getNumFloatingSpecies()
             boundaryId = r.getBoundarySpeciesIds()
             floatingId = r.getFloatingSpeciesIds()
-            speciesId = boundaryId + floatingId
             rid_temp = r.getReactionIds()
             
             # prepare symbols for sympy
@@ -1021,6 +1135,14 @@ class NetworkEnsemble():
             
             avsym = sympy.symbols(allIds)
             
+            # extract reactant, product, modifiers, and kinetic laws
+            rct = []
+            prd = []
+            mod_m = []
+            mod_target_m = []
+            kineticLaw = []
+            mod_type_m = []
+            
             doc = tesbml.readSBMLFromString(r.getSBML())
             sbmlmodel = doc.getModel()
         
@@ -1044,12 +1166,12 @@ class NetworkEnsemble():
                 if len(temprct) == 0:
                     rct.append(['Input'])
                 else:
-                    rct.append(temprct)
+                    rct.append(sorted(temprct, key=lambda v: (v.upper(), v[0].islower())))
                 if len(tempprd) == 0:
                     prd.append(['Output'])
                 else:
-                    prd.append(tempprd)
-                mod_m.append(tempmod)
+                    prd.append(sorted(tempprd, key=lambda v: (v.upper(), v[0].islower())))
+                mod_m.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
                 
                 # Update kinetic law according to change in species name
                 kl_split = kl.getFormula().split(' ')
@@ -1070,38 +1192,37 @@ class NetworkEnsemble():
                     elif d.has(mod_m[ml][ml_i]):
                         mod_type_temp.append('inhibitor')
                     else:
-                        continue
+                        mod_type_temp.append('modifier')
                 mod_type_m.append(mod_type_temp)
             
             for i in range(len(mod_m)):
-                mod_target_temp = []
                 if len(mod_m[i]) > 0:
-                    mod_target_temp.append(rid_temp[i]) #FIXME: issue with rids
-                mod_target_m.append(mod_target_temp)
+                    mod_target_m.append(np.repeat(rid_temp[i], len(mod_m[i])).tolist())
                 
             mod_flat = [item for sublist in mod_m for item in sublist]
             modtype_flat = [item for sublist in mod_type_m for item in sublist]
             modtarget_flat = [item for sublist in mod_target_m for item in sublist]
             
+            speciesId = list(rct + prd)
+            speciesId = [item for sublist in speciesId for item in sublist]
+            speciesId = list(set(speciesId))
+            
             if self.breakBoundary:
-                speciesId = []
                 boundaryId_temp = []
                 bc = 0
                 for i in range(len(rid_temp)):
                     for j in range(len(rct[i])):
-                        if rct[i][j] in boundaryId:
+                        if rct[i][j] in boundaryId + ['Input', 'Output']:
                             rct[i][j] = rct[i][j] + '_' + str(bc)
                             speciesId.append(rct[i][j])
                             boundaryId_temp.append(rct[i][j])
                             bc += 1
                     for k in range(len(prd[i])):
-                        if prd[i][k] in boundaryId:
+                        if prd[i][k] in boundaryId + ['Input', 'Output']:
                             prd[i][k] = prd[i][k] + '_' + str(bc)
                             speciesId.append(prd[i][k])
                             boundaryId_temp.append(prd[i][k])
                             bc += 1
-                for i in range(numFlt):
-                    speciesId.append(floatingId[i])
                 boundaryId = boundaryId_temp
             
             for t in range(sbmlmodel.getNumReactions()):
@@ -1131,27 +1252,26 @@ class NetworkEnsemble():
         for i in range(len(allRxn)):
             for k in range(len(allRxn[i][0])):
                 G.add_edges_from([(allRxn[i][0][k], rid[i])], weight=(count[i]*self.edgelw))
+                
             for j in range(len(allRxn[i][1])):
                 G.add_edges_from([(rid[i], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
                         
             if len(mod[i]) > 0:
-                if mod_type[i][0] == 'inhibitor':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
-                elif mod_type[i][0] == 'activator':
-                    G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
+                G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
     
         # calcutate positions
-        thres = 0.1
+        thres = 0.3
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
         
-        dist_flag = True
-        maxIter = 50
+        maxIter = 5
         maxIter_n = 0
+        
+        dist_flag = True
         
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
-            for i in itertools.combinations(speciesId, 2):
+            for i in itertools.combinations(speciesId + rid, 2):
                 pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
                 if pos_dist < thres:
                     dist_flag = True
@@ -1176,10 +1296,11 @@ class NetworkEnsemble():
         # add nodes to the figure
         for n in G:
             if n in rid:
-                rec_width = 0.05
-                rec_height = 0.05
+                rec_width = 0.05*(self.fontsize/20)
+                rec_height = 0.05*(self.fontsize/20)
                 if n in self.highlight:
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                        pos[n][1]-rec_height/2),
                                         rec_width, 
                                         rec_height,
                                         boxstyle="round,pad=0.01, rounding_size=0.01",
@@ -1187,85 +1308,234 @@ class NetworkEnsemble():
                                         edgecolor=self.hlNodeEdgeColor, 
                                         facecolor=self.hlNodeColor)
                 else:
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
-                                   rec_width, 
-                                   rec_height,
-                                   boxstyle="round,pad=0.01, rounding_size=0.01",
-                                   linewidth=self.nodeEdgelw, 
-                                   edgecolor=self.nodeEdgeColor, 
-                                   facecolor=self.reactionNodeColor)
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                        pos[n][1]-rec_height/2),
+                                        rec_width, 
+                                        rec_height,
+                                        boxstyle="round,pad=0.01, rounding_size=0.01",
+                                        linewidth=self.nodeEdgelw, 
+                                        edgecolor=self.nodeEdgeColor, 
+                                        facecolor=self.reactionNodeColor)
+                if self.labelReactionIds:
+                    plt.text(pos[n][0], 
+                             pos[n][1], 
+                             n, 
+                             fontsize=self.fontsize, 
+                             horizontalalignment='center', 
+                             verticalalignment='center', 
+                             color=self.labelColor)
             else:
-                # TODO: if the label is too long, increase the height and change line/abbreviate?
-                rec_width = max(0.04*(len(n)+2), 0.17)
-                rec_height = 0.12
+                if len(n) > 10:
+                    rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
+                    rec_height = 0.20*(self.fontsize/20)
+                else:
+                    rec_width = max(0.045*(len(n)+1), 0.13)*(self.fontsize/20)
+                    rec_height = 0.11*(self.fontsize/20)
+                    
                 if (n in boundaryId) or (n == 'Input') or (n == 'Output'):
                     node_color = self.boundaryColor
                 else:
                     node_color = self.nodeColor
+                    
                 if n in self.highlight:
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
-                                       rec_width, 
-                                       rec_height,
-                                       boxstyle="round,pad=0.01, rounding_size=0.02",
-                                       linewidth=self.nodeEdgelw, 
-                                       edgecolor=self.hlNodeEdgeColor, 
-                                       facecolor=self.hlNodeColor)
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                        pos[n][1]-rec_height/2),
+                                        rec_width, 
+                                        rec_height,
+                                        boxstyle="round,pad=0.01, rounding_size=0.02",
+                                        linewidth=self.nodeEdgelw, 
+                                        edgecolor=self.hlNodeEdgeColor, 
+                                        facecolor=self.hlNodeColor)
                 else:
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, pos[n][1]-rec_height/2),
-                                   rec_width, 
-                                   rec_height,
-                                   boxstyle="round,pad=0.01, rounding_size=0.02",
-                                   linewidth=self.nodeEdgelw, 
-                                   edgecolor=self.nodeEdgeColor, 
-                                   facecolor=node_color)
-                plt.text(pos[n][0], pos[n][1], n, 
-                         fontsize=self.fontsize, horizontalalignment='center', 
-                         verticalalignment='center', color=self.labelColor)
+                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                        pos[n][1]-rec_height/2),
+                                        rec_width, 
+                                        rec_height,
+                                        boxstyle="round,pad=0.01, rounding_size=0.02",
+                                        linewidth=self.nodeEdgelw, 
+                                        edgecolor=self.nodeEdgeColor, 
+                                        facecolor=node_color)
+                if len(n) > 10:
+                    plt.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
+                             fontsize=self.fontsize, horizontalalignment='center', 
+                             verticalalignment='center', color=self.labelColor)
+                else:
+                    plt.text(pos[n][0], pos[n][1], n, 
+                             fontsize=self.fontsize, horizontalalignment='center', 
+                             verticalalignment='center', color=self.labelColor)
             G.node[n]['patch'] = c
         
         # add edges to the figure
         for i in range(len(allRxn)):
-            for j in [list(zip(x,allRxn[i][1])) for x in itertools.combinations(allRxn[i][0],len(allRxn[i][1]))][0]:
-                p1 = G.node[j[0]]['patch']
-                p2 = G.node[rid[i]]['patch']
-                p3 = G.node[j[1]]['patch']
-    
-                X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
-                X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
-                X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
-                XY = np.vstack((X1, X2, X3))
-                
-                tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
-                intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
-                stackXY = np.vstack((intX, intY))
-                
-                X3top = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height())
-                X3bot = (p3.get_x()+p3.get_width()/2,p3.get_y())
-                X3left = (p3.get_x(),p3.get_y()+p3.get_height()/2)
-                X3right = (p3.get_x()+p3.get_width(),p3.get_y()+p3.get_height()/2)
-                
-                n = -1
-                arrthres_v = .02
-                arrthres_h = .02
-                while ((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and (stackXY.T[n][0] < (X3right[0]+arrthres_h))
-                    and (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and (stackXY.T[n][1] < (X3top[1]+arrthres_v))):
-                    n -= 1
-               
-                lpath = Path(stackXY.T[3:n])
-                
-                if self.edgeTransparency:
-                    alpha = count[i]
+            if (len(allRxn[i][0]) == 1) or (len(allRxn[i][1]) == 1): # UNI-involved
+                comb = list(itertools.combinations_with_replacement(allRxn[i][0],len(allRxn[i][1])))
+                for j in [list(zip(x,allRxn[i][1])) for x in comb]:
+                    for k in range(len(j)):
+                        p1 = G.node[j[k][0]]['patch']
+                        p2 = G.node[rid[i]]['patch']
+                        p3 = G.node[j[k][1]]['patch']
+            
+                        X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
+                        X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
+                        X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
+                        
+                        if ((len(np.unique(allRxn[i][0])) > len(allRxn[i][1])) or 
+                            (len(allRxn[i][0]) < len(np.unique(allRxn[i][1])))): # Uni-Bi or Bi-Uni
+                            XY1 = np.vstack((X1, X2))
+                            XY2 = np.vstack((X2, X3))
+                            
+                            tck1, u1 = interpolate.splprep([XY1[:,0], XY1[:,1]], 
+                                                           k=1)
+                            intX1, intY1 = interpolate.splev(np.linspace(0, 1, 100),
+                                                             tck1, 
+                                                             der=0)
+                            stackXY = np.vstack((intX1, intY1))
+                            tck2, u2 = interpolate.splprep([XY2[:,0], XY2[:,1]], 
+                                                           k=1)
+                            intX2, intY2 = interpolate.splev(np.linspace(0, 1, 100), 
+                                                             tck2, 
+                                                             der=0)
+                            stackXY2 = np.vstack((intX2, intY2))
+                            
+                            X3top = (p3.get_x()+p3.get_width()/2,
+                                     p3.get_y()+p3.get_height())
+                            X3bot = (p3.get_x()+p3.get_width()/2,
+                                     p3.get_y())
+                            X3left = (p3.get_x(),
+                                      p3.get_y()+p3.get_height()/2)
+                            X3right = (p3.get_x()+p3.get_width(),
+                                       p3.get_y()+p3.get_height()/2)
+                            
+                            n = -1
+                            arrthres_v = .02
+                            arrthres_h = .02
+                            while (((stackXY2.T[n][0] > (X3left[0]-arrthres_h)) and
+                                    (stackXY2.T[n][0] < (X3right[0]+arrthres_h)) and
+                                    (stackXY2.T[n][1] > (X3bot[1]-arrthres_v)) and 
+                                    (stackXY2.T[n][1] < (X3top[1]+arrthres_v))) and
+                                    (np.abs(n) < np.shape(stackXY2)[1] - 10)):
+                                n -= 1
+                           
+                            lpath1 = Path(stackXY.T)
+                            lpath2 = Path(stackXY2.T[3:n])
+                            
+                            if self.edgeTransparency:
+                                alpha = count[i]
+                            else:
+                                alpha = None
+                            
+                            e1 = FancyArrowPatch(path=lpath1,
+                                                arrowstyle='-',
+                                                mutation_scale=10.0,
+                                                lw=(count[i]*self.edgelw),
+                                                alpha=alpha,
+                                                color=self.reactionColor)
+                            
+                            e2 = FancyArrowPatch(path=lpath2,
+                                                arrowstyle='-|>',
+                                                mutation_scale=10.0,
+                                                lw=(count[i]*self.edgelw),
+                                                alpha=alpha,
+                                                color=self.reactionColor)
+                            
+                            ax.add_patch(e1)
+                            ax.add_patch(e2)
+                            
+                        else: # Uni-Uni    
+                            XY = np.vstack((X1, X2, X3))
+                            
+                            tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
+                            intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
+                            stackXY = np.vstack((intX, intY))
+                            
+                            X3top = (p3.get_x()+p3.get_width()/2,
+                                     p3.get_y()+p3.get_height())
+                            X3bot = (p3.get_x()+p3.get_width()/2,
+                                     p3.get_y())
+                            X3left = (p3.get_x(),
+                                      p3.get_y()+p3.get_height()/2)
+                            X3right = (p3.get_x()+p3.get_width(),
+                                       p3.get_y()+p3.get_height()/2)
+                            
+                            n = -1
+                            arrthres_v = .02
+                            arrthres_h = .02
+                            while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and 
+                                    (stackXY.T[n][0] < (X3right[0]+arrthres_h)) and
+                                    (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and 
+                                    (stackXY.T[n][1] < (X3top[1]+arrthres_v))) and
+                                    (np.abs(n) < np.shape(stackXY)[1] - 10)):
+                                n -= 1
+                           
+                            lpath = Path(stackXY.T[3:n])
+                            
+                            if self.edgeTransparency:
+                                alpha = count[i]
+                            else:
+                                alpha = None
+                            
+                            e = FancyArrowPatch(path=lpath,
+                                                arrowstyle='-|>',
+                                                mutation_scale=10.0,
+                                                lw=(count[i]*self.edgelw),
+                                                alpha=alpha,
+                                                color=self.reactionColor)
+                            ax.add_patch(e)
+            else: # BIBI or larger
+                if len(allRxn[i][0]) < len(allRxn[i][1]):
+                    rVal = len(allRxn[i][0])
                 else:
-                    alpha = None
-
-                e = FancyArrowPatch(path=lpath,
-                                    arrowstyle='-|>',
-                                    mutation_scale=10.0,
-                                    lw=(count[i]*self.edgelw),
-                                    alpha=alpha,
-                                    color=self.reactionColor)
-                ax.add_patch(e)
-                
+                    rVal = len(allRxn[i][1])
+                    
+                for j in [list(zip(x,allRxn[i][1])) for x in itertools.combinations(allRxn[i][0],rVal)][0]:
+                    p1 = G.node[j[0]]['patch']
+                    p2 = G.node[rid[i]]['patch']
+                    p3 = G.node[j[1]]['patch']
+                    
+                    X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
+                    X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
+                    X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
+                    
+                    XY = np.vstack((X1, X2, X3))
+                    
+                    tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
+                    intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
+                    stackXY = np.vstack((intX, intY))
+                    
+                    X3top = (p3.get_x()+p3.get_width()/2,
+                             p3.get_y()+p3.get_height())
+                    X3bot = (p3.get_x()+p3.get_width()/2,
+                             p3.get_y())
+                    X3left = (p3.get_x(),
+                              p3.get_y()+p3.get_height()/2)
+                    X3right = (p3.get_x()+p3.get_width(),
+                               p3.get_y()+p3.get_height()/2)
+                    
+                    n = -1
+                    arrthres_v = .02
+                    arrthres_h = .02
+                    while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and
+                            (stackXY.T[n][0] < (X3right[0]+arrthres_h)) and
+                            (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and 
+                            (stackXY.T[n][1] < (X3top[1]+arrthres_v))) and
+                            (np.abs(n) < np.shape(stackXY)[1] - 10)):
+                        n -= 1
+                   
+                    lpath = Path(stackXY.T[3:n])
+                    
+                    if self.edgeTransparency:
+                                alpha = count[i]
+                    else:
+                        alpha = None
+                    
+                    e = FancyArrowPatch(path=lpath,
+                                        arrowstyle='-|>',
+                                        mutation_scale=10.0,
+                                        lw=(count[i]*self.edgelw),
+                                        alpha=alpha,
+                                        color=self.reactionColor)
+                    ax.add_patch(e)
+                    
             # Edge labels
             if self.edgeLabel:
                 c = FancyBboxPatch((stackXY.T[50,0]-0.0325, stackXY.T[50,1]+0.005),
@@ -1280,47 +1550,49 @@ class NetworkEnsemble():
                 
         # Modifiers
         seen={}
-        for (u,v,d) in G.edges(data=True):
-            n1 = G.node[u]['patch']
-            n2 = G.node[v]['patch']
+        for i, e in enumerate(mod_flat):
+            n1 = G.node[e]['patch']
+            n2 = G.node[modtarget_flat[i]]['patch']
             rad = 0.1
             shrinkB = 5.
-            if (u,v) in seen:
-                rad = seen.get((u,v)) # TODO: No curvature when there is just a single line between two nodes
-                rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
             
-            if u not in rid and v in rid and u in mod_flat and v in modtarget_flat: 
-                X1 = (n1.get_x()+n1.get_width()/2,n1.get_y()+n1.get_height()/2)
-                X2 = (n2.get_x()+n2.get_width()/2,n2.get_y()+n2.get_height()/2)
-                uind = [i for i, e in enumerate(mod_flat) if e == u]
-                vind = [i for i, e in enumerate(modtarget_flat) if e == v]
-                if modtype_flat[list(set(uind).intersection(vind))[0]] == 'inhibitor': # inhibition
-                    color=self.modifierColor
-                    arrowstyle='-['
-                    shrinkB = 10.
-                else: # activation
-                    color=self.modifierColor
-                    arrowstyle='-|>'
+            if (e,modtarget_flat[i]) in seen:
+                rad = seen.get((e,modtarget_flat[i])) # TODO: No curvature when there is just a single line between two nodes
+                rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
                 
-                if self.edgeTransparency:
-                    alpha = count[i]
-                else:
-                    alpha = None
-                
-                e = FancyArrowPatch(X1,
-                                    X2,
-                                    patchA=n1,
-                                    patchB=n2,
-                                    shrinkB=shrinkB,
-                                    arrowstyle=arrowstyle,
-                                    connectionstyle='arc3,rad=%s'%rad,
-                                    mutation_scale=10.0,
-                                    lw=G[u][v]['weight'],
-                                    alpha=alpha,
-                                    color=color)
-                seen[(u,v)]=rad
-                ax.add_patch(e)
-        
+            X1 = (n1.get_x()+n1.get_width()/2,
+                  n1.get_y()+n1.get_height()/2)
+            X2 = (n2.get_x()+n2.get_width()/2,
+                  n2.get_y()+n2.get_height()/2)
+            
+            if modtype_flat[i] == 'inhibitor': # inhibition
+                color = self.modifierColor
+                arrowstyle = '-['
+                shrinkB = 10.
+                linestyle = '-'
+            elif modtype_flat[i] == 'activator': # activation
+                color = self.modifierColor
+                arrowstyle = '-|>'
+                linestyle = '-'
+            elif modtype_flat[i] == 'modifier': # Unknown modifier
+                color = self.modifierColor
+                arrowstyle = '-|>'
+                linestyle = ':'
+            e = FancyArrowPatch(X1,
+                                X2,
+                                patchA=n1,
+                                patchB=n2,
+                                shrinkB=shrinkB,
+                                arrowstyle=arrowstyle,
+                                connectionstyle='arc3,rad=%s'%rad,
+                                mutation_scale=10.0,
+                                lw=G[e][modtarget_flat[i]]['weight'],
+                                color=color,
+                                linestyle=linestyle)
+            seen[(e,modtarget_flat[i])]=rad
+            ax.add_patch(e)
+            ax.add_patch(n1)
+            
         # Add nodes at last to put it on top
         if self.drawReactionNode:
             allnodes = speciesId + rid
@@ -1341,7 +1613,21 @@ class NetworkEnsemble():
         plt.axis('off')
         plt.axis('equal')
         
-        plt.show()
-        
-        return allRxn, count
+        if show:
+            plt.show()
+            return allRxn, count
+        else:
+            plt.close()
+            return allRxn, count, fig
 
+
+    def savefig(self, path):
+        """
+        Save network diagram to specified location
+        
+        :param path: path to save the diagram
+        """
+        
+        allRxn, count, fig = self.drawWeightedDiagram()
+        fig.savefig(path)
+        
