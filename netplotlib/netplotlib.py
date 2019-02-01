@@ -280,6 +280,7 @@ class Network():
         rct = []
         prd = []
         mod = []
+        r_type = []
         mod_target = []
         kineticLaw = []
         mod_type = []
@@ -335,7 +336,13 @@ class Network():
                 else:
                     mod_type_temp.append('modifier')
             mod_type.append(mod_type_temp)
-        
+            
+            # In case all products are in rate law, assume it is a reversible reaction
+            if all(ext in str(n) for ext in prd[ml]):
+                r_type.append('reversible')
+            else:
+                r_type.append('irreversible')
+            
         for i in range(len(mod)):
             if len(mod[i]) > 0:
                 mod_target.append(np.repeat(rid[i], len(mod[i])).tolist())
@@ -542,8 +549,14 @@ class Network():
                             lpath1 = Path(stackXY1.T)
                             lpath2 = Path(stackXY2.T[3:n])
                             
+                            if r_type[i] == 'reversible':
+                                arrowstyle = '<|-'
+                                lpath1 = Path(stackXY1.T[-n:-3])
+                            else:
+                                arrowstyle = '-'
+                            
                             e1 = FancyArrowPatch(path=lpath1,
-                                                arrowstyle='-',
+                                                arrowstyle=arrowstyle,
                                                 mutation_scale=10.0,
                                                 lw=(1+self.edgelw),
                                                 color=self.reactionColor)
@@ -614,8 +627,14 @@ class Network():
                            
                             lpath = Path(stackXY.T[3:n])
                             
+                            if r_type[i] == 'reversible':
+                                arrowstyle = '<|-|>'
+                                lpath = Path(stackXY.T[-n:n])
+                            else:
+                                arrowstyle = '-|>'
+                            
                             e = FancyArrowPatch(path=lpath,
-                                                arrowstyle='-|>',
+                                                arrowstyle=arrowstyle,
                                                 mutation_scale=10.0,
                                                 lw=(1+self.edgelw),
                                                 color=self.reactionColor)
@@ -691,8 +710,14 @@ class Network():
                    
                     lpath = Path(stackXY.T[3:n])
                     
+                    if r_type[i] == 'reversible':
+                        arrowstyle = '<|-|>'
+                        lpath = Path(stackXY.T[-n:n])
+                    else:
+                        arrowstyle = '-|>'
+                    
                     e = FancyArrowPatch(path=lpath,
-                                        arrowstyle='-|>',
+                                        arrowstyle=arrowstyle,
                                         mutation_scale=10.0,
                                         lw=(1+self.edgelw),
                                         color=self.reactionColor)
