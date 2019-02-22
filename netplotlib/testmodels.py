@@ -9,11 +9,20 @@ for i in testfiles:
     content.append(sbmlstr.read())
     sbmlstr.close()
 
-list_models = [s for s in testfiles if "test_list1" in s]
+list_models1 = [s for s in testfiles if "test_list1" in s]
+list_models2 = [s for s in testfiles if "test_list2" in s]
+
 _LIST1 = []
-for i in range(len(list_models)):
-    sbmlstr = open(os.path.join(dir_path, list_models[i]), 'r')
+_LIST2 = []
+
+for i in range(len(list_models1)):
+    sbmlstr = open(os.path.join(dir_path, list_models1[i]), 'r')
     _LIST1.append(sbmlstr.read())
+    sbmlstr.close()
+    
+for i in range(len(list_models2)):
+    sbmlstr = open(os.path.join(dir_path, list_models2[i]), 'r')
+    _LIST2.append(sbmlstr.read())
     sbmlstr.close()
 
 class testmodels():
@@ -43,6 +52,7 @@ class testmodels():
     UNDEF = content[testfiles.index('test_undefBoundary.xml')]
     UNIBI = content[testfiles.index('test_unibi.xml')]
     LIST1 = _LIST1
+    LIST2 = _LIST2
     
         
         
