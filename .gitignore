@@ -1,3 +1,5 @@
-
+build
+netplotlib.egg-info/
+__pycache__
 doc/_build
 dist/
