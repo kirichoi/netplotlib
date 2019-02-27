@@ -1097,6 +1097,7 @@ class NetworkEnsemble():
         mod = []
         mod_target = []
         mod_type = []
+        allBoundary = []
         rid_ind = 0
         
         if len(self.weights) > 0:
@@ -1110,6 +1111,8 @@ class NetworkEnsemble():
             boundaryId = r.getBoundarySpeciesIds()
             floatingId = r.getFloatingSpeciesIds()
             rid_temp = r.getReactionIds()
+            
+            allBoundary.append(boundaryId)
             
             # prepare symbols for sympy
             boundaryId_sympy = [] 
@@ -1212,24 +1215,6 @@ class NetworkEnsemble():
             speciesId = [item for sublist in speciesId for item in sublist]
             speciesId = list(set(speciesId))
             
-            if self.breakBoundary:
-                boundaryId_temp = []
-                bc = 0
-                for i in range(len(rid_temp)):
-                    for j in range(len(rct[i])):
-                        if rct[i][j] in boundaryId + ['Input', 'Output']:
-                            rct[i][j] = rct[i][j] + '_' + str(bc)
-                            speciesId.append(rct[i][j])
-                            boundaryId_temp.append(rct[i][j])
-                            bc += 1
-                    for k in range(len(prd[i])):
-                        if prd[i][k] in boundaryId + ['Input', 'Output']:
-                            prd[i][k] = prd[i][k] + '_' + str(bc)
-                            speciesId.append(prd[i][k])
-                            boundaryId_temp.append(prd[i][k])
-                            bc += 1
-                boundaryId = boundaryId_temp
-            
             for t in range(sbmlmodel.getNumReactions()):
                 if [rct[t], prd[t]] not in allRxn:
                     allRxn.append([rct[t], prd[t]])
@@ -1263,6 +1248,27 @@ class NetworkEnsemble():
                         count.append(1)
                         
             mod_type.append(modtype_flat)
+        
+        # Break boundary
+        allBoundary = np.unique(allBoundary).tolist()
+        if self.breakBoundary:
+            boundaryId_temp = []
+            bc = 0
+            for i in range(len(allRxn)):
+                for j in range(len(allRxn[i][0])):
+                    if allRxn[i][0][j] in allBoundary + ['Input', 'Output']:
+                        allRxn[i][0][j] = allRxn[i][0][j] + '_' + str(bc)
+                        speciesId.append(allRxn[i][0][j])
+                        boundaryId_temp.append(allRxn[i][0][j])
+                        bc += 1
+                for k in range(len(allRxn[i][1])):
+                    if allRxn[i][1][k] in allBoundary + ['Input', 'Output']:
+                        allRxn[i][1][k] = allRxn[i][1][k] + '_' + str(bc)
+                        speciesId.append(allRxn[i][1][k])
+                        boundaryId_temp.append(allRxn[i][1][k])
+                        bc += 1
+            allBoundary = boundaryId_temp
+        
         
         count = np.divide(count, len(self.rrInstances))
         # initialize directional graph
@@ -1334,8 +1340,7 @@ class NetworkEnsemble():
                         G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])], weight=(count[i]*self.edgelw))
             
             pos = nx.spring_layout(G, pos=pos, fixed=sid_used+rid_used, scale=self.scale, seed=1)
-            
-            
+        
         # check the range of x and y positions
         max_width = []
         max_height = []
@@ -1389,7 +1394,7 @@ class NetworkEnsemble():
                     rec_width = max(0.045*(len(n)+1), 0.13)*(self.fontsize/20)
                     rec_height = 0.11*(self.fontsize/20)
                     
-                if (n in boundaryId) or (n == 'Input') or (n == 'Output'):
+                if (n in allBoundary) or (n == 'Input') or (n == 'Output'):
                     node_color = self.boundaryColor
                 else:
                     node_color = self.nodeColor
