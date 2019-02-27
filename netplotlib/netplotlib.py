@@ -1141,7 +1141,8 @@ class NetworkEnsemble():
             rct = []
             prd = []
             mod_m = []
-            mod_target_m = []
+            mod_target_rct = []
+            mod_target_prd = []
             kineticLaw = []
             mod_type_m = []
             
@@ -1199,11 +1200,13 @@ class NetworkEnsemble():
             
             for i in range(len(mod_m)):
                 if len(mod_m[i]) > 0:
-                    mod_target_m.append(np.repeat(rid_temp[i], len(mod_m[i])).tolist())
+                    mod_target_rct.append(np.repeat([rct[i]], len(mod_m[i])).tolist())
+                    mod_target_prd.append(np.repeat([prd[i]], len(mod_m[i])).tolist())
                 
             mod_flat = [item for sublist in mod_m for item in sublist]
             modtype_flat = [item for sublist in mod_type_m for item in sublist]
-            modtarget_flat = [item for sublist in mod_target_m for item in sublist]
+            modtarget_flat_rct = [item for sublist in mod_target_rct for item in sublist]
+            modtarget_flat_prd = [item for sublist in mod_target_prd for item in sublist]
             
             speciesId = list(rct + prd)
             speciesId = [item for sublist in speciesId for item in sublist]
@@ -1243,20 +1246,24 @@ class NetworkEnsemble():
                         count[allRxn.index([rct[t], prd[t]])] += 1
             
             for m in range(len(mod_flat)):
-                if [mod_flat[m], modtarget_flat[m]] not in allRxn:
-                    allRxn.append([[mod_flat[m]], [modtarget_flat[m]]])
+                if [[modtarget_flat_rct[m]], [modtarget_flat_prd[m]]] not in allRxn:
+                    allRxn.append([[modtarget_flat_rct[m]], [modtarget_flat_prd[m]]])
+                mod_ridx = allRxn.index([[modtarget_flat_rct[m]], [modtarget_flat_prd[m]]])
+                
+                if [[mod_flat[m]], ['J'+str(mod_ridx)]] in allRxn:
                     if len(self.weights) > 0:
-                            count.append(1*self.weights[rind])
+                        count[allRxn.index([[mod_flat[m]], ['J'+str(mod_ridx)]])] += 1*self.weights[rind]
+                    else:
+                        count[allRxn.index([[mod_flat[m]], ['J'+str(mod_ridx)]])] += 1
+                else:
+                    allRxn.append([[mod_flat[m]], ['J'+str(mod_ridx)]])
+                    if len(self.weights) > 0:
+                        count.append(1*self.weights[rind])
                     else:
                         count.append(1)
-                else:
-                    if len(self.weights) > 0:
-                        count[allRxn.index([mod_flat[m], modtarget_flat[m]])] += 1*self.weights[rind]
-                    else:
-                        count[allRxn.index([mod_flat[m], modtarget_flat[m]])] += 1
-            
+                        
             mod_type.append(modtype_flat)
-                
+        
         count = np.divide(count, len(self.rrInstances))
         # initialize directional graph
         G = nx.DiGraph()
@@ -1604,7 +1611,6 @@ class NetworkEnsemble():
                 rid_idx += 1
             else:
                 # Modifiers
-                print(allRxn[i][1][0])
                 if count[i] > self.plottingThreshold or not self.removeBelowThreshold:
                     seen={}
                     for m, e in enumerate(allRxn[i][0]):
