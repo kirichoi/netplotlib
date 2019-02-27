@@ -1657,9 +1657,23 @@ class NetworkEnsemble():
                                             lw=G[e][allRxn[i][1][0]]['weight'],
                                             color=color,
                                             linestyle=linestyle)
+                        
                         seen[(e,allRxn[i][1][0])]=rad
                         ax.add_patch(e)
                         ax.add_patch(n1)
+                    # Edge labels
+                    if self.edgeLabel:
+                        mod_path = e.get_path().vertices
+                        c = FancyBboxPatch((mod_path[int(len(mod_path)/5)][0]-0.0325, mod_path[int(len(mod_path)/5)][1]+0.005),
+                                           0.125, 
+                                           0.05,
+                                           boxstyle="round,pad=0.01, rounding_size=0.01",
+                                           color='w')
+                        ax.add_patch(c)
+                        plt.text(mod_path[int(len(mod_path)/5)][0]+0.03, mod_path[int(len(mod_path)/5)][1]+0.03, round(count[i], 3), 
+                             fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
+                             verticalalignment='center', color='r')
+                    
                 mod_idx += 1
             
         # Add nodes at last to put it on top
