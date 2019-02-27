@@ -1252,6 +1252,13 @@ class NetworkEnsemble():
         # Break boundary
         allBoundary = np.unique(allBoundary).tolist()
         if self.breakBoundary:
+            speciesId_temp = []
+            for i in range(len(speciesId)):
+                if speciesId[i] not in allBoundary:
+                    speciesId_temp.append(speciesId[i])
+                
+            speciesId = speciesId_temp
+            
             boundaryId_temp = []
             bc = 0
             for i in range(len(allRxn)):
@@ -1268,8 +1275,7 @@ class NetworkEnsemble():
                         boundaryId_temp.append(allRxn[i][1][k])
                         bc += 1
             allBoundary = boundaryId_temp
-        
-        
+            
         count = np.divide(count, len(self.rrInstances))
         # initialize directional graph
         G = nx.DiGraph()
@@ -1300,7 +1306,7 @@ class NetworkEnsemble():
                     sid_used.append(allRxn[i][1][0])
         
         sid_used = np.unique(sid_used).tolist()
-
+        
         # calcutate positions
         thres = 0.3
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
