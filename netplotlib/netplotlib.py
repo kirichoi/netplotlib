@@ -880,6 +880,7 @@ class NetworkEnsemble():
         self.weights = []
         self.edgeTransparency = False
         self.plottingThreshold = 0.
+        self.removeBelowThreshold = True
         
     
     def getLayout(self):
@@ -1291,7 +1292,7 @@ class NetworkEnsemble():
         thres = 0.3
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-        
+
         maxIter = 5
         maxIter_n = 0
         
@@ -1306,6 +1307,27 @@ class NetworkEnsemble():
                     shortest_dist[i[0]][i[1]] = 4
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
+            
+        if not self.removeBelowThreshold:
+            rid_idx = 0
+            sid_used = speciesId
+            rid_used = rid
+            for i in range(len(allRxn)):
+                if allRxn[i][1][0] not in rid:
+                    if count[i] <= self.plottingThreshold:
+                        for k in range(len(allRxn[i][0])):
+                            G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])], weight=(count[i]*self.edgelw))
+                            
+                        for j in range(len(allRxn[i][1])):
+                            G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+                        
+                    rid_idx += 1
+                else:
+                    if count[i] <= self.plottingThreshold:
+                        G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])], weight=(count[i]*self.edgelw))
+            
+            pos = nx.spring_layout(G, pos=pos, fixed=sid_used+rid_used, scale=self.scale, seed=1)
+            
             
         # check the range of x and y positions
         max_width = []
@@ -1399,7 +1421,7 @@ class NetworkEnsemble():
         
         for i in range(len(allRxn)):
             if allRxn[i][1][0] not in rid:
-                if count[i] > self.plottingThreshold:
+                if count[i] > self.plottingThreshold or not self.removeBelowThreshold:
                     if (len(allRxn[i][0]) == 1) or (len(allRxn[i][1]) == 1): # UNI-involved
                         comb = list(itertools.combinations_with_replacement(allRxn[i][0],len(allRxn[i][1])))
                         for j in [list(zip(x,allRxn[i][1])) for x in comb]:
@@ -1582,7 +1604,8 @@ class NetworkEnsemble():
                 rid_idx += 1
             else:
                 # Modifiers
-                if count[i] > self.plottingThreshold:
+                print(allRxn[i][1][0])
+                if count[i] > self.plottingThreshold or not self.removeBelowThreshold:
                     seen={}
                     for m, e in enumerate(allRxn[i][0]):
                         n1 = G.node[e]['patch']
