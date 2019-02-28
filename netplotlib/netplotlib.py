@@ -381,7 +381,8 @@ class Network():
                 self.rrInstance.steadyState()
                 reaction_rate = self.rrInstance.getReactionRates()
             except:
-                reaction_rate = np.repeat(1, self.rrInstance.getNumReactions())
+                print("Could not analyze the network - no steadyState found")
+                reaction_rate = np.repeat(0, self.rrInstance.getNumReactions())
         
         # initialize directional graph
         G = nx.DiGraph()
@@ -566,8 +567,11 @@ class Network():
                                     if reaction_rate[i] > 0:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (4+self.edgelw)
-                                    else:
+                                    elif reaction_rate[i] < 0:
                                         lw1 = (4+self.edgelw)
+                                        lw2 = (1+self.edgelw)
+                                    else:
+                                        lw1 = (1+self.edgelw)
                                         lw2 = (1+self.edgelw)
                             else:
                                 arrowstyle='-'
@@ -648,8 +652,11 @@ class Network():
                                     if reaction_rate[i] > 0:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (4+self.edgelw)
-                                    else:
+                                    elif reaction_rate[i] < 0:
                                         lw1 = (4+self.edgelw)
+                                        lw2 = (1+self.edgelw)
+                                    else:
+                                        lw1 = (1+self.edgelw)
                                         lw2 = (1+self.edgelw)
                                     e1 = FancyArrowPatch(path=Path(stackXY.T[-n:50]),
                                                         arrowstyle='<|-',
@@ -756,8 +763,11 @@ class Network():
                             if reaction_rate[i] > 0:
                                 lw1 = (1+self.edgelw)
                                 lw2 = (4+self.edgelw)
-                            else:
+                            elif reaction_rate[i] < 0:
                                 lw1 = (4+self.edgelw)
+                                lw2 = (1+self.edgelw)
+                            else:
+                                lw1 = (1+self.edgelw)
                                 lw2 = (1+self.edgelw)
                             e1 = FancyArrowPatch(path=Path(stackXY.T[-n:50]),
                                                 arrowstyle='<|-',
