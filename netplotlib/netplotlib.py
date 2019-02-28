@@ -343,7 +343,7 @@ class Network():
                 r_type.append('reversible')
             else:
                 r_type.append('irreversible')
-            
+        
         for i in range(len(mod)):
             if len(mod[i]) > 0:
                 mod_target.append(np.repeat(rid[i], len(mod[i])).tolist())
@@ -374,6 +374,15 @@ class Network():
                         bc += 1
             boundaryId = boundaryId_temp
                 
+        
+        # Analyze the reaction rates
+        if self.analyzeParamters:
+            try:
+                self.rrInstance.steadyState()
+                reaction_rate = self.rrInstance.getReactionRates()
+            except:
+                reaction_rate = np.repeat(1, self.rrInstance.getNumReactions())
+        
         # initialize directional graph
         G = nx.DiGraph()
     
@@ -544,28 +553,37 @@ class Network():
                                     (stackXY2.T[n][1] < (X3top[1]+arrthres_v))) and
                                     (np.abs(n) < np.shape(stackXY2)[1] - 10)):
                                 n -= 1
-                           
+                            
                             lpath1 = Path(stackXY1.T)
                             lpath2 = Path(stackXY2.T[3:n])
+                            lw1 = (1+self.edgelw)
+                            lw2 = (1+self.edgelw)
                             
                             if r_type[i] == 'reversible':
-                                arrowstyle = '<|-'
                                 lpath1 = Path(stackXY1.T[-n:-3])
+                                arrowstyle='<|-'
+                                if self.analyzeParamters:
+                                    if reaction_rate[i] > 0:
+                                        lw1 = (1+self.edgelw)
+                                        lw2 = (4+self.edgelw)
+                                    else:
+                                        lw1 = (4+self.edgelw)
+                                        lw2 = (1+self.edgelw)
                             else:
-                                arrowstyle = '-'
-                            
+                                arrowstyle='-'
+                                
                             e1 = FancyArrowPatch(path=lpath1,
                                                 arrowstyle=arrowstyle,
                                                 mutation_scale=10.0,
-                                                lw=(1+self.edgelw),
+                                                lw=lw1,
                                                 color=self.reactionColor)
                             
                             e2 = FancyArrowPatch(path=lpath2,
                                                 arrowstyle='-|>',
                                                 mutation_scale=10.0,
-                                                lw=(1+self.edgelw),
+                                                lw=lw2,
                                                 color=self.reactionColor)
-                            
+                                
                             ax.add_patch(e1)
                             ax.add_patch(e2)
                             
@@ -624,20 +642,45 @@ class Network():
                                         (np.abs(n) < np.shape(stackXY)[1] - 10)):
                                 n -= 1
                            
-                            lpath = Path(stackXY.T[3:n])
-                            
                             if r_type[i] == 'reversible':
-                                arrowstyle = '<|-|>'
                                 lpath = Path(stackXY.T[-n:n])
+                                if self.analyzeParamters:
+                                    if reaction_rate[i] > 0:
+                                        lw1 = (1+self.edgelw)
+                                        lw2 = (4+self.edgelw)
+                                    else:
+                                        lw1 = (4+self.edgelw)
+                                        lw2 = (1+self.edgelw)
+                                    e1 = FancyArrowPatch(path=Path(stackXY.T[-n:50]),
+                                                        arrowstyle='<|-',
+                                                        mutation_scale=10.0,
+                                                        lw=lw1,
+                                                        color=self.reactionColor)
+                                    e2 = FancyArrowPatch(path=Path(stackXY.T[50:n]),
+                                                        arrowstyle='-|>',
+                                                        mutation_scale=10.0,
+                                                        lw=lw2,
+                                                        color=self.reactionColor)
+                                    ax.add_patch(e1)
+                                    ax.add_patch(e2)
+                                else:
+                                    arrowstyle = '<|-|>'
+                                    e = FancyArrowPatch(path=lpath,
+                                                    arrowstyle=arrowstyle,
+                                                    mutation_scale=10.0,
+                                                    lw=(1+self.edgelw),
+                                                    color=self.reactionColor)
+                                    ax.add_patch(e)
+                                
                             else:
+                                lpath = Path(stackXY.T[3:n])
                                 arrowstyle = '-|>'
-                            
-                            e = FancyArrowPatch(path=lpath,
-                                                arrowstyle=arrowstyle,
-                                                mutation_scale=10.0,
-                                                lw=(1+self.edgelw),
-                                                color=self.reactionColor)
-                            ax.add_patch(e)
+                                e = FancyArrowPatch(path=lpath,
+                                                    arrowstyle=arrowstyle,
+                                                    mutation_scale=10.0,
+                                                    lw=(1+self.edgelw),
+                                                    color=self.reactionColor)
+                                ax.add_patch(e)
                         
                             if j[k][0] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][0])][i]) > 1):
@@ -706,21 +749,46 @@ class Network():
                             (stackXY.T[n][1] < (X3top[1]+arrthres_v))) and
                             (np.abs(n) < np.shape(stackXY)[1] - 10)):
                         n -= 1
-                   
-                    lpath = Path(stackXY.T[3:n])
                     
                     if r_type[i] == 'reversible':
-                        arrowstyle = '<|-|>'
                         lpath = Path(stackXY.T[-n:n])
+                        if self.analyzeParamters:
+                            if reaction_rate[i] > 0:
+                                lw1 = (1+self.edgelw)
+                                lw2 = (4+self.edgelw)
+                            else:
+                                lw1 = (4+self.edgelw)
+                                lw2 = (1+self.edgelw)
+                            e1 = FancyArrowPatch(path=Path(stackXY.T[-n:50]),
+                                                arrowstyle='<|-',
+                                                mutation_scale=10.0,
+                                                lw=lw1,
+                                                color=self.reactionColor)
+                            e2 = FancyArrowPatch(path=Path(stackXY.T[50:n]),
+                                                arrowstyle='-|>',
+                                                mutation_scale=10.0,
+                                                lw=lw2,
+                                                color=self.reactionColor)
+                            ax.add_patch(e1)
+                            ax.add_patch(e2)
+                        else:
+                            arrowstyle = '<|-|>'
+                            e = FancyArrowPatch(path=lpath,
+                                            arrowstyle=arrowstyle,
+                                            mutation_scale=10.0,
+                                            lw=(1+self.edgelw),
+                                            color=self.reactionColor)
+                            ax.add_patch(e)
+                        
                     else:
+                        lpath = Path(stackXY.T[3:n])
                         arrowstyle = '-|>'
-                    
-                    e = FancyArrowPatch(path=lpath,
-                                        arrowstyle=arrowstyle,
-                                        mutation_scale=10.0,
-                                        lw=(1+self.edgelw),
-                                        color=self.reactionColor)
-                    ax.add_patch(e)
+                        e = FancyArrowPatch(path=lpath,
+                                            arrowstyle=arrowstyle,
+                                            mutation_scale=10.0,
+                                            lw=(1+self.edgelw),
+                                            color=self.reactionColor)
+                        ax.add_patch(e)
                     
                     if j[0] in floatingId:
                         if (np.abs(stoch[stoch_row.index(j[0])][i]) > 1):
