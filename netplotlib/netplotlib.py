@@ -5,7 +5,7 @@ from __future__ import absolute_import
 import os
 import tellurium as te
 import networkx as nx
-from matplotlib.patches import FancyArrowPatch, Circle, FancyBboxPatch
+from matplotlib.patches import FancyArrowPatch, Circle, FancyBboxPatch, ArrowStyle
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,6 +72,7 @@ class Network():
         self.hlNodeEdgeColor = 'tab:pink'
         self.drawReactionNode = True
         self.breakBoundary = False
+        self.analyzeParamters = False
 
 
     def getLayout(self):
@@ -342,7 +343,7 @@ class Network():
                 r_type.append('reversible')
             else:
                 r_type.append('irreversible')
-            
+        
         for i in range(len(mod)):
             if len(mod[i]) > 0:
                 mod_target.append(np.repeat(rid[i], len(mod[i])).tolist())
@@ -373,6 +374,16 @@ class Network():
                         bc += 1
             boundaryId = boundaryId_temp
                 
+        
+        # Analyze the reaction rates
+        if self.analyzeParamters:
+            try:
+                self.rrInstance.steadyState()
+                reaction_rate = self.rrInstance.getReactionRates()
+            except:
+                print("Could not analyze the network - no steadyState found")
+                reaction_rate = np.repeat(0, self.rrInstance.getNumReactions())
+        
         # initialize directional graph
         G = nx.DiGraph()
     
@@ -543,28 +554,40 @@ class Network():
                                     (stackXY2.T[n][1] < (X3top[1]+arrthres_v))) and
                                     (np.abs(n) < np.shape(stackXY2)[1] - 10)):
                                 n -= 1
-                           
+                            
                             lpath1 = Path(stackXY1.T)
                             lpath2 = Path(stackXY2.T[3:n])
+                            lw1 = (1+self.edgelw)
+                            lw2 = (1+self.edgelw)
                             
                             if r_type[i] == 'reversible':
-                                arrowstyle = '<|-'
                                 lpath1 = Path(stackXY1.T[-n:-3])
+                                arrowstyle='<|-'
+                                if self.analyzeParamters:
+                                    if reaction_rate[i] > 0:
+                                        lw1 = (1+self.edgelw)
+                                        lw2 = (4+self.edgelw)
+                                    elif reaction_rate[i] < 0:
+                                        lw1 = (4+self.edgelw)
+                                        lw2 = (1+self.edgelw)
+                                    else:
+                                        lw1 = (1+self.edgelw)
+                                        lw2 = (1+self.edgelw)
                             else:
-                                arrowstyle = '-'
-                            
+                                arrowstyle='-'
+                                
                             e1 = FancyArrowPatch(path=lpath1,
                                                 arrowstyle=arrowstyle,
                                                 mutation_scale=10.0,
-                                                lw=(1+self.edgelw),
+                                                lw=lw1,
                                                 color=self.reactionColor)
                             
                             e2 = FancyArrowPatch(path=lpath2,
                                                 arrowstyle='-|>',
                                                 mutation_scale=10.0,
-                                                lw=(1+self.edgelw),
+                                                lw=lw2,
                                                 color=self.reactionColor)
-                            
+                                
                             ax.add_patch(e1)
                             ax.add_patch(e2)
                             
@@ -623,20 +646,48 @@ class Network():
                                         (np.abs(n) < np.shape(stackXY)[1] - 10)):
                                 n -= 1
                            
-                            lpath = Path(stackXY.T[3:n])
-                            
                             if r_type[i] == 'reversible':
-                                arrowstyle = '<|-|>'
                                 lpath = Path(stackXY.T[-n:n])
+                                if self.analyzeParamters:
+                                    if reaction_rate[i] > 0:
+                                        lw1 = (1+self.edgelw)
+                                        lw2 = (4+self.edgelw)
+                                    elif reaction_rate[i] < 0:
+                                        lw1 = (4+self.edgelw)
+                                        lw2 = (1+self.edgelw)
+                                    else:
+                                        lw1 = (1+self.edgelw)
+                                        lw2 = (1+self.edgelw)
+                                    e1 = FancyArrowPatch(path=Path(stackXY.T[-n:50]),
+                                                        arrowstyle='<|-',
+                                                        mutation_scale=10.0,
+                                                        lw=lw1,
+                                                        color=self.reactionColor)
+                                    e2 = FancyArrowPatch(path=Path(stackXY.T[50:n]),
+                                                        arrowstyle='-|>',
+                                                        mutation_scale=10.0,
+                                                        lw=lw2,
+                                                        color=self.reactionColor)
+                                    ax.add_patch(e1)
+                                    ax.add_patch(e2)
+                                else:
+                                    arrowstyle = '<|-|>'
+                                    e = FancyArrowPatch(path=lpath,
+                                                    arrowstyle=arrowstyle,
+                                                    mutation_scale=10.0,
+                                                    lw=(1+self.edgelw),
+                                                    color=self.reactionColor)
+                                    ax.add_patch(e)
+                                
                             else:
+                                lpath = Path(stackXY.T[3:n])
                                 arrowstyle = '-|>'
-                            
-                            e = FancyArrowPatch(path=lpath,
-                                                arrowstyle=arrowstyle,
-                                                mutation_scale=10.0,
-                                                lw=(1+self.edgelw),
-                                                color=self.reactionColor)
-                            ax.add_patch(e)
+                                e = FancyArrowPatch(path=lpath,
+                                                    arrowstyle=arrowstyle,
+                                                    mutation_scale=10.0,
+                                                    lw=(1+self.edgelw),
+                                                    color=self.reactionColor)
+                                ax.add_patch(e)
                         
                             if j[k][0] in floatingId:
                                 if (np.abs(stoch[stoch_row.index(j[k][0])][i]) > 1):
@@ -705,21 +756,49 @@ class Network():
                             (stackXY.T[n][1] < (X3top[1]+arrthres_v))) and
                             (np.abs(n) < np.shape(stackXY)[1] - 10)):
                         n -= 1
-                   
-                    lpath = Path(stackXY.T[3:n])
                     
                     if r_type[i] == 'reversible':
-                        arrowstyle = '<|-|>'
                         lpath = Path(stackXY.T[-n:n])
+                        if self.analyzeParamters:
+                            if reaction_rate[i] > 0:
+                                lw1 = (1+self.edgelw)
+                                lw2 = (4+self.edgelw)
+                            elif reaction_rate[i] < 0:
+                                lw1 = (4+self.edgelw)
+                                lw2 = (1+self.edgelw)
+                            else:
+                                lw1 = (1+self.edgelw)
+                                lw2 = (1+self.edgelw)
+                            e1 = FancyArrowPatch(path=Path(stackXY.T[-n:50]),
+                                                arrowstyle='<|-',
+                                                mutation_scale=10.0,
+                                                lw=lw1,
+                                                color=self.reactionColor)
+                            e2 = FancyArrowPatch(path=Path(stackXY.T[50:n]),
+                                                arrowstyle='-|>',
+                                                mutation_scale=10.0,
+                                                lw=lw2,
+                                                color=self.reactionColor)
+                            ax.add_patch(e1)
+                            ax.add_patch(e2)
+                        else:
+                            arrowstyle = '<|-|>'
+                            e = FancyArrowPatch(path=lpath,
+                                            arrowstyle=arrowstyle,
+                                            mutation_scale=10.0,
+                                            lw=(1+self.edgelw),
+                                            color=self.reactionColor)
+                            ax.add_patch(e)
+                        
                     else:
+                        lpath = Path(stackXY.T[3:n])
                         arrowstyle = '-|>'
-                    
-                    e = FancyArrowPatch(path=lpath,
-                                        arrowstyle=arrowstyle,
-                                        mutation_scale=10.0,
-                                        lw=(1+self.edgelw),
-                                        color=self.reactionColor)
-                    ax.add_patch(e)
+                        e = FancyArrowPatch(path=lpath,
+                                            arrowstyle=arrowstyle,
+                                            mutation_scale=10.0,
+                                            lw=(1+self.edgelw),
+                                            color=self.reactionColor)
+                        ax.add_patch(e)
                     
                     if j[0] in floatingId:
                         if (np.abs(stoch[stoch_row.index(j[0])][i]) > 1):
@@ -767,7 +846,7 @@ class Network():
             
             if modtype_flat[i] == 'inhibitor': # inhibition
                 color = self.modifierColor
-                arrowstyle = '-['
+                arrowstyle = ArrowStyle.BarAB(widthA=0.0, angleA=None, widthB=1.0, angleB=None)
                 shrinkB = 10.
                 linestyle = '-'
             elif modtype_flat[i] == 'activator': # activation
@@ -879,6 +958,8 @@ class NetworkEnsemble():
         self.breakBoundary = False
         self.weights = []
         self.edgeTransparency = False
+        self.plottingThreshold = 0.
+        self.removeBelowThreshold = True
         
     
     def getLayout(self):
@@ -1095,6 +1176,7 @@ class NetworkEnsemble():
         mod = []
         mod_target = []
         mod_type = []
+        allBoundary = []
         rid_ind = 0
         
         if len(self.weights) > 0:
@@ -1108,6 +1190,8 @@ class NetworkEnsemble():
             boundaryId = r.getBoundarySpeciesIds()
             floatingId = r.getFloatingSpeciesIds()
             rid_temp = r.getReactionIds()
+            
+            allBoundary.append(boundaryId)
             
             # prepare symbols for sympy
             boundaryId_sympy = [] 
@@ -1139,7 +1223,8 @@ class NetworkEnsemble():
             rct = []
             prd = []
             mod_m = []
-            mod_target_m = []
+            mod_target_rct = []
+            mod_target_prd = []
             kineticLaw = []
             mod_type_m = []
             
@@ -1197,33 +1282,17 @@ class NetworkEnsemble():
             
             for i in range(len(mod_m)):
                 if len(mod_m[i]) > 0:
-                    mod_target_m.append(np.repeat(rid_temp[i], len(mod_m[i])).tolist())
+                    mod_target_rct.append(np.repeat([rct[i]], len(mod_m[i])).tolist())
+                    mod_target_prd.append(np.repeat([prd[i]], len(mod_m[i])).tolist())
                 
             mod_flat = [item for sublist in mod_m for item in sublist]
             modtype_flat = [item for sublist in mod_type_m for item in sublist]
-            modtarget_flat = [item for sublist in mod_target_m for item in sublist]
+            modtarget_flat_rct = [item for sublist in mod_target_rct for item in sublist]
+            modtarget_flat_prd = [item for sublist in mod_target_prd for item in sublist]
             
             speciesId = list(rct + prd)
             speciesId = [item for sublist in speciesId for item in sublist]
             speciesId = list(set(speciesId))
-            
-            if self.breakBoundary:
-                boundaryId_temp = []
-                bc = 0
-                for i in range(len(rid_temp)):
-                    for j in range(len(rct[i])):
-                        if rct[i][j] in boundaryId + ['Input', 'Output']:
-                            rct[i][j] = rct[i][j] + '_' + str(bc)
-                            speciesId.append(rct[i][j])
-                            boundaryId_temp.append(rct[i][j])
-                            bc += 1
-                    for k in range(len(prd[i])):
-                        if prd[i][k] in boundaryId + ['Input', 'Output']:
-                            prd[i][k] = prd[i][k] + '_' + str(bc)
-                            speciesId.append(prd[i][k])
-                            boundaryId_temp.append(prd[i][k])
-                            bc += 1
-                boundaryId = boundaryId_temp
             
             for t in range(sbmlmodel.getNumReactions()):
                 if [rct[t], prd[t]] not in allRxn:
@@ -1233,37 +1302,95 @@ class NetworkEnsemble():
                     else:
                         count.append(1)
                     rid.append("J" + str(rid_ind))
-                    mod.append(mod_flat)
-                    mod_type.append(modtype_flat)
-                    mod_target.append(modtarget_flat)
                     rid_ind += 1
                 else:
                     if len(self.weights) > 0:
                         count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
                     else:
                         count[allRxn.index([rct[t], prd[t]])] += 1
-                    
+            
+            for m in range(len(mod_flat)):
+                if [[modtarget_flat_rct[m]], [modtarget_flat_prd[m]]] not in allRxn:
+                    allRxn.append([[modtarget_flat_rct[m]], [modtarget_flat_prd[m]]])
+                mod_ridx = allRxn.index([[modtarget_flat_rct[m]], [modtarget_flat_prd[m]]])
+                
+                if [[mod_flat[m]], ['J'+str(mod_ridx)]] in allRxn:
+                    if len(self.weights) > 0:
+                        count[allRxn.index([[mod_flat[m]], ['J'+str(mod_ridx)]])] += 1*self.weights[rind]
+                    else:
+                        count[allRxn.index([[mod_flat[m]], ['J'+str(mod_ridx)]])] += 1
+                else:
+                    allRxn.append([[mod_flat[m]], ['J'+str(mod_ridx)]])
+                    if len(self.weights) > 0:
+                        count.append(1*self.weights[rind])
+                    else:
+                        count.append(1)
+                        
+            mod_type.append(modtype_flat)
+        
+        # Break boundary
+        allBoundary = np.unique(allBoundary).tolist()
+        if self.breakBoundary:
+            speciesId_temp = []
+            for i in range(len(speciesId)):
+                if speciesId[i] not in allBoundary:
+                    speciesId_temp.append(speciesId[i])
+                
+            speciesId = speciesId_temp
+            
+            boundaryId_temp = []
+            bc = 0
+            for i in range(len(allRxn)):
+                for j in range(len(allRxn[i][0])):
+                    if allRxn[i][0][j] in allBoundary + ['Input', 'Output']:
+                        allRxn[i][0][j] = allRxn[i][0][j] + '_' + str(bc)
+                        speciesId.append(allRxn[i][0][j])
+                        boundaryId_temp.append(allRxn[i][0][j])
+                        bc += 1
+                for k in range(len(allRxn[i][1])):
+                    if allRxn[i][1][k] in allBoundary + ['Input', 'Output']:
+                        allRxn[i][1][k] = allRxn[i][1][k] + '_' + str(bc)
+                        speciesId.append(allRxn[i][1][k])
+                        boundaryId_temp.append(allRxn[i][1][k])
+                        bc += 1
+            allBoundary = boundaryId_temp
+            
         count = np.divide(count, len(self.rrInstances))
-    
         # initialize directional graph
         G = nx.DiGraph()
     
         # add edges
+        sid_used = []
+        rid_used = []
+        rid_idx = 0
+        
         for i in range(len(allRxn)):
-            for k in range(len(allRxn[i][0])):
-                G.add_edges_from([(allRxn[i][0][k], rid[i])], weight=(count[i]*self.edgelw))
-                
-            for j in range(len(allRxn[i][1])):
-                G.add_edges_from([(rid[i], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+            if allRxn[i][1][0] not in rid:
+                if count[i] > self.plottingThreshold:
+                    for k in range(len(allRxn[i][0])):
+                        G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])], weight=(count[i]*self.edgelw))
                         
-            if len(mod[i]) > 0:
-                G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
-    
+                    for j in range(len(allRxn[i][1])):
+                        G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+                    
+                    sid_used.append(allRxn[i][0][k])
+                    sid_used.append(allRxn[i][1][j])
+                    rid_used.append(rid[rid_idx])
+                    
+                rid_idx += 1
+            else:
+                if count[i] > self.plottingThreshold:
+                    G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])], weight=(count[i]*self.edgelw))
+                    sid_used.append(allRxn[i][0][0])
+                    sid_used.append(allRxn[i][1][0])
+        
+        sid_used = np.unique(sid_used).tolist()
+        
         # calcutate positions
         thres = 0.3
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-        
+
         maxIter = 5
         maxIter_n = 0
         
@@ -1271,7 +1398,7 @@ class NetworkEnsemble():
         
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
-            for i in itertools.combinations(speciesId + rid, 2):
+            for i in itertools.combinations(pos.keys(), 2):
                 pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
                 if pos_dist < thres:
                     dist_flag = True
@@ -1279,6 +1406,26 @@ class NetworkEnsemble():
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
             
+        if not self.removeBelowThreshold:
+            rid_idx = 0
+            sid_used = speciesId
+            rid_used = rid
+            for i in range(len(allRxn)):
+                if allRxn[i][1][0] not in rid:
+                    if count[i] <= self.plottingThreshold:
+                        for k in range(len(allRxn[i][0])):
+                            G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])], weight=(count[i]*self.edgelw))
+                            
+                        for j in range(len(allRxn[i][1])):
+                            G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+                        
+                    rid_idx += 1
+                else:
+                    if count[i] <= self.plottingThreshold:
+                        G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])], weight=(count[i]*self.edgelw))
+            
+            pos = nx.spring_layout(G, pos=pos, fixed=sid_used+rid_used, scale=self.scale, seed=1)
+        
         # check the range of x and y positions
         max_width = []
         max_height = []
@@ -1332,7 +1479,7 @@ class NetworkEnsemble():
                     rec_width = max(0.045*(len(n)+1), 0.13)*(self.fontsize/20)
                     rec_height = 0.11*(self.fontsize/20)
                     
-                if (n in boundaryId) or (n == 'Input') or (n == 'Output'):
+                if (n in allBoundary) or (n == 'Input') or (n == 'Output'):
                     node_color = self.boundaryColor
                 else:
                     node_color = self.nodeColor
@@ -1366,82 +1513,141 @@ class NetworkEnsemble():
             G.node[n]['patch'] = c
         
         # add edges to the figure
+        mod_idx = 0
+        rid_idx = 0
+        
         for i in range(len(allRxn)):
-            if (len(allRxn[i][0]) == 1) or (len(allRxn[i][1]) == 1): # UNI-involved
-                comb = list(itertools.combinations_with_replacement(allRxn[i][0],len(allRxn[i][1])))
-                for j in [list(zip(x,allRxn[i][1])) for x in comb]:
-                    for k in range(len(j)):
-                        p1 = G.node[j[k][0]]['patch']
-                        p2 = G.node[rid[i]]['patch']
-                        p3 = G.node[j[k][1]]['patch']
-            
-                        X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
-                        X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
-                        X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
-                        
-                        if ((len(np.unique(allRxn[i][0])) > len(allRxn[i][1])) or 
-                            (len(allRxn[i][0]) < len(np.unique(allRxn[i][1])))): # Uni-Bi or Bi-Uni
-                            XY1 = np.vstack((X1, X2))
-                            XY2 = np.vstack((X2, X3))
+            if allRxn[i][1][0] not in rid:
+                if count[i] > self.plottingThreshold or not self.removeBelowThreshold:
+                    if (len(allRxn[i][0]) == 1) or (len(allRxn[i][1]) == 1): # UNI-involved
+                        comb = list(itertools.combinations_with_replacement(allRxn[i][0],len(allRxn[i][1])))
+                        for j in [list(zip(x,allRxn[i][1])) for x in comb]:
+                            for k in range(len(j)):
+                                p1 = G.node[j[k][0]]['patch']
+                                p2 = G.node[rid[rid_idx]]['patch']
+                                p3 = G.node[j[k][1]]['patch']
+                    
+                                X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
+                                X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
+                                X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
+                                
+                                if ((len(np.unique(allRxn[i][0])) > len(allRxn[i][1])) or 
+                                    (len(allRxn[i][0]) < len(np.unique(allRxn[i][1])))): # Uni-Bi or Bi-Uni
+                                    XY1 = np.vstack((X1, X2))
+                                    XY2 = np.vstack((X2, X3))
+                                    
+                                    tck1, u1 = interpolate.splprep([XY1[:,0], XY1[:,1]], 
+                                                                   k=1)
+                                    intX1, intY1 = interpolate.splev(np.linspace(0, 1, 100),
+                                                                     tck1, 
+                                                                     der=0)
+                                    stackXY = np.vstack((intX1, intY1))
+                                    tck2, u2 = interpolate.splprep([XY2[:,0], XY2[:,1]], 
+                                                                   k=1)
+                                    intX2, intY2 = interpolate.splev(np.linspace(0, 1, 100), 
+                                                                     tck2, 
+                                                                     der=0)
+                                    stackXY2 = np.vstack((intX2, intY2))
+                                    
+                                    X3top = (p3.get_x()+p3.get_width()/2,
+                                             p3.get_y()+p3.get_height())
+                                    X3bot = (p3.get_x()+p3.get_width()/2,
+                                             p3.get_y())
+                                    X3left = (p3.get_x(),
+                                              p3.get_y()+p3.get_height()/2)
+                                    X3right = (p3.get_x()+p3.get_width(),
+                                               p3.get_y()+p3.get_height()/2)
+                                    
+                                    n = -1
+                                    arrthres_v = .02
+                                    arrthres_h = .02
+                                    while (((stackXY2.T[n][0] > (X3left[0]-arrthres_h)) and
+                                            (stackXY2.T[n][0] < (X3right[0]+arrthres_h)) and
+                                            (stackXY2.T[n][1] > (X3bot[1]-arrthres_v)) and 
+                                            (stackXY2.T[n][1] < (X3top[1]+arrthres_v))) and
+                                            (np.abs(n) < np.shape(stackXY2)[1] - 10)):
+                                        n -= 1
+                                   
+                                    lpath1 = Path(stackXY.T)
+                                    lpath2 = Path(stackXY2.T[3:n])
+                                    
+                                    if self.edgeTransparency:
+                                        alpha = count[i]
+                                    else:
+                                        alpha = None
+                                    
+                                    e1 = FancyArrowPatch(path=lpath1,
+                                                        arrowstyle='-',
+                                                        mutation_scale=10.0,
+                                                        lw=(count[i]*self.edgelw),
+                                                        alpha=alpha,
+                                                        color=self.reactionColor)
+                                    
+                                    e2 = FancyArrowPatch(path=lpath2,
+                                                        arrowstyle='-|>',
+                                                        mutation_scale=10.0,
+                                                        lw=(count[i]*self.edgelw),
+                                                        alpha=alpha,
+                                                        color=self.reactionColor)
+                                    
+                                    ax.add_patch(e1)
+                                    ax.add_patch(e2)
+                                    
+                                else: # Uni-Uni    
+                                    XY = np.vstack((X1, X2, X3))
+                                    
+                                    tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
+                                    intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
+                                    stackXY = np.vstack((intX, intY))
+                                    
+                                    X3top = (p3.get_x()+p3.get_width()/2,
+                                             p3.get_y()+p3.get_height())
+                                    X3bot = (p3.get_x()+p3.get_width()/2,
+                                             p3.get_y())
+                                    X3left = (p3.get_x(),
+                                              p3.get_y()+p3.get_height()/2)
+                                    X3right = (p3.get_x()+p3.get_width(),
+                                               p3.get_y()+p3.get_height()/2)
+                                    
+                                    n = -1
+                                    arrthres_v = .02
+                                    arrthres_h = .02
+                                    while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and 
+                                            (stackXY.T[n][0] < (X3right[0]+arrthres_h)) and
+                                            (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and 
+                                            (stackXY.T[n][1] < (X3top[1]+arrthres_v))) and
+                                            (np.abs(n) < np.shape(stackXY)[1] - 10)):
+                                        n -= 1
+                                   
+                                    lpath = Path(stackXY.T[3:n])
+                                    
+                                    if self.edgeTransparency:
+                                        alpha = count[i]
+                                    else:
+                                        alpha = None
+                                    
+                                    e = FancyArrowPatch(path=lpath,
+                                                        arrowstyle='-|>',
+                                                        mutation_scale=10.0,
+                                                        lw=(count[i]*self.edgelw),
+                                                        alpha=alpha,
+                                                        color=self.reactionColor)
+                                    ax.add_patch(e)
+                    else: # BIBI or larger
+                        if len(allRxn[i][0]) < len(allRxn[i][1]):
+                            rVal = len(allRxn[i][0])
+                        else:
+                            rVal = len(allRxn[i][1])
                             
-                            tck1, u1 = interpolate.splprep([XY1[:,0], XY1[:,1]], 
-                                                           k=1)
-                            intX1, intY1 = interpolate.splev(np.linspace(0, 1, 100),
-                                                             tck1, 
-                                                             der=0)
-                            stackXY = np.vstack((intX1, intY1))
-                            tck2, u2 = interpolate.splprep([XY2[:,0], XY2[:,1]], 
-                                                           k=1)
-                            intX2, intY2 = interpolate.splev(np.linspace(0, 1, 100), 
-                                                             tck2, 
-                                                             der=0)
-                            stackXY2 = np.vstack((intX2, intY2))
+                        for j in [list(zip(x,allRxn[i][1])) for x in itertools.combinations(allRxn[i][0],rVal)][0]:
+                            p1 = G.node[j[0]]['patch']
+                            p2 = G.node[rid[rid_idx]]['patch']
+                            p3 = G.node[j[1]]['patch']
                             
-                            X3top = (p3.get_x()+p3.get_width()/2,
-                                     p3.get_y()+p3.get_height())
-                            X3bot = (p3.get_x()+p3.get_width()/2,
-                                     p3.get_y())
-                            X3left = (p3.get_x(),
-                                      p3.get_y()+p3.get_height()/2)
-                            X3right = (p3.get_x()+p3.get_width(),
-                                       p3.get_y()+p3.get_height()/2)
+                            X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
+                            X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
+                            X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
                             
-                            n = -1
-                            arrthres_v = .02
-                            arrthres_h = .02
-                            while (((stackXY2.T[n][0] > (X3left[0]-arrthres_h)) and
-                                    (stackXY2.T[n][0] < (X3right[0]+arrthres_h)) and
-                                    (stackXY2.T[n][1] > (X3bot[1]-arrthres_v)) and 
-                                    (stackXY2.T[n][1] < (X3top[1]+arrthres_v))) and
-                                    (np.abs(n) < np.shape(stackXY2)[1] - 10)):
-                                n -= 1
-                           
-                            lpath1 = Path(stackXY.T)
-                            lpath2 = Path(stackXY2.T[3:n])
-                            
-                            if self.edgeTransparency:
-                                alpha = count[i]
-                            else:
-                                alpha = None
-                            
-                            e1 = FancyArrowPatch(path=lpath1,
-                                                arrowstyle='-',
-                                                mutation_scale=10.0,
-                                                lw=(count[i]*self.edgelw),
-                                                alpha=alpha,
-                                                color=self.reactionColor)
-                            
-                            e2 = FancyArrowPatch(path=lpath2,
-                                                arrowstyle='-|>',
-                                                mutation_scale=10.0,
-                                                lw=(count[i]*self.edgelw),
-                                                alpha=alpha,
-                                                color=self.reactionColor)
-                            
-                            ax.add_patch(e1)
-                            ax.add_patch(e2)
-                            
-                        else: # Uni-Uni    
                             XY = np.vstack((X1, X2, X3))
                             
                             tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
@@ -1460,7 +1666,7 @@ class NetworkEnsemble():
                             n = -1
                             arrthres_v = .02
                             arrthres_h = .02
-                            while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and 
+                            while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and
                                     (stackXY.T[n][0] < (X3right[0]+arrthres_h)) and
                                     (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and 
                                     (stackXY.T[n][1] < (X3top[1]+arrthres_v))) and
@@ -1470,7 +1676,7 @@ class NetworkEnsemble():
                             lpath = Path(stackXY.T[3:n])
                             
                             if self.edgeTransparency:
-                                alpha = count[i]
+                                        alpha = count[i]
                             else:
                                 alpha = None
                             
@@ -1481,123 +1687,89 @@ class NetworkEnsemble():
                                                 alpha=alpha,
                                                 color=self.reactionColor)
                             ax.add_patch(e)
-            else: # BIBI or larger
-                if len(allRxn[i][0]) < len(allRxn[i][1]):
-                    rVal = len(allRxn[i][0])
-                else:
-                    rVal = len(allRxn[i][1])
+                    # Edge labels
+                    if self.edgeLabel:
+                        c = FancyBboxPatch((stackXY.T[50,0]-0.0325, stackXY.T[50,1]+0.005),
+                                           0.125, 
+                                           0.05,
+                                           boxstyle="round,pad=0.01, rounding_size=0.01",
+                                           color='w')
+                        ax.add_patch(c)
+                        plt.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(count[i], 3), 
+                             fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
+                             verticalalignment='center')
+                rid_idx += 1
+            else:
+                # Modifiers
+                if count[i] > self.plottingThreshold or not self.removeBelowThreshold:
+                    seen={}
+                    for m, e in enumerate(allRxn[i][0]):
+                        n1 = G.node[e]['patch']
+                        n2 = G.node[allRxn[i][1][0]]['patch']
+                        rad = 0.1
+                        shrinkB = 5.
+                        
+                        if (e,allRxn[i][1][0]) in seen:
+                            rad = seen.get((e,allRxn[i][1][0])) # TODO: No curvature when there is just a single line between two nodes
+                            rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
+                            
+                        X1 = (n1.get_x()+n1.get_width()/2,
+                              n1.get_y()+n1.get_height()/2)
+                        X2 = (n2.get_x()+n2.get_width()/2,
+                              n2.get_y()+n2.get_height()/2)
+                        
+                        XY = np.vstack((X1, X2))
+                            
+                        tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=1)
+                        intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
+                        stackXY = np.vstack((intX, intY))
+                        
+                        if mod_type[mod_idx][m] == 'inhibitor': # inhibition
+                            color = self.modifierColor
+                            arrowstyle = ArrowStyle.BarAB(widthA=0.0, angleA=None, widthB=1.0, angleB=None)
+                            shrinkB = 10.
+                            linestyle = '-'
+                        elif mod_type[mod_idx][m] == 'activator': # activation
+                            color = self.modifierColor
+                            arrowstyle = '-|>'
+                            linestyle = '-'
+                        elif mod_type[mod_idx][m] == 'modifier': # Unknown modifier
+                            color = self.modifierColor
+                            arrowstyle = '-|>'
+                            linestyle = ':'
+                        e = FancyArrowPatch(X1,
+                                            X2,
+                                            patchA=n1,
+                                            patchB=n2,
+                                            shrinkB=shrinkB,
+                                            arrowstyle=arrowstyle,
+                                            connectionstyle='arc3,rad=%s'%rad,
+                                            mutation_scale=10.0,
+                                            lw=G[e][allRxn[i][1][0]]['weight'],
+                                            color=color,
+                                            linestyle=linestyle)
+                        
+                        seen[(e,allRxn[i][1][0])]=rad
+                        ax.add_patch(e)
+                    # Edge labels
+                    if self.edgeLabel:
+                        c = FancyBboxPatch((stackXY.T[50,0]-0.0325, stackXY.T[50,1]+0.005),
+                                           0.125, 
+                                           0.05,
+                                           boxstyle="round,pad=0.01, rounding_size=0.01",
+                                           color='w')
+                        ax.add_patch(c)
+                        plt.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(count[i], 3), 
+                             fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
+                             verticalalignment='center', color='r')
                     
-                for j in [list(zip(x,allRxn[i][1])) for x in itertools.combinations(allRxn[i][0],rVal)][0]:
-                    p1 = G.node[j[0]]['patch']
-                    p2 = G.node[rid[i]]['patch']
-                    p3 = G.node[j[1]]['patch']
-                    
-                    X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
-                    X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
-                    X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
-                    
-                    XY = np.vstack((X1, X2, X3))
-                    
-                    tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
-                    intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
-                    stackXY = np.vstack((intX, intY))
-                    
-                    X3top = (p3.get_x()+p3.get_width()/2,
-                             p3.get_y()+p3.get_height())
-                    X3bot = (p3.get_x()+p3.get_width()/2,
-                             p3.get_y())
-                    X3left = (p3.get_x(),
-                              p3.get_y()+p3.get_height()/2)
-                    X3right = (p3.get_x()+p3.get_width(),
-                               p3.get_y()+p3.get_height()/2)
-                    
-                    n = -1
-                    arrthres_v = .02
-                    arrthres_h = .02
-                    while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and
-                            (stackXY.T[n][0] < (X3right[0]+arrthres_h)) and
-                            (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and 
-                            (stackXY.T[n][1] < (X3top[1]+arrthres_v))) and
-                            (np.abs(n) < np.shape(stackXY)[1] - 10)):
-                        n -= 1
-                   
-                    lpath = Path(stackXY.T[3:n])
-                    
-                    if self.edgeTransparency:
-                                alpha = count[i]
-                    else:
-                        alpha = None
-                    
-                    e = FancyArrowPatch(path=lpath,
-                                        arrowstyle='-|>',
-                                        mutation_scale=10.0,
-                                        lw=(count[i]*self.edgelw),
-                                        alpha=alpha,
-                                        color=self.reactionColor)
-                    ax.add_patch(e)
-                    
-            # Edge labels
-            if self.edgeLabel:
-                c = FancyBboxPatch((stackXY.T[50,0]-0.0325, stackXY.T[50,1]+0.005),
-                                   0.125, 
-                                   0.05,
-                                   boxstyle="round,pad=0.01, rounding_size=0.01",
-                                   color='w')
-                ax.add_patch(c)
-                plt.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(count[i], 3), 
-                     fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
-                     verticalalignment='center')
-                
-        # Modifiers
-        seen={}
-        for i, e in enumerate(mod_flat):
-            n1 = G.node[e]['patch']
-            n2 = G.node[modtarget_flat[i]]['patch']
-            rad = 0.1
-            shrinkB = 5.
-            
-            if (e,modtarget_flat[i]) in seen:
-                rad = seen.get((e,modtarget_flat[i])) # TODO: No curvature when there is just a single line between two nodes
-                rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
-                
-            X1 = (n1.get_x()+n1.get_width()/2,
-                  n1.get_y()+n1.get_height()/2)
-            X2 = (n2.get_x()+n2.get_width()/2,
-                  n2.get_y()+n2.get_height()/2)
-            
-            if modtype_flat[i] == 'inhibitor': # inhibition
-                color = self.modifierColor
-                arrowstyle = '-['
-                shrinkB = 10.
-                linestyle = '-'
-            elif modtype_flat[i] == 'activator': # activation
-                color = self.modifierColor
-                arrowstyle = '-|>'
-                linestyle = '-'
-            elif modtype_flat[i] == 'modifier': # Unknown modifier
-                color = self.modifierColor
-                arrowstyle = '-|>'
-                linestyle = ':'
-            e = FancyArrowPatch(X1,
-                                X2,
-                                patchA=n1,
-                                patchB=n2,
-                                shrinkB=shrinkB,
-                                arrowstyle=arrowstyle,
-                                connectionstyle='arc3,rad=%s'%rad,
-                                mutation_scale=10.0,
-                                lw=G[e][modtarget_flat[i]]['weight'],
-                                color=color,
-                                linestyle=linestyle)
-            seen[(e,modtarget_flat[i])]=rad
-            ax.add_patch(e)
-            ax.add_patch(n1)
+                mod_idx += 1
             
         # Add nodes at last to put it on top
         if self.drawReactionNode:
-            allnodes = speciesId + rid
+            allnodes = sid_used + rid_used
         else:
-            allnodes = speciesId
+            allnodes = sid_used
             
         if 'Input' in G.node:
             allnodes += ['Input']

@@ -6,7 +6,7 @@
 
 A simple package for visualizing reaction network models
 
-Copyright 2019 Kiri Choi
+Copyright 2018-2019 Kiri Choi
 
 ## Introduction
 
