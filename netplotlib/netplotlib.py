@@ -5,7 +5,7 @@ from __future__ import absolute_import
 import os
 import tellurium as te
 import networkx as nx
-from matplotlib.patches import FancyArrowPatch, Circle, FancyBboxPatch
+from matplotlib.patches import FancyArrowPatch, Circle, FancyBboxPatch, ArrowStyle
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,6 +72,7 @@ class Network():
         self.hlNodeEdgeColor = 'tab:pink'
         self.drawReactionNode = True
         self.breakBoundary = False
+        self.analyzeParamters = False
 
 
     def getLayout(self):
@@ -767,7 +768,7 @@ class Network():
             
             if modtype_flat[i] == 'inhibitor': # inhibition
                 color = self.modifierColor
-                arrowstyle = '-['
+                arrowstyle = ArrowStyle.BarAB(widthA=0.0, angleA=None, widthB=1.0, angleB=None)
                 shrinkB = 10.
                 linestyle = '-'
             elif modtype_flat[i] == 'activator': # activation
@@ -1639,9 +1640,15 @@ class NetworkEnsemble():
                         X2 = (n2.get_x()+n2.get_width()/2,
                               n2.get_y()+n2.get_height()/2)
                         
+                        XY = np.vstack((X1, X2))
+                            
+                        tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=1)
+                        intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
+                        stackXY = np.vstack((intX, intY))
+                        
                         if mod_type[mod_idx][m] == 'inhibitor': # inhibition
                             color = self.modifierColor
-                            arrowstyle = '-['
+                            arrowstyle = ArrowStyle.BarAB(widthA=0.0, angleA=None, widthB=1.0, angleB=None)
                             shrinkB = 10.
                             linestyle = '-'
                         elif mod_type[mod_idx][m] == 'activator': # activation
@@ -1666,17 +1673,15 @@ class NetworkEnsemble():
                         
                         seen[(e,allRxn[i][1][0])]=rad
                         ax.add_patch(e)
-                        ax.add_patch(n1)
                     # Edge labels
                     if self.edgeLabel:
-                        mod_path = e.get_path().vertices
-                        c = FancyBboxPatch((mod_path[int(len(mod_path)/5)][0]-0.0325, mod_path[int(len(mod_path)/5)][1]+0.005),
+                        c = FancyBboxPatch((stackXY.T[50,0]-0.0325, stackXY.T[50,1]+0.005),
                                            0.125, 
                                            0.05,
                                            boxstyle="round,pad=0.01, rounding_size=0.01",
                                            color='w')
                         ax.add_patch(c)
-                        plt.text(mod_path[int(len(mod_path)/5)][0]+0.03, mod_path[int(len(mod_path)/5)][1]+0.03, round(count[i], 3), 
+                        plt.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(count[i], 3), 
                              fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
                              verticalalignment='center', color='r')
                     
