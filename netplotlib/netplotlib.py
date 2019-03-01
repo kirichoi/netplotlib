@@ -1683,7 +1683,7 @@ class NetworkEnsemble():
                             lpath = Path(stackXY.T[3:n])
                             
                             if self.edgeTransparency:
-                                        alpha = count[i]
+                                alpha = count[i]
                             else:
                                 alpha = None
                             
@@ -1744,6 +1744,12 @@ class NetworkEnsemble():
                             color = self.modifierColor
                             arrowstyle = '-|>'
                             linestyle = ':'
+                            
+                        if self.edgeTransparency:
+                            alpha = count[i]
+                        else:
+                            alpha = None
+                            
                         e = FancyArrowPatch(X1,
                                             X2,
                                             patchA=n1,
@@ -1754,6 +1760,7 @@ class NetworkEnsemble():
                                             mutation_scale=10.0,
                                             lw=G[e][allRxn[i][1][0]]['weight'],
                                             color=color,
+                                            alpha=alpha,
                                             linestyle=linestyle)
                         
                         seen[(e,allRxn[i][1][0])]=rad
