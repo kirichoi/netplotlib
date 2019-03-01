@@ -357,6 +357,13 @@ class Network():
         speciesId = list(set(speciesId))
         
         if self.breakBoundary:
+            speciesId_temp = []
+            for i in range(len(speciesId)):
+                if speciesId[i] not in boundaryId + ['Input', 'Output']:
+                    speciesId_temp.append(speciesId[i])
+                
+            speciesId = speciesId_temp
+            
             boundaryId_temp = []
             bc = 0
             for i in range(len(rid)):
@@ -373,7 +380,7 @@ class Network():
                         boundaryId_temp.append(prd[i][k])
                         bc += 1
             boundaryId = boundaryId_temp
-                
+
         
         # Analyze the reaction rates
         if self.analyzeParamters:
@@ -1333,7 +1340,7 @@ class NetworkEnsemble():
         if self.breakBoundary:
             speciesId_temp = []
             for i in range(len(speciesId)):
-                if speciesId[i] not in allBoundary:
+                if speciesId[i] not in allBoundary + ['Input', 'Output']:
                     speciesId_temp.append(speciesId[i])
                 
             speciesId = speciesId_temp
