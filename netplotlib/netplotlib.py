@@ -899,9 +899,9 @@ class Network():
         plt.axis('off')
         plt.axis('equal')
         
+        if show:
+            plt.show()
         plt.close()
-        if  show:
-            return fig
 
 
     def savefig(self, path):
@@ -1180,8 +1180,6 @@ class NetworkEnsemble():
         allRxn = []
         count = []
         rid = []
-        mod = []
-        mod_target = []
         mod_type = []
         allBoundary = []
         rid_ind = 0
@@ -1196,7 +1194,6 @@ class NetworkEnsemble():
             numFlt = r.getNumFloatingSpecies()
             boundaryId = r.getBoundarySpeciesIds()
             floatingId = r.getFloatingSpeciesIds()
-            rid_temp = r.getReactionIds()
             
             allBoundary.append(boundaryId)
             
@@ -1291,12 +1288,10 @@ class NetworkEnsemble():
                 if len(mod_m[i]) > 0:
                     mod_target_rct.append(np.repeat([rct[i]], len(mod_m[i])).tolist())
                     mod_target_prd.append(np.repeat([prd[i]], len(mod_m[i])).tolist())
+                else:
+                    mod_target_rct.append([])
+                    mod_target_prd.append([])
                 
-            mod_flat = [item for sublist in mod_m for item in sublist]
-            modtype_flat = [item for sublist in mod_type_m for item in sublist]
-            modtarget_flat_rct = [item for sublist in mod_target_rct for item in sublist]
-            modtarget_flat_prd = [item for sublist in mod_target_prd for item in sublist]
-            
             speciesId = list(rct + prd)
             speciesId = [item for sublist in speciesId for item in sublist]
             speciesId = list(set(speciesId))
@@ -1315,25 +1310,33 @@ class NetworkEnsemble():
                         count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
                     else:
                         count[allRxn.index([rct[t], prd[t]])] += 1
-            
-            for m in range(len(mod_flat)):
-                if [[modtarget_flat_rct[m]], [modtarget_flat_prd[m]]] not in allRxn:
-                    allRxn.append([[modtarget_flat_rct[m]], [modtarget_flat_prd[m]]])
-                mod_ridx = allRxn.index([[modtarget_flat_rct[m]], [modtarget_flat_prd[m]]])
-                
-                if [[mod_flat[m]], ['J'+str(mod_ridx)]] in allRxn:
-                    if len(self.weights) > 0:
-                        count[allRxn.index([[mod_flat[m]], ['J'+str(mod_ridx)]])] += 1*self.weights[rind]
-                    else:
-                        count[allRxn.index([[mod_flat[m]], ['J'+str(mod_ridx)]])] += 1
+
+            for mi in range(len(mod_m)):
+                mod_type_full = []
+                if len(mod_m[mi]) == 0:
+                    pass
                 else:
-                    allRxn.append([[mod_flat[m]], ['J'+str(mod_ridx)]])
-                    if len(self.weights) > 0:
-                        count.append(1*self.weights[rind])
-                    else:
-                        count.append(1)
+                    for mj in range(len(mod_m[mi])):
+                        if [[mod_target_rct[mi][mj]], [mod_target_prd[mi][mj]]] not in allRxn:
+                            allRxn.append([[mod_target_rct[mi][mj]], [mod_target_prd[mi][mj]]])
+                        mod_ridx = allRxn.index([[mod_target_rct[mi][mj]], [mod_target_prd[mi][mj]]])
                         
-            mod_type.append(modtype_flat)
+                        if [[mod_m[mi][mj]], ['J'+str(mod_ridx)]] in allRxn:
+                            if len(self.weights) > 0:
+                                count[allRxn.index([[mod_m[mi][mj]], ['J'+str(mod_ridx)]])] += 1*self.weights[rind]
+                            else:
+                                count[allRxn.index([[mod_m[mi][mj]], ['J'+str(mod_ridx)]])] += 1
+                        else:
+                            allRxn.append([[mod_m[mi][mj]], ['J'+str(mod_ridx)]])
+                            if len(self.weights) > 0:
+                                count.append(1*self.weights[rind])
+                            else:
+                                count.append(1)
+                            mod_type_full.append(mod_type_m[mi][mj])
+                    if len(mod_type_full) > 0:
+                        mod_type.append(mod_type_full)
+        
+        mod_type_flat = [item for sublist in mod_type for item in sublist]
         
         # Break boundary
         allBoundary = np.unique(allBoundary).tolist()
@@ -1726,21 +1729,21 @@ class NetworkEnsemble():
                               n2.get_y()+n2.get_height()/2)
                         
                         XY = np.vstack((X1, X2))
-                            
+                        
                         tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=1)
                         intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
                         stackXY = np.vstack((intX, intY))
                         
-                        if mod_type[mod_idx][m] == 'inhibitor': # inhibition
+                        if mod_type_flat[mod_idx] == 'inhibitor': # inhibition
                             color = self.modifierColor
                             arrowstyle = ArrowStyle.BarAB(widthA=0.0, angleA=None, widthB=1.0, angleB=None)
                             shrinkB = 10.
                             linestyle = '-'
-                        elif mod_type[mod_idx][m] == 'activator': # activation
+                        elif mod_type_flat[mod_idx] == 'activator': # activation
                             color = self.modifierColor
                             arrowstyle = '-|>'
                             linestyle = '-'
-                        elif mod_type[mod_idx][m] == 'modifier': # Unknown modifier
+                        elif mod_type_flat[mod_idx] == 'modifier': # Unknown modifier
                             color = self.modifierColor
                             arrowstyle = '-|>'
                             linestyle = ':'
@@ -1777,7 +1780,7 @@ class NetworkEnsemble():
                              fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
                              verticalalignment='center', color='r')
                     
-                mod_idx += 1
+                    mod_idx += 1
             
         # Add nodes at last to put it on top
         if self.drawReactionNode:
