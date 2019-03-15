@@ -8,6 +8,7 @@ import networkx as nx
 from matplotlib.patches import FancyArrowPatch, Circle, FancyBboxPatch, ArrowStyle
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 import numpy as np
 from scipy import interpolate
 import sympy
@@ -80,6 +81,7 @@ class Network():
         self.breakBoundary = False
         self.analyzeParamters = False
         self.drawInlineTimeCourse = False
+        self.inlineSimTime = 100
 
 
     def getLayout(self, returnState=False):
@@ -295,13 +297,27 @@ class Network():
         max_width = [min(max_width), max(max_width)]
         max_height = [min(max_height), max(max_height)]
         
-        if self.drawInlineTimeCourse:
-            self.rrInstance.reset()
-            result = self.rrInstance.simulate(0, 100, 100)
-            
         # initialize figure
         fig = plt.figure()
-        ax = plt.gca()
+
+        if self.drawInlineTimeCourse:
+            self.rrInstance.reset()
+            result = self.rrInstance.simulate(0, self.inlineSimTime, self.inlineSimTime+1)
+            
+            plt.tight_layout()
+            
+            gs = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
+            gs.update(wspace=0.025, hspace=0.05)
+            ax = plt.subplot(gs[1])
+                    
+            ax.plot(result[:,0], result[:,1:], lw=3)
+            
+            colorDict = dict(zip(self.rrInstance.getFloatingSpeciesIds(), 
+                                 plt.rcParams['axes.prop_cycle'].by_key()['color'][:self.rrInstance.getNumFloatingSpecies()]))
+            
+            ax = plt.subplot(gs[0])
+        else:
+            ax = plt.gca()
         
         # add nodes to the figure
         for n in Var.G:
@@ -342,10 +358,13 @@ class Network():
                     rec_width = max(0.045*(len(n)+1), 0.13)*(self.fontsize/20)
                     rec_height = 0.11*(self.fontsize/20)
                     
-                if (n in Var.boundaryId) or (n == 'Input') or (n == 'Output'):
-                    node_color = self.boundaryColor
+                if self.drawInlineTimeCourse:
+                    node_color = colorDict[n]
                 else:
-                    node_color = self.nodeColor
+                    if (n in Var.boundaryId) or (n == 'Input') or (n == 'Output'):
+                        node_color = self.boundaryColor
+                    else:
+                        node_color = self.nodeColor
                     
                 if n in self.highlight:
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, 
@@ -829,7 +848,6 @@ class Network():
         fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5)
         fig.set_figheight((abs(max_height[0] - max_height[1])+0.5)*5)
         plt.axis('off')
-        plt.axis('equal')
         
         if show:
             plt.show()
