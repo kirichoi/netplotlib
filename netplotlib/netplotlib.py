@@ -57,7 +57,7 @@ class Network():
     
         self.scale = 1.
         self.fontsize = 10
-        self.edgelw = 1
+        self.edgelw = 1.
         self.nodeColor = 'tab:blue'
         self.reactionNodeColor = 'tab:gray'
         self.labelColor = 'w'
@@ -115,6 +115,7 @@ class Network():
         rct = []
         prd = []
         mod = []
+        r_type = []
         mod_target = []
         kineticLaw = []
         mod_type = []
@@ -170,6 +171,12 @@ class Network():
                 else:
                     mod_type_temp.append('modifier')
             mod_type.append(mod_type_temp)
+            
+            # In case all products are in rate law, assume it is a reversible reaction
+            if all(ext in str(n) for ext in prd[ml]):
+                r_type.append('reversible')
+            else:
+                r_type.append('irreversible')
         
         for i in range(len(mod)):
             if len(mod[i]) > 0:
@@ -180,6 +187,13 @@ class Network():
         speciesId = list(set(speciesId))
         
         if self.breakBoundary:
+            speciesId_temp = []
+            for i in range(len(speciesId)):
+                if speciesId[i] not in boundaryId + ['Input', 'Output']:
+                    speciesId_temp.append(speciesId[i])
+                
+            speciesId = speciesId_temp
+            
             boundaryId_temp = []
             bc = 0
             for i in range(len(rid)):
@@ -196,7 +210,7 @@ class Network():
                         boundaryId_temp.append(prd[i][k])
                         bc += 1
             boundaryId = boundaryId_temp
-                
+
         # initialize directional graph
         G = nx.DiGraph()
     
@@ -219,9 +233,7 @@ class Network():
         
         maxIter = 5
         maxIter_n = 0
-        
         dist_flag = True
-        maxIter_n = 0
         
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
@@ -695,18 +707,18 @@ class Network():
                                     if reaction_rate[i] > 0:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (4+self.edgelw)
-                                        arrowstyle1=ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
-                                        arrowstyle2=ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
+                                        arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
+                                        arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
                                     elif reaction_rate[i] < 0:
                                         lw1 = (4+self.edgelw)
                                         lw2 = (1+self.edgelw)
-                                        arrowstyle1=ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
-                                        arrowstyle2=ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                        arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
+                                        arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                                     else:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (1+self.edgelw)
-                                        arrowstyle1=ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
-                                        arrowstyle2=ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                        arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
+                                        arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                                         
                                     e1 = FancyArrowPatch(path=Path(stackXY.T[-n_1:50]),
                                                         arrowstyle=arrowstyle1,
@@ -831,18 +843,18 @@ class Network():
                             if reaction_rate[i] > 0:
                                 lw1 = (1+self.edgelw)
                                 lw2 = (4+self.edgelw)
-                                arrowstyle1=ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
-                                arrowstyle2=ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
+                                arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
+                                arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
                             elif reaction_rate[i] < 0:
                                 lw1 = (4+self.edgelw)
                                 lw2 = (1+self.edgelw)
-                                arrowstyle1=ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
-                                arrowstyle2=ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
+                                arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                             else:
                                 lw1 = (1+self.edgelw)
                                 lw2 = (1+self.edgelw)
-                                arrowstyle1=ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
-                                arrowstyle2=ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
+                                arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                                 
                             e1 = FancyArrowPatch(path=Path(stackXY.T[n_2:50]),
                                                 arrowstyle=arrowstyle1,
@@ -1012,9 +1024,9 @@ class NetworkEnsemble():
         Resets all properties
         """
     
-        self.scale = 1.25
+        self.scale = 1.
         self.fontsize = 10
-        self.edgelw = 10
+        self.edgelw = 10.
         self.nodeColor = 'tab:blue'
         self.reactionNodeColor = 'tab:gray'
         self.labelColor = 'w'
@@ -1235,7 +1247,7 @@ class NetworkEnsemble():
         return pos
     
     
-    def drawWeightedDiagram(self, show=True):
+    def draw(self, show=True):
         """     
         Draw weighted reaction network based on frequency of reactions
         
@@ -1637,8 +1649,8 @@ class NetworkEnsemble():
                                                p3.get_y()+p3.get_height()/2)
                                     
                                     n = -1
-                                    arrthres_v = .02
                                     arrthres_h = .02
+                                    arrthres_v = .01
                                     while (((stackXY2.T[n][0] > (X3left[0]-arrthres_h)) and
                                             (stackXY2.T[n][0] < (X3right[0]+arrthres_h)) and
                                             (stackXY2.T[n][1] > (X3bot[1]-arrthres_v)) and 
@@ -1647,22 +1659,26 @@ class NetworkEnsemble():
                                         n -= 1
                                    
                                     lpath1 = Path(stackXY.T)
-                                    lpath2 = Path(stackXY2.T[3:n])
+                                    lpath2 = Path(stackXY2.T[:n])
                                     
                                     if self.edgeTransparency:
                                         alpha = count[i]
                                     else:
                                         alpha = None
                                     
+                                    arrowstyle1 = ArrowStyle.Curve()
+                                    arrowstyle2 = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                          head_width=(0.4 + 0.01*count[i]*self.edgelw))
+                                    
                                     e1 = FancyArrowPatch(path=lpath1,
-                                                        arrowstyle='-',
+                                                        arrowstyle=arrowstyle1,
                                                         mutation_scale=10.0,
                                                         lw=(count[i]*self.edgelw),
                                                         alpha=alpha,
                                                         color=self.reactionColor)
                                     
                                     e2 = FancyArrowPatch(path=lpath2,
-                                                        arrowstyle='-|>',
+                                                        arrowstyle=arrowstyle2,
                                                         mutation_scale=10.0,
                                                         lw=(count[i]*self.edgelw),
                                                         alpha=alpha,
@@ -1688,8 +1704,8 @@ class NetworkEnsemble():
                                                p3.get_y()+p3.get_height()/2)
                                     
                                     n = -1
-                                    arrthres_v = .02
                                     arrthres_h = .02
+                                    arrthres_v = .01
                                     while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and 
                                             (stackXY.T[n][0] < (X3right[0]+arrthres_h)) and
                                             (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and 
@@ -1697,15 +1713,18 @@ class NetworkEnsemble():
                                             (np.abs(n) < np.shape(stackXY)[1] - 10)):
                                         n -= 1
                                    
-                                    lpath = Path(stackXY.T[3:n])
+                                    lpath = Path(stackXY.T[:n])
                                     
                                     if self.edgeTransparency:
                                         alpha = count[i]
                                     else:
                                         alpha = None
                                     
+                                    arrowstyle = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                          head_width=(0.4 + 0.01*count[i]*self.edgelw))
+                                    
                                     e = FancyArrowPatch(path=lpath,
-                                                        arrowstyle='-|>',
+                                                        arrowstyle=arrowstyle,
                                                         mutation_scale=10.0,
                                                         lw=(count[i]*self.edgelw),
                                                         alpha=alpha,
@@ -1742,8 +1761,8 @@ class NetworkEnsemble():
                                        p3.get_y()+p3.get_height()/2)
                             
                             n = -1
-                            arrthres_v = .02
                             arrthres_h = .02
+                            arrthres_v = .01
                             while (((stackXY.T[n][0] > (X3left[0]-arrthres_h)) and
                                     (stackXY.T[n][0] < (X3right[0]+arrthres_h)) and
                                     (stackXY.T[n][1] > (X3bot[1]-arrthres_v)) and 
@@ -1751,15 +1770,18 @@ class NetworkEnsemble():
                                     (np.abs(n) < np.shape(stackXY)[1] - 10)):
                                 n -= 1
                            
-                            lpath = Path(stackXY.T[3:n])
+                            lpath = Path(stackXY.T[:n])
                             
                             if self.edgeTransparency:
                                 alpha = count[i]
                             else:
                                 alpha = None
                             
+                            arrowstyle = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                 head_width=(0.4 + 0.01*count[i]*self.edgelw))
+                            
                             e = FancyArrowPatch(path=lpath,
-                                                arrowstyle='-|>',
+                                                arrowstyle=arrowstyle,
                                                 mutation_scale=10.0,
                                                 lw=(count[i]*self.edgelw),
                                                 alpha=alpha,
@@ -1785,7 +1807,7 @@ class NetworkEnsemble():
                         n1 = G.node[e]['patch']
                         n2 = G.node[allRxn[i][1][0]]['patch']
                         rad = 0.1
-                        shrinkB = 5.
+                        shrinkB = 2.
                         
                         if (e,allRxn[i][1][0]) in seen:
                             rad = seen.get((e,allRxn[i][1][0])) # TODO: No curvature when there is just a single line between two nodes
@@ -1809,11 +1831,13 @@ class NetworkEnsemble():
                             linestyle = '-'
                         elif mod_type_flat[mod_idx] == 'activator': # activation
                             color = self.modifierColor
-                            arrowstyle = '-|>'
+                            arrowstyle = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                 head_width=(0.4 + 0.01*count[i]*self.edgelw))
                             linestyle = '-'
                         elif mod_type_flat[mod_idx] == 'modifier': # Unknown modifier
                             color = self.modifierColor
-                            arrowstyle = '-|>'
+                            arrowstyle = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                 head_width=(0.4 + 0.01*count[i]*self.edgelw))
                             linestyle = ':'
                             
                         if self.edgeTransparency:
