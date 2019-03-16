@@ -79,9 +79,14 @@ class Network():
         self.hlNodeEdgeColor = 'tab:pink'
         self.drawReactionNode = True
         self.breakBoundary = False
-        self.analyzeParamters = False
+        self.analyzeRates = False
+        self.analyzeFlux = False
+        self.analyzeColorHigh = 'k'
+        self.analyzeColorLow = 'k'
+        self.analyzeColorMap = None
+        self.analyzeScale = False
         self.drawInlineTimeCourse = False
-        self.inlineSimTime = 100
+        self.simTime = 100
 
 
     def getLayout(self, returnState=False):
@@ -230,13 +235,20 @@ class Network():
 
         
         # Analyze the reaction rates
-        if self.analyzeParamters:
+        if self.analyzeRates:
             try:
                 self.rrInstance.steadyState()
                 Var.reaction_rate = self.rrInstance.getReactionRates()
             except:
-                print("Could not analyze the network - no steadyState found")
-                Var.reaction_rate = np.repeat(0, self.rrInstance.getNumReactions())
+                print("No steadyState is found - netplotlib will use state at t=simTime")
+                self.rrInstance.reset()
+                self.rrInstance.simulate(0, self.simTime, self.simTime)
+                Var.reaction_rate = self.rrInstance.getReactionRates()
+                
+        if self.analyzeFlux:
+            self.rrInstance.reset()
+            self.rrInstance.simulate(0, self.simTime, self.simTime)
+            Var.flux = self.rrInstance.getRatesOfChange()
         
         # initialize directional graph
         Var.G = nx.DiGraph()
@@ -302,7 +314,7 @@ class Network():
 
         if self.drawInlineTimeCourse:
             self.rrInstance.reset()
-            result = self.rrInstance.simulate(0, self.inlineSimTime, self.inlineSimTime+1)
+            result = self.rrInstance.simulate(0, self.simTime, self.simTime+1)
             
             plt.tight_layout()
             
@@ -451,6 +463,8 @@ class Network():
                             lw2 = (1+self.edgelw)
                             arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                             arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                            e1color = self.reactionColor
+                            e2color = self.reactionColor
                             
                             if Var.r_type[i] == 'reversible':
                                 X1top = (p1.get_x()+p1.get_width()/2,
@@ -472,29 +486,42 @@ class Network():
                                 
                                 lpath1 = Path(stackXY1.T[n_2:])
                                 
-                                if self.analyzeParamters:
+                                if self.analyzeRates:
                                     if Var.reaction_rate[i] > 0:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (4+self.edgelw)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
+                                        e1color = self.analyzeColorLow
+                                        e2color = self.analyzeColorHigh
                                     elif Var.reaction_rate[i] < 0:
                                         lw1 = (4+self.edgelw)
                                         lw2 = (1+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
+                                        e1color = self.analyzeColorHigh
+                                        e2color = self.analyzeColorLow
+                                
+                                if self.analyzeFlux:
+                                    if Var.flux.colnames.index(Var.rct[i]):
+                                        pass
+                                    if Var.flux[i] > 0:
+                                        lw1 = (1+self.edgelw)
+                                        lw2 = (1+self.edgelw)
+                                        arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
+                                        
                             else:
                                 arrowstyle1 = ArrowStyle.Curve()
-                                
+                            
                             e1 = FancyArrowPatch(path=lpath1,
                                                 arrowstyle=arrowstyle1,
                                                 mutation_scale=10.0,
                                                 lw=lw1,
-                                                color=self.reactionColor)
+                                                color=e1color)
                             
                             e2 = FancyArrowPatch(path=lpath2,
                                                 arrowstyle=arrowstyle2,
                                                 mutation_scale=10.0,
                                                 lw=lw2,
-                                                color=self.reactionColor)
+                                                color=e2color)
                                 
                             ax.add_patch(e1)
                             ax.add_patch(e2)
@@ -574,33 +601,39 @@ class Network():
                                 
                                 lpath = Path(stackXY.T[n_2:n_1])
                                 
-                                if self.analyzeParamters:
+                                if self.analyzeRates:
                                     if Var.reaction_rate[i] > 0:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (4+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
+                                        e1color = self.analyzeColorLow
+                                        e2color = self.analyzeColorHigh
                                     elif Var.reaction_rate[i] < 0:
                                         lw1 = (4+self.edgelw)
                                         lw2 = (1+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                        e1color = self.analyzeColorHigh
+                                        e2color = self.analyzeColorLow
                                     else:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (1+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                        e1color = self.reactionColor
+                                        e2color = self.reactionColor
                                         
                                     e1 = FancyArrowPatch(path=Path(stackXY.T[-n_1:50]),
                                                         arrowstyle=arrowstyle1,
                                                         mutation_scale=10.0,
                                                         lw=lw1,
-                                                        color=self.reactionColor)
+                                                        color=e1color)
                                     e2 = FancyArrowPatch(path=Path(stackXY.T[50:n_1]),
                                                         arrowstyle=arrowstyle2,
                                                         mutation_scale=10.0,
                                                         lw=lw2,
-                                                        color=self.reactionColor)
+                                                        color=e2color)
                                     ax.add_patch(e1)
                                     ax.add_patch(e2)
                                 else:
@@ -710,33 +743,39 @@ class Network():
                         
                         lpath = Path(stackXY.T[n_2:n_1])
                         
-                        if self.analyzeParamters:
+                        if self.analyzeRates:
                             if Var.reaction_rate[i] > 0:
                                 lw1 = (1+self.edgelw)
                                 lw2 = (4+self.edgelw)
                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
+                                e1color = self.analyzeColorLow
+                                e2color = self.analyzeColorHigh
                             elif Var.reaction_rate[i] < 0:
                                 lw1 = (4+self.edgelw)
                                 lw2 = (1+self.edgelw)
                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                e1color = self.analyzeColorHigh
+                                e2color = self.analyzeColorLow
                             else:
                                 lw1 = (1+self.edgelw)
                                 lw2 = (1+self.edgelw)
                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                e1color = self.reactionColor
+                                e2color = self.reactionColor
                                 
                             e1 = FancyArrowPatch(path=Path(stackXY.T[n_2:50]),
                                                 arrowstyle=arrowstyle1,
                                                 mutation_scale=10.0,
                                                 lw=lw1,
-                                                color=self.reactionColor)
+                                                color=e1color)
                             e2 = FancyArrowPatch(path=Path(stackXY.T[50:n_1]),
                                                 arrowstyle=arrowstyle2,
                                                 mutation_scale=10.0,
                                                 lw=lw2,
-                                                color=self.reactionColor)
+                                                color=e2color)
                             ax.add_patch(e1)
                             ax.add_patch(e2)
                         else:
@@ -918,7 +957,7 @@ class NetworkEnsemble():
         self.edgeTransparency = False
         self.plottingThreshold = 0.
         self.removeBelowThreshold = True
-        self.analyzeParamters = False
+        self.analyzeRates = False
         
     
     def getLayout(self):
@@ -1960,7 +1999,7 @@ class NetworkEnsemble():
                                         
                                         lpath1 = Path(stackXY1.T[n_2:])
                                         
-                                        if self.analyzeParamters:
+                                        if self.analyzeRates:
                                             if Var.reaction_rate[i] > 0:
                                                 lw1 = (1+self.edgelw)
                                                 lw2 = (4+self.edgelw)
@@ -2062,7 +2101,7 @@ class NetworkEnsemble():
                                         
                                         lpath = Path(stackXY.T[n_2:n_1])
                                         
-                                        if self.analyzeParamters:
+                                        if self.analyzeRates:
                                             if Var.reaction_rate[i] > 0:
                                                 lw1 = (1+self.edgelw)
                                                 lw2 = (4+self.edgelw)
@@ -2198,7 +2237,7 @@ class NetworkEnsemble():
                                 
                                 lpath = Path(stackXY.T[n_2:n_1])
                                 
-                                if self.analyzeParamters:
+                                if self.analyzeRates:
                                     if Var.reaction_rate[i] > 0:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (4+self.edgelw)
