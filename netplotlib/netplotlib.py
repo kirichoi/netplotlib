@@ -491,24 +491,18 @@ class Network():
                                         lw1 = (1+self.edgelw)
                                         lw2 = (4+self.edgelw)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                        if self.analyzeColorScale:
-                                            colormap = cm.get_cmap(self.analyzeColorMap)
-                                            e1color = colormap(0.5-abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                            e2color = colormap(0.5+abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                        else:
-                                            e1color = self.analyzeColorLow
-                                            e2color = self.analyzeColorHigh
                                     elif Var.reaction_rate[i] < 0:
                                         lw1 = (4+self.edgelw)
                                         lw2 = (1+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
-                                        if self.analyzeColorScale:
-                                            colormap = cm.get_cmap(self.analyzeColorMap)
-                                            e1color = colormap(0.5+abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                            e2color = colormap(0.5-abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                        else:
-                                            e1color = self.analyzeColorHigh
-                                            e2color = self.analyzeColorLow
+                                    
+                                    if self.analyzeColorScale:
+                                        colormap = cm.get_cmap(self.analyzeColorMap)
+                                        e1color = colormap(0.5-Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                                        e2color = colormap(0.5+Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                                    else:
+                                        e1color = self.analyzeColorLow
+                                        e2color = self.analyzeColorHigh
                                 
                                 if self.analyzeFlux:
                                     if Var.flux.colnames.index(Var.rct[i]):
@@ -617,37 +611,24 @@ class Network():
                                         lw2 = (4+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                        if self.analyzeColorScale:
-                                            colormap = cm.get_cmap(self.analyzeColorMap)
-                                            e1color = colormap(0.5-abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                            e2color = colormap(0.5+abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                        else:
-                                            e1color = self.analyzeColorLow
-                                            e2color = self.analyzeColorHigh
                                     elif Var.reaction_rate[i] < 0:
                                         lw1 = (4+self.edgelw)
                                         lw2 = (1+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                                        if self.analyzeColorScale:
-                                            colormap = cm.get_cmap(self.analyzeColorMap)
-                                            e1color = colormap(0.5+abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                            e2color = colormap(0.5-abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                        else:
-                                            e1color = self.analyzeColorHigh
-                                            e2color = self.analyzeColorLow
                                     else:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (1+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                                        if self.analyzeColorScale:
-                                            colormap = cm.get_cmap(self.analyzeColorMap)
-                                            e1color = colormap(0.5-abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                            e2color = colormap(0.5+abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                        else:
-                                            e1color = self.reactionColor
-                                            e2color = self.reactionColor
+                                    
+                                    if self.analyzeColorScale:
+                                        colormap = cm.get_cmap(self.analyzeColorMap)
+                                        e1color = colormap(0.5-Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                                        e2color = colormap(0.5+Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                                    else:
+                                        e1color = self.analyzeColorLow
+                                        e2color = self.analyzeColorHigh
                                         
                                     e1 = FancyArrowPatch(path=Path(stackXY.T[-n_1:50]),
                                                         arrowstyle=arrowstyle1,
@@ -774,37 +755,24 @@ class Network():
                                 lw2 = (4+self.edgelw)
                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                if self.analyzeColorScale:
-                                    colormap = cm.get_cmap(self.analyzeColorMap)
-                                    e1color = colormap(0.5-abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                    e2color = colormap(0.5+abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                else:
-                                    e1color = self.analyzeColorLow
-                                    e2color = self.analyzeColorHigh
                             elif Var.reaction_rate[i] < 0:
                                 lw1 = (4+self.edgelw)
                                 lw2 = (1+self.edgelw)
                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                                if self.analyzeColorScale:
-                                    colormap = cm.get_cmap(self.analyzeColorMap)
-                                    e1color = colormap(0.5+abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                    e2color = colormap(0.5-abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                else:
-                                    e1color = self.analyzeColorHigh
-                                    e2color = self.analyzeColorLow
                             else:
                                 lw1 = (1+self.edgelw)
                                 lw2 = (1+self.edgelw)
                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                                if self.analyzeColorScale:
-                                    colormap = cm.get_cmap(self.analyzeColorMap)
-                                    e1color = colormap(0.5-abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                    e2color = colormap(0.5+abs(Var.reaction_rate[i]/(2*max(Var.reaction_rate))))
-                                else:
-                                    e1color = self.reactionColor
-                                    e2color = self.reactionColor
+                            
+                            if self.analyzeColorScale:
+                                colormap = cm.get_cmap(self.analyzeColorMap)
+                                e1color = colormap(0.5-Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                                e2color = colormap(0.5+Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                            else:
+                                e1color = self.analyzeColorLow
+                                e2color = self.analyzeColorHigh
                                 
                             e1 = FancyArrowPatch(path=Path(stackXY.T[n_2:50]),
                                                 arrowstyle=arrowstyle1,
