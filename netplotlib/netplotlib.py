@@ -87,6 +87,7 @@ class Network():
         self.analyzeColorScale = False
         self.drawInlineTimeCourse = False
         self.simTime = 100
+        self.forceAnalysisAtSimTime = False
 
 
     def getLayout(self, returnState=False):
@@ -236,14 +237,18 @@ class Network():
         
         # Analyze the reaction rates
         if self.analyzeRates:
-            try:
-                self.rrInstance.steadyState()
-                Var.reaction_rate = self.rrInstance.getReactionRates()
-            except:
-                print("No steadyState is found - netplotlib will use the state at t=simTime")
-                self.rrInstance.reset()
+            if self.forceAnalysisAtSimTime:
                 self.rrInstance.simulate(0, self.simTime, self.simTime)
                 Var.reaction_rate = self.rrInstance.getReactionRates()
+            else:
+                try:
+                    self.rrInstance.steadyState()
+                    Var.reaction_rate = self.rrInstance.getReactionRates()
+                except:
+                    print("No steadyState is found - netplotlib will use the state at t=simTime")
+                    self.rrInstance.reset()
+                    self.rrInstance.simulate(0, self.simTime, self.simTime)
+                    Var.reaction_rate = self.rrInstance.getReactionRates()
                 
         if self.analyzeFlux:
             self.rrInstance.reset()
@@ -376,7 +381,11 @@ class Network():
                     if (n in Var.boundaryId) or (n == 'Input') or (n == 'Output'):
                         node_color = self.boundaryColor
                     else:
-                        node_color = self.nodeColor
+                        if self.analyzeFlux:
+                            colormap = cm.get_cmap(self.analyzeColorMap)
+                            node_color = colormap(Var.flux[0][Var.flux.colnames.index(n)]/(max(abs(Var.flux[0]))))
+                        else:
+                            node_color = self.nodeColor
                     
                 if n in self.highlight:
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, 
@@ -643,6 +652,7 @@ class Network():
                                     ax.add_patch(e)
                                 
                             else:
+                                e1color = self.reactionColor
                                 if self.analyzeRates:
                                     if self.analyzeColorScale:
                                         colormap = cm.get_cmap(self.analyzeColorMap)
