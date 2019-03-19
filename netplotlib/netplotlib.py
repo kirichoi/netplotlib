@@ -240,7 +240,7 @@ class Network():
                 self.rrInstance.steadyState()
                 Var.reaction_rate = self.rrInstance.getReactionRates()
             except:
-                print("No steadyState is found - netplotlib will use state at t=simTime")
+                print("No steadyState is found - netplotlib will use the state at t=simTime")
                 self.rrInstance.reset()
                 self.rrInstance.simulate(0, self.simTime, self.simTime)
                 Var.reaction_rate = self.rrInstance.getReactionRates()
@@ -485,35 +485,26 @@ class Network():
                                     n_2 += 1
                                 
                                 lpath1 = Path(stackXY1.T[n_2:])
-                                
-                                if self.analyzeRates:
-                                    if Var.reaction_rate[i] > 0:
-                                        lw1 = (1+self.edgelw)
-                                        lw2 = (4+self.edgelw)
-                                        arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                    elif Var.reaction_rate[i] < 0:
-                                        lw1 = (4+self.edgelw)
-                                        lw2 = (1+self.edgelw)
-                                        arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
-                                    
-                                    if self.analyzeColorScale:
-                                        colormap = cm.get_cmap(self.analyzeColorMap)
-                                        e1color = colormap(0.5-Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
-                                        e2color = colormap(0.5+Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
-                                    else:
-                                        e1color = self.analyzeColorLow
-                                        e2color = self.analyzeColorHigh
-                                
-                                if self.analyzeFlux:
-                                    if Var.flux.colnames.index(Var.rct[i]):
-                                        pass
-                                    if Var.flux[i] > 0:
-                                        lw1 = (1+self.edgelw)
-                                        lw2 = (1+self.edgelw)
-                                        arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                        
                             else:
                                 arrowstyle1 = ArrowStyle.Curve()
+
+                            if self.analyzeRates:
+                                if Var.reaction_rate[i] > 0:
+                                    lw1 = (1+self.edgelw)
+                                    lw2 = (4+self.edgelw)
+                                    arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
+                                elif Var.reaction_rate[i] < 0:
+                                    lw1 = (4+self.edgelw)
+                                    lw2 = (1+self.edgelw)
+                                    arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
+                                
+                                if self.analyzeColorScale:
+                                    colormap = cm.get_cmap(self.analyzeColorMap)
+                                    e1color = colormap(0.5-Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                                    e2color = colormap(0.5+Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                                else:
+                                    e1color = self.analyzeColorLow
+                                    e2color = self.analyzeColorHigh
                             
                             e1 = FancyArrowPatch(path=lpath1,
                                                 arrowstyle=arrowstyle1,
@@ -652,13 +643,21 @@ class Network():
                                     ax.add_patch(e)
                                 
                             else:
+                                if self.analyzeRates:
+                                    if self.analyzeColorScale:
+                                        colormap = cm.get_cmap(self.analyzeColorMap)
+                                        e1color = colormap(Var.reaction_rate[i]/(max(abs(Var.reaction_rate))))
+                                    else:
+                                        e1color = self.reactionColor
+                                    
                                 lpath = Path(stackXY.T[:n_1])
-                                arrowstyle = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                arrowstyle1 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                lw1 = (1+self.edgelw)
                                 e = FancyArrowPatch(path=lpath,
-                                                    arrowstyle=arrowstyle,
+                                                    arrowstyle=arrowstyle1,
                                                     mutation_scale=10.0,
-                                                    lw=(1+self.edgelw),
-                                                    color=self.reactionColor)
+                                                    lw=lw1,
+                                                    color=e1color)
                                 ax.add_patch(e)
                         
                             if j[k][0] in Var.floatingId:
@@ -796,13 +795,21 @@ class Network():
                             ax.add_patch(e)
                         
                     else:
+                        if self.analyzeRates:
+                            if self.analyzeColorScale:
+                                colormap = cm.get_cmap(self.analyzeColorMap)
+                                e1color = colormap(Var.reaction_rate[i]/(max(abs(Var.reaction_rate))))
+                            else:
+                                e1color = self.reactionColor
+                            
                         lpath = Path(stackXY.T[:n_1])
-                        arrowstyle = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                        arrowstyle1 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                        lw1 = (1+self.edgelw)
                         e = FancyArrowPatch(path=lpath,
-                                            arrowstyle=arrowstyle,
+                                            arrowstyle=arrowstyle1,
                                             mutation_scale=10.0,
-                                            lw=(1+self.edgelw),
-                                            color=self.reactionColor)
+                                            lw=lw1,
+                                            color=e1color)
                         ax.add_patch(e)
                     
                     if j[0] in Var.floatingId:
