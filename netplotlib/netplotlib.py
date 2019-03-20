@@ -192,7 +192,13 @@ class Network():
             mod_type.append(mod_type_temp)
             
             # In case all products are in rate law, assume it is a reversible reaction
-            if all(ext in str(n) for ext in Var.prd[ml]):
+            if (all(ext in str(n) for ext in [s + '/' for s in Var.prd[ml]]) or
+                all(ext in str(n) for ext in [s + ')' for s in Var.prd[ml]]) or
+                all(ext in str(n) for ext in [s + '*' for s in Var.prd[ml]]) or
+                all(ext in str(n) for ext in [s + ';' for s in Var.prd[ml]]) or
+                all(ext in str(n) for ext in [s + '+' for s in Var.prd[ml]]) or
+                all(ext in str(n) for ext in [s + '-' for s in Var.prd[ml]]) or
+                all(ext in str(n) for ext in [s + ' ' for s in Var.prd[ml]])):
                 Var.r_type.append('reversible')
             else:
                 Var.r_type.append('irreversible')
