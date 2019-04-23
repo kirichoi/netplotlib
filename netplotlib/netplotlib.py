@@ -817,6 +817,8 @@ class Network():
                                 e1color = colormap(Var.reaction_rate[i]/(max(abs(Var.reaction_rate))))
                             else:
                                 e1color = self.reactionColor
+                        else:
+                            e1color = self.reactionColor
                             
                         lpath = Path(stackXY.T[:n_1])
                         arrowstyle1 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
