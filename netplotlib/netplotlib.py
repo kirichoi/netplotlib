@@ -301,11 +301,12 @@ class Network():
             return pos
     
     
-    def draw(self, show=True):
+    def draw(self, show=True, savePath=None):
         """
         Draw network diagram
         
         :param show: flag to show the diagram
+        :param savePath: path to save the diagram
         """
         
         pos, Var = self.getLayout(returnState=True)
@@ -920,10 +921,15 @@ class Network():
         fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5)
         fig.set_figheight((abs(max_height[0] - max_height[1])+0.5)*5)
         plt.axis('off')
+        plt.tight_layout()
+        
+        if savePath != None:
+            fig.savefig(savePath)
         
         if show:
             plt.show()
-        plt.close()
+        else:
+            plt.close()
 
 
     def savefig(self, path):
@@ -933,8 +939,7 @@ class Network():
         :param path: path to save the diagram
         """
         
-        fig = self.draw()
-        fig.savefig(path)
+        self.draw(savePath=path)
         
 
 class NetworkEnsemble():
