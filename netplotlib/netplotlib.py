@@ -818,6 +818,7 @@ class Network():
                             ax.add_patch(e)
                         
                     else:
+                        e1color = self.reactionColor
                         if self.analyzeFlux:
                             if self.analyzeColorScale:
                                 norm = colors.Normalize(vmin=np.min(Var.flux),vmax=np.max(Var.flux))
@@ -1173,13 +1174,13 @@ class NetworkEnsemble():
         # add edges
         for i in range(len(allRxn)):
             for k in range(len(allRxn[i][0])):
-                G.add_edges_from([(allRxn[i][0][k], rid[i])], weight=(count[i]*self.edgelw))
+                G.add_edges_from([(allRxn[i][0][k], rid[i])])
                 
             for j in range(len(allRxn[i][1])):
-                G.add_edges_from([(rid[i], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+                G.add_edges_from([(rid[i], allRxn[i][1][j])])
                         
             if len(mod[i]) > 0:
-                G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
+                G.add_edges_from([(mod[i][0], rid[i])])
     
         # calcutate positions
         thres = 0.3
@@ -1204,7 +1205,7 @@ class NetworkEnsemble():
         return pos
     
     
-    def drawWeightedDiagram(self, show=True):
+    def drawWeightedDiagram(self, show=True, savePath=None):
         """     
         Draw weighted reaction network based on frequency of reactions
         
@@ -1415,10 +1416,10 @@ class NetworkEnsemble():
             if allRxn[i][1][0] not in rid:
                 if count[i] > self.plottingThreshold:
                     for k in range(len(allRxn[i][0])):
-                        G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])], weight=(count[i]*self.edgelw))
+                        G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])])
                         
                     for j in range(len(allRxn[i][1])):
-                        G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+                        G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])])
                     
                     sid_used.append(allRxn[i][0][k])
                     sid_used.append(allRxn[i][1][j])
@@ -1427,9 +1428,9 @@ class NetworkEnsemble():
                 rid_idx += 1
             else:
                 if count[i] > self.plottingThreshold:
-                    G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])], weight=(count[i]*self.edgelw))
+                    G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])])
                     sid_used.append(allRxn[i][0][0])
-                    sid_used.append(allRxn[i][1][0])
+#                    sid_used.append(allRxn[i][1][0])
         
         sid_used = np.unique(sid_used).tolist()
         
@@ -1455,23 +1456,23 @@ class NetworkEnsemble():
             
         if not self.removeBelowThreshold:
             rid_idx = 0
-            sid_used = speciesId
-            rid_used = rid
             for i in range(len(allRxn)):
                 if allRxn[i][1][0] not in rid:
                     if count[i] <= self.plottingThreshold:
                         for k in range(len(allRxn[i][0])):
-                            G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])], weight=(count[i]*self.edgelw))
+                            G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])])
                             
                         for j in range(len(allRxn[i][1])):
-                            G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+                            G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])])
                         
                     rid_idx += 1
                 else:
                     if count[i] <= self.plottingThreshold:
-                        G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])], weight=(count[i]*self.edgelw))
+                        G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])])
             
             pos = nx.spring_layout(G, pos=pos, fixed=sid_used+rid_used, scale=self.scale, seed=1)
+            sid_used = speciesId
+            rid_used = rid
         
         # check the range of x and y positions
         max_width = []
@@ -1810,7 +1811,7 @@ class NetworkEnsemble():
                                             arrowstyle=arrowstyle,
                                             connectionstyle='arc3,rad=%s'%rad,
                                             mutation_scale=10.0,
-                                            lw=G[e][allRxn[i][1][0]]['weight'],
+                                            lw=(count[i]*self.edgelw),
                                             color=color,
                                             alpha=alpha,
                                             linestyle=linestyle)
@@ -1829,7 +1830,7 @@ class NetworkEnsemble():
                              fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
                              verticalalignment='center', color='r')
                     
-                    mod_idx += 1
+                mod_idx += 1
             
         # Add nodes at last to put it on top
         if self.drawReactionNode:
@@ -1851,15 +1852,15 @@ class NetworkEnsemble():
         plt.axis('off')
         plt.axis('equal')
         
-        if show:
-            plt.show()
-            return allRxn, count
+        if savePath != None:
+            fig.savefig(savePath, bbox_inches='tight')
         else:
+            if show:
+                plt.show()
             plt.close()
-            return allRxn, count, fig
-
+            return allRxn, count
     
-    def drawNetworkGrid(self, nrows, ncols, auto=False, savePath=None):
+    def drawNetworkGrid(self, nrows, ncols, auto=False, show=True, savePath=None):
         """
         Plot a grid of network diagrams
         
@@ -1869,11 +1870,10 @@ class NetworkEnsemble():
         """
         
         edgelw_backup = self.edgelw
-#        self.edgelw = 1
         
         fig, ax = plt.subplots(nrows, ncols, squeeze=False, sharex=True, sharey=True)
         fig.set_figheight(7*nrows)
-        fig.set_figwidth(7*nrows)
+        fig.set_figwidth(7*ncols)
         plt.subplots_adjust(wspace=0.0, hspace=0.0)
         
         for mdl in range(nrows*ncols):
@@ -2421,8 +2421,9 @@ class NetworkEnsemble():
         if savePath != None:
             fig.savefig(savePath, bbox_inches='tight')
         else:
-            plt.show()
-        plt.close()
+            if show:
+                plt.show()
+            plt.close()
         
         self.edgelw = edgelw_backup
 
