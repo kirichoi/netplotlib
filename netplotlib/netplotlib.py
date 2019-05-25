@@ -8,7 +8,7 @@ import networkx as nx
 from matplotlib.patches import FancyArrowPatch, Circle, FancyBboxPatch, ArrowStyle
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
-from matplotlib import gridspec, cm
+from matplotlib import gridspec, cm, colors
 import numpy as np
 from scipy import interpolate
 import sympy
@@ -79,8 +79,8 @@ class Network():
         self.hlNodeEdgeColor = 'tab:pink'
         self.drawReactionNode = True
         self.breakBoundary = False
-        self.analyzeRates = False
         self.analyzeFlux = False
+        self.analyzeRates = False
         self.analyzeColorHigh = 'k'
         self.analyzeColorLow = 'k'
         self.analyzeColorMap = 'Reds'
@@ -88,6 +88,7 @@ class Network():
         self.drawInlineTimeCourse = False
         self.simTime = 100
         self.forceAnalysisAtSimTime = False
+        self.plotColorbar = False
 
 
     def getLayout(self, returnState=False):
@@ -242,24 +243,24 @@ class Network():
 
         
         # Analyze the reaction rates
-        if self.analyzeRates:
+        if self.analyzeFlux:
             if self.forceAnalysisAtSimTime:
-                self.rrInstance.simulate(0, self.simTime, self.simTime)
-                Var.reaction_rate = self.rrInstance.getReactionRates()
+                self.rrInstance.simulate(0, self.simTime, 300)
+                Var.flux = self.rrInstance.getReactionRates()
             else:
                 try:
                     self.rrInstance.steadyState()
-                    Var.reaction_rate = self.rrInstance.getReactionRates()
+                    Var.flux = self.rrInstance.getReactionRates()
                 except:
                     print("No steadyState is found - netplotlib will use the state at t=simTime")
                     self.rrInstance.reset()
-                    self.rrInstance.simulate(0, self.simTime, self.simTime)
-                    Var.reaction_rate = self.rrInstance.getReactionRates()
+                    self.rrInstance.simulate(0, self.simTime, 300)
+                    Var.flux = self.rrInstance.getReactionRates()
                 
-        if self.analyzeFlux:
+        if self.analyzeRates:
             self.rrInstance.reset()
-            self.rrInstance.simulate(0, self.simTime, self.simTime)
-            Var.flux = self.rrInstance.getRatesOfChange()
+            self.rrInstance.simulate(0, self.simTime, 300)
+            Var.reaction_rate = self.rrInstance.getRatesOfChange()
         
         # initialize directional graph
         Var.G = nx.DiGraph()
@@ -267,14 +268,14 @@ class Network():
         # add edges
         for i in range(sbmlmodel.getNumReactions()):
             for k in range(len(Var.rct[i])):
-                Var.G.add_edges_from([(Var.rct[i][k], Var.rid[i])], weight=(1+self.edgelw))
+                Var.G.add_edges_from([(Var.rct[i][k], Var.rid[i])])
             
             for j in range(len(Var.prd[i])):
-                Var.G.add_edges_from([(Var.rid[i], Var.prd[i][j])], weight=(1+self.edgelw))
+                Var.G.add_edges_from([(Var.rid[i], Var.prd[i][j])])
                         
             if len(Var.mod[i]) > 0:
                 for l in range(len(Var.mod[i])):
-                    Var.G.add_edges_from([(Var.mod[i][l], Var.rid[i])], weight=(1+self.edgelw))
+                    Var.G.add_edges_from([(Var.mod[i][l], Var.rid[i])])
             
         # calcutate positions
         thres = 0.3
@@ -288,24 +289,25 @@ class Network():
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
             for i in itertools.combinations(Var.speciesId + Var.rid, 2):
-                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
                 if pos_dist < thres:
                     dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 4
+                    shortest_dist[i[0]][i[1]] = 2
+                    shortest_dist[i[1]][i[0]] = 2
             pos = nx.kamada_kawai_layout(Var.G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
-        
         if returnState:
             return pos, Var
         else:
             return pos
     
     
-    def draw(self, show=True):
+    def draw(self, show=True, savePath=None):
         """
         Draw network diagram
         
         :param show: flag to show the diagram
+        :param savePath: path to save the diagram
         """
         
         pos, Var = self.getLayout(returnState=True)
@@ -325,11 +327,11 @@ class Network():
 
         if self.drawInlineTimeCourse:
             self.rrInstance.reset()
-            result = self.rrInstance.simulate(0, self.simTime, self.simTime+1)
+            result = self.rrInstance.simulate(0, self.simTime, 300)
             
             plt.tight_layout()
             
-            gs = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
+            gs = gridspec.GridSpec(2, 1, height_ratios=[5, 1])
             gs.update(wspace=0.025, hspace=0.05)
             ax = plt.subplot(gs[1])
                     
@@ -376,10 +378,10 @@ class Network():
             else:
                 if len(n) > 10:
                     rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
-                    rec_height = 0.20*(self.fontsize/20)
+                    rec_height = 0.18*(self.fontsize/20)
                 else:
-                    rec_width = max(0.045*(len(n)+1), 0.13)*(self.fontsize/20)
-                    rec_height = 0.11*(self.fontsize/20)
+                    rec_width = max(0.04*(len(n)+1), 0.13)*(self.fontsize/20)
+                    rec_height = 0.08*(self.fontsize/20)
                     
                 if self.drawInlineTimeCourse:
                     node_color = colorDict[n]
@@ -387,9 +389,10 @@ class Network():
                     if (n in Var.boundaryId) or (n == 'Input') or (n == 'Output'):
                         node_color = self.boundaryColor
                     else:
-                        if self.analyzeFlux:
+                        if self.analyzeRates:
+                            norm = colors.Normalize(vmin=np.min(Var.reaction_rate),vmax=np.max(Var.reaction_rate))
                             colormap = cm.get_cmap(self.analyzeColorMap)
-                            node_color = colormap(Var.flux[0][Var.flux.colnames.index(n)]/(max(abs(Var.flux[0]))))
+                            node_color = colormap(norm(Var.reaction_rate[0][Var.reaction_rate.colnames.index(n)]))
                         else:
                             node_color = self.nodeColor
                     
@@ -503,20 +506,21 @@ class Network():
                             else:
                                 arrowstyle1 = ArrowStyle.Curve()
 
-                            if self.analyzeRates:
-                                if Var.reaction_rate[i] > 0:
+                            if self.analyzeFlux:
+                                if Var.flux[i] > 0:
                                     lw1 = (1+self.edgelw)
                                     lw2 = (4+self.edgelw)
                                     arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                elif Var.reaction_rate[i] < 0:
+                                elif Var.flux[i] < 0:
                                     lw1 = (4+self.edgelw)
                                     lw2 = (1+self.edgelw)
                                     arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
                                 
                                 if self.analyzeColorScale:
+                                    norm = colors.Normalize(vmin=np.min(Var.flux),vmax=np.max(Var.flux))
                                     colormap = cm.get_cmap(self.analyzeColorMap)
-                                    e1color = colormap(0.5-Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
-                                    e2color = colormap(0.5+Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                                    e1color = colormap(norm(Var.flux[i]))#0.5-Var.flux[i]/(2*max(abs(Var.flux))))
+                                    e2color = colormap(norm(Var.flux[i]))#0.5+Var.flux[i]/(2*max(abs(Var.flux))))
                                 else:
                                     e1color = self.analyzeColorLow
                                     e2color = self.analyzeColorHigh
@@ -611,13 +615,13 @@ class Network():
                                 
                                 lpath = Path(stackXY.T[n_2:n_1])
                                 
-                                if self.analyzeRates:
-                                    if Var.reaction_rate[i] > 0:
+                                if self.analyzeFlux:
+                                    if Var.flux[i] > 0:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (4+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                    elif Var.reaction_rate[i] < 0:
+                                    elif Var.flux[i] < 0:
                                         lw1 = (4+self.edgelw)
                                         lw2 = (1+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
@@ -629,9 +633,10 @@ class Network():
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                                     
                                     if self.analyzeColorScale:
+                                        norm = colors.Normalize(vmin=np.min(Var.flux),vmax=np.max(Var.flux))
                                         colormap = cm.get_cmap(self.analyzeColorMap)
-                                        e1color = colormap(0.5-Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
-                                        e2color = colormap(0.5+Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                                        e1color = colormap(norm(Var.flux[i]))
+                                        e2color = colormap(norm(Var.flux[i]))
                                     else:
                                         e1color = self.analyzeColorLow
                                         e2color = self.analyzeColorHigh
@@ -659,10 +664,11 @@ class Network():
                                 
                             else:
                                 e1color = self.reactionColor
-                                if self.analyzeRates:
+                                if self.analyzeFlux:
                                     if self.analyzeColorScale:
+                                        norm = colors.Normalize(vmin=np.min(Var.flux),vmax=np.max(Var.flux))
                                         colormap = cm.get_cmap(self.analyzeColorMap)
-                                        e1color = colormap(Var.reaction_rate[i]/(max(abs(Var.reaction_rate))))
+                                        e1color = colormap(norm(Var.flux[i]))
                                     else:
                                         e1color = self.reactionColor
                                     
@@ -764,13 +770,13 @@ class Network():
                         
                         lpath = Path(stackXY.T[n_2:n_1])
                         
-                        if self.analyzeRates:
-                            if Var.reaction_rate[i] > 0:
+                        if self.analyzeFlux:
+                            if Var.flux[i] > 0:
                                 lw1 = (1+self.edgelw)
                                 lw2 = (4+self.edgelw)
                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                            elif Var.reaction_rate[i] < 0:
+                            elif Var.flux[i] < 0:
                                 lw1 = (4+self.edgelw)
                                 lw2 = (1+self.edgelw)
                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
@@ -782,9 +788,10 @@ class Network():
                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                             
                             if self.analyzeColorScale:
+                                norm = colors.Normalize(vmin=np.min(Var.flux),vmax=np.max(Var.flux))
                                 colormap = cm.get_cmap(self.analyzeColorMap)
-                                e1color = colormap(0.5-Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
-                                e2color = colormap(0.5+Var.reaction_rate[i]/(2*max(abs(Var.reaction_rate))))
+                                e1color = colormap(norm(Var.flux[i]))
+                                e2color = colormap(norm(Var.flux[i]))
                             else:
                                 e1color = self.analyzeColorLow
                                 e2color = self.analyzeColorHigh
@@ -811,10 +818,12 @@ class Network():
                             ax.add_patch(e)
                         
                     else:
-                        if self.analyzeRates:
+                        e1color = self.reactionColor
+                        if self.analyzeFlux:
                             if self.analyzeColorScale:
+                                norm = colors.Normalize(vmin=np.min(Var.flux),vmax=np.max(Var.flux))
                                 colormap = cm.get_cmap(self.analyzeColorMap)
-                                e1color = colormap(Var.reaction_rate[i]/(max(abs(Var.reaction_rate))))
+                                e1color = colormap(norm(Var.flux[i]))
                             else:
                                 e1color = self.reactionColor
                             
@@ -917,9 +926,17 @@ class Network():
         ax.autoscale()
         fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5)
         fig.set_figheight((abs(max_height[0] - max_height[1])+0.5)*5)
+        if self.plotColorbar:
+            fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5 + 4)
+            sm = plt.cm.ScalarMappable(cmap=colormap, norm=norm)
+            sm.set_array([])
+            plt.colorbar(sm)        
         plt.axis('off')
+        plt.tight_layout()
         
-        if show:
+        if savePath != None:
+            fig.savefig(savePath, bbox_inches='tight')
+        else:
             plt.show()
         plt.close()
 
@@ -931,8 +948,7 @@ class Network():
         :param path: path to save the diagram
         """
         
-        fig = self.draw()
-        fig.savefig(path)
+        self.draw(savePath=path)
         
 
 class NetworkEnsemble():
@@ -988,7 +1004,7 @@ class NetworkEnsemble():
         self.edgeTransparency = False
         self.plottingThreshold = 0.
         self.removeBelowThreshold = True
-        self.analyzeRates = False
+        self.analyzeFlux = False
         
     
     def getLayout(self):
@@ -1158,13 +1174,13 @@ class NetworkEnsemble():
         # add edges
         for i in range(len(allRxn)):
             for k in range(len(allRxn[i][0])):
-                G.add_edges_from([(allRxn[i][0][k], rid[i])], weight=(count[i]*self.edgelw))
+                G.add_edges_from([(allRxn[i][0][k], rid[i])])
                 
             for j in range(len(allRxn[i][1])):
-                G.add_edges_from([(rid[i], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+                G.add_edges_from([(rid[i], allRxn[i][1][j])])
                         
             if len(mod[i]) > 0:
-                G.add_edges_from([(mod[i][0], rid[i])], weight=(count[i]*self.edgelw))
+                G.add_edges_from([(mod[i][0], rid[i])])
     
         # calcutate positions
         thres = 0.3
@@ -1189,7 +1205,7 @@ class NetworkEnsemble():
         return pos
     
     
-    def drawWeightedDiagram(self, show=True):
+    def drawWeightedDiagram(self, show=True, savePath=None):
         """     
         Draw weighted reaction network based on frequency of reactions
         
@@ -1400,10 +1416,10 @@ class NetworkEnsemble():
             if allRxn[i][1][0] not in rid:
                 if count[i] > self.plottingThreshold:
                     for k in range(len(allRxn[i][0])):
-                        G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])], weight=(count[i]*self.edgelw))
+                        G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])])
                         
                     for j in range(len(allRxn[i][1])):
-                        G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+                        G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])])
                     
                     sid_used.append(allRxn[i][0][k])
                     sid_used.append(allRxn[i][1][j])
@@ -1412,9 +1428,9 @@ class NetworkEnsemble():
                 rid_idx += 1
             else:
                 if count[i] > self.plottingThreshold:
-                    G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])], weight=(count[i]*self.edgelw))
+                    G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])])
                     sid_used.append(allRxn[i][0][0])
-                    sid_used.append(allRxn[i][1][0])
+#                    sid_used.append(allRxn[i][1][0])
         
         sid_used = np.unique(sid_used).tolist()
         
@@ -1440,23 +1456,23 @@ class NetworkEnsemble():
             
         if not self.removeBelowThreshold:
             rid_idx = 0
-            sid_used = speciesId
-            rid_used = rid
             for i in range(len(allRxn)):
                 if allRxn[i][1][0] not in rid:
                     if count[i] <= self.plottingThreshold:
                         for k in range(len(allRxn[i][0])):
-                            G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])], weight=(count[i]*self.edgelw))
+                            G.add_edges_from([(allRxn[i][0][k], rid[rid_idx])])
                             
                         for j in range(len(allRxn[i][1])):
-                            G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])], weight=(count[i]*self.edgelw))
+                            G.add_edges_from([(rid[rid_idx], allRxn[i][1][j])])
                         
                     rid_idx += 1
                 else:
                     if count[i] <= self.plottingThreshold:
-                        G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])], weight=(count[i]*self.edgelw))
+                        G.add_edges_from([(allRxn[i][0][0], allRxn[i][1][0])])
             
             pos = nx.spring_layout(G, pos=pos, fixed=sid_used+rid_used, scale=self.scale, seed=1)
+            sid_used = speciesId
+            rid_used = rid
         
         # check the range of x and y positions
         max_width = []
@@ -1795,7 +1811,7 @@ class NetworkEnsemble():
                                             arrowstyle=arrowstyle,
                                             connectionstyle='arc3,rad=%s'%rad,
                                             mutation_scale=10.0,
-                                            lw=G[e][allRxn[i][1][0]]['weight'],
+                                            lw=(count[i]*self.edgelw),
                                             color=color,
                                             alpha=alpha,
                                             linestyle=linestyle)
@@ -1814,7 +1830,7 @@ class NetworkEnsemble():
                              fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
                              verticalalignment='center', color='r')
                     
-                    mod_idx += 1
+                mod_idx += 1
             
         # Add nodes at last to put it on top
         if self.drawReactionNode:
@@ -1836,15 +1852,15 @@ class NetworkEnsemble():
         plt.axis('off')
         plt.axis('equal')
         
-        if show:
-            plt.show()
-            return allRxn, count
+        if savePath != None:
+            fig.savefig(savePath, bbox_inches='tight')
         else:
+            if show:
+                plt.show()
             plt.close()
-            return allRxn, count, fig
-
+            return allRxn, count
     
-    def drawNetworkGrid(self, nrows, ncols, auto=False):
+    def drawNetworkGrid(self, nrows, ncols, auto=False, show=True, savePath=None):
         """
         Plot a grid of network diagrams
         
@@ -1854,11 +1870,10 @@ class NetworkEnsemble():
         """
         
         edgelw_backup = self.edgelw
-#        self.edgelw = 1
         
         fig, ax = plt.subplots(nrows, ncols, squeeze=False, sharex=True, sharey=True)
         fig.set_figheight(7*nrows)
-        fig.set_figwidth(7*nrows)
+        fig.set_figwidth(7*ncols)
         plt.subplots_adjust(wspace=0.0, hspace=0.0)
         
         for mdl in range(nrows*ncols):
@@ -1913,11 +1928,11 @@ class NetworkEnsemble():
                                      color=self.labelColor)
                     else:
                         if len(n) > 10:
-                            rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
-                            rec_height = 0.20*(self.fontsize/20)
+                            rec_width = max(0.045*((len(n)/2)+1), 0.15)*(self.fontsize/20)
+                            rec_height = 0.27*(self.fontsize/20)
                         else:
-                            rec_width = max(0.045*(len(n)+1), 0.13)*(self.fontsize/20)
-                            rec_height = 0.11*(self.fontsize/20)
+                            rec_width = max(0.045*(len(n)+1), 0.15)*(self.fontsize/20)
+                            rec_height = 0.13*(self.fontsize/20)
                             
                         if (n in Var.boundaryId) or (n == 'Input') or (n == 'Output'):
                             node_color = self.boundaryColor
@@ -2030,12 +2045,12 @@ class NetworkEnsemble():
                                         
                                         lpath1 = Path(stackXY1.T[n_2:])
                                         
-                                        if self.analyzeRates:
-                                            if Var.reaction_rate[i] > 0:
+                                        if self.analyzeFlux:
+                                            if Var.flux[i] > 0:
                                                 lw1 = (1+self.edgelw)
                                                 lw2 = (4+self.edgelw)
                                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                            elif Var.reaction_rate[i] < 0:
+                                            elif Var.flux[i] < 0:
                                                 lw1 = (4+self.edgelw)
                                                 lw2 = (1+self.edgelw)
                                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
@@ -2132,13 +2147,13 @@ class NetworkEnsemble():
                                         
                                         lpath = Path(stackXY.T[n_2:n_1])
                                         
-                                        if self.analyzeRates:
-                                            if Var.reaction_rate[i] > 0:
+                                        if self.analyzeFlux:
+                                            if Var.flux[i] > 0:
                                                 lw1 = (1+self.edgelw)
                                                 lw2 = (4+self.edgelw)
                                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                            elif Var.reaction_rate[i] < 0:
+                                            elif Var.flux[i] < 0:
                                                 lw1 = (4+self.edgelw)
                                                 lw2 = (1+self.edgelw)
                                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
@@ -2268,13 +2283,13 @@ class NetworkEnsemble():
                                 
                                 lpath = Path(stackXY.T[n_2:n_1])
                                 
-                                if self.analyzeRates:
-                                    if Var.reaction_rate[i] > 0:
+                                if self.analyzeFlux:
+                                    if Var.flux[i] > 0:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (4+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                    elif Var.reaction_rate[i] < 0:
+                                    elif Var.flux[i] < 0:
                                         lw1 = (4+self.edgelw)
                                         lw2 = (1+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
@@ -2402,6 +2417,13 @@ class NetworkEnsemble():
                     fig.axes[mdl].add_patch(Var.G.node[allnodes[i]]['patch'])
                 
                 fig.axes[mdl].autoscale()
+        
+        if savePath != None:
+            fig.savefig(savePath, bbox_inches='tight')
+        else:
+            if show:
+                plt.show()
+            plt.close()
         
         self.edgelw = edgelw_backup
 
