@@ -183,6 +183,7 @@ class Network():
             mod_type_temp = []
             expression = kineticLaw[ml]
             n,d = sympy.fraction(expression)
+            n = '(' + str(n) + ')'
             for ml_i in range(len(Var.mod[ml])):
                 if n.has(Var.mod[ml][ml_i]):
                     mod_type_temp.append('activator')
@@ -380,8 +381,8 @@ class Network():
                     rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
                     rec_height = 0.18*(self.fontsize/20)
                 else:
-                    rec_width = max(0.04*(len(n)+1), 0.13)*(self.fontsize/20)
-                    rec_height = 0.08*(self.fontsize/20)
+                    rec_width = max(0.04*(len(n)+1), 0.12)*(self.fontsize/20)
+                    rec_height = 0.07*(self.fontsize/20)
                     
                 if self.drawInlineTimeCourse:
                     node_color = colorDict[n]
@@ -543,12 +544,12 @@ class Network():
                             if j[k][0] in Var.floatingId:
                                 if (np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i]) > 1):
                                     # position calculation
-                                    slope = ((lpath1.vertices[0][1] - lpath1.vertices[10][1])/
-                                             (lpath1.vertices[0][0] - lpath1.vertices[10][0]))
+                                    slope = ((lpath1.vertices[0][1] - lpath1.vertices[35][1])/
+                                             (lpath1.vertices[0][0] - lpath1.vertices[35][0]))
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath1.vertices[10][0], 
-                                             y_prime+lpath1.vertices[10][1], 
+                                    plt.text(x_prime+lpath1.vertices[35][0], 
+                                             y_prime+lpath1.vertices[35][1], 
                                              int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
                                              fontsize=self.fontsize, 
                                              horizontalalignment='center', 
@@ -557,12 +558,12 @@ class Network():
                             
                             if j[k][1] in Var.floatingId:
                                 if (np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i]) > 1):
-                                    slope = ((lpath2.vertices[0][1] - lpath2.vertices[-20][1])/
-                                             (lpath2.vertices[0][0] - lpath2.vertices[-20][0]))
+                                    slope = ((lpath2.vertices[0][1] - lpath2.vertices[-35][1])/
+                                             (lpath2.vertices[0][0] - lpath2.vertices[-35][0]))
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath2.vertices[-20][0], 
-                                             y_prime+lpath2.vertices[-20][1], 
+                                    plt.text(x_prime+lpath2.vertices[-35][0], 
+                                             y_prime+lpath2.vertices[-35][1], 
                                              int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
                                              fontsize=self.fontsize, 
                                              horizontalalignment='center', 
@@ -684,12 +685,12 @@ class Network():
                         
                             if j[k][0] in Var.floatingId:
                                 if (np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i]) > 1):
-                                    slope = ((lpath.vertices[0][1] - lpath.vertices[10][1])/
-                                             (lpath.vertices[0][0] - lpath.vertices[10][0]))
-                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
+                                    slope = ((lpath.vertices[0][1] - lpath.vertices[35][1])/
+                                             (lpath.vertices[0][0] - lpath.vertices[35][0]))
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath.vertices[10][0], 
-                                             y_prime+lpath.vertices[10][1], 
+                                    plt.text(x_prime+lpath.vertices[35][0], 
+                                             y_prime+lpath.vertices[35][1], 
                                              int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
                                              fontsize=self.fontsize, 
                                              horizontalalignment='center', 
@@ -698,12 +699,12 @@ class Network():
                             
                             if j[k][1] in Var.floatingId:
                                 if (np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i]) > 1):
-                                    slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
-                                             (lpath.vertices[0][0] - lpath.vertices[-20][0]))
-                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
+                                    slope = ((lpath.vertices[0][1] - lpath.vertices[-25][1])/
+                                             (lpath.vertices[0][0] - lpath.vertices[-25][0]))
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath.vertices[-20][0], 
-                                             y_prime+lpath.vertices[-20][1],
+                                    plt.text(x_prime+lpath.vertices[-25][0], 
+                                             y_prime+lpath.vertices[-25][1],
                                              int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
                                              fontsize=self.fontsize, 
                                              horizontalalignment='center', 
@@ -1109,6 +1110,7 @@ class NetworkEnsemble():
                 mod_type_temp = []
                 expression = kineticLaw[ml]
                 n,d = sympy.fraction(expression)
+                n = '(' + str(n) + ')'
                 for ml_i in range(len(mod_m[ml])):
                     if n.has(mod_m[ml][ml_i]):
                         mod_type_temp.append('activator')
@@ -1315,6 +1317,7 @@ class NetworkEnsemble():
                 mod_type_temp = []
                 expression = kineticLaw[ml]
                 n,d = sympy.fraction(expression)
+                n = '(' + str(n) + ')'
                 for ml_i in range(len(mod_m[ml])):
                     if n.has(mod_m[ml][ml_i]):
                         mod_type_temp.append('activator')
