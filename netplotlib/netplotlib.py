@@ -89,6 +89,7 @@ class Network():
         self.simTime = 100
         self.forceAnalysisAtSimTime = False
         self.plotColorbar = False
+        self.inlineTimeCourseSelections = []
 
 
     def getLayout(self, returnState=False):
@@ -183,7 +184,6 @@ class Network():
             mod_type_temp = []
             expression = kineticLaw[ml]
             n,d = sympy.fraction(expression)
-            n = '(' + str(n) + ')'
             for ml_i in range(len(Var.mod[ml])):
                 if n.has(Var.mod[ml][ml_i]):
                     mod_type_temp.append('activator')
@@ -192,6 +192,7 @@ class Network():
                 else:
                     mod_type_temp.append('modifier')
             mod_type.append(mod_type_temp)
+            n = '(' + str(n) + ')'
             
             # In case all products are in rate law, assume it is a reversible reaction
             if (all(ext in str(n) for ext in [s + '/' for s in Var.prd[ml]]) or
@@ -328,19 +329,29 @@ class Network():
 
         if self.drawInlineTimeCourse:
             self.rrInstance.reset()
-            result = self.rrInstance.simulate(0, self.simTime, 300)
+            if len(self.inlineTimeCourseSelections) == 0:
+                result = self.rrInstance.simulate(0, self.simTime, 300)
+            else:
+                sel = self.inlineTimeCourseSelections
+                if 'time' not in sel:
+                    sel = ['time'] + sel
+                result = self.rrInstance.simulate(0, self.simTime, 300, selections=sel)
             
             plt.tight_layout()
-            
-            gs = gridspec.GridSpec(2, 1, height_ratios=[5, 1])
-            gs.update(wspace=0.025, hspace=0.05)
-            ax = plt.subplot(gs[1])
-                    
-            ax.plot(result[:,0], result[:,1:], lw=3)
             
             colorDict = dict(zip(self.rrInstance.getFloatingSpeciesIds(), 
                                  plt.rcParams['axes.prop_cycle'].by_key()['color'][:self.rrInstance.getNumFloatingSpecies()]))
             
+            gs = gridspec.GridSpec(2, 1, height_ratios=[5, 1])
+            gs.update(wspace=0.025, hspace=0.05)
+            ax = plt.subplot(gs[1])
+            
+            if len(self.inlineTimeCourseSelections) == 0:
+                ax.plot(result[:,0], result[:,1], lw=3)
+            else:
+                for i in range(len(sel) - 1):
+                    ax.plot(result[:,0], result[:,i+1], lw=3, c=colorDict.get(sel[i+1]))
+                
             ax = plt.subplot(gs[0])
         else:
             ax = plt.gca()
@@ -933,7 +944,9 @@ class Network():
             sm.set_array([])
             plt.colorbar(sm)        
         plt.axis('off')
-        plt.tight_layout()
+        
+        if not self.drawInlineTimeCourse:
+            plt.tight_layout()
         
         if savePath != None:
             fig.savefig(savePath, bbox_inches='tight')
@@ -1110,7 +1123,6 @@ class NetworkEnsemble():
                 mod_type_temp = []
                 expression = kineticLaw[ml]
                 n,d = sympy.fraction(expression)
-                n = '(' + str(n) + ')'
                 for ml_i in range(len(mod_m[ml])):
                     if n.has(mod_m[ml][ml_i]):
                         mod_type_temp.append('activator')
@@ -1119,6 +1131,7 @@ class NetworkEnsemble():
                     else:
                         mod_type_temp.append('modifier')
                 mod_type_m.append(mod_type_temp)
+                n = '(' + str(n) + ')'
             
             for i in range(len(mod_m)):
                 if len(mod_m[i]) > 0:
@@ -1317,7 +1330,6 @@ class NetworkEnsemble():
                 mod_type_temp = []
                 expression = kineticLaw[ml]
                 n,d = sympy.fraction(expression)
-                n = '(' + str(n) + ')'
                 for ml_i in range(len(mod_m[ml])):
                     if n.has(mod_m[ml][ml_i]):
                         mod_type_temp.append('activator')
@@ -1326,6 +1338,7 @@ class NetworkEnsemble():
                     else:
                         mod_type_temp.append('modifier')
                 mod_type_m.append(mod_type_temp)
+                n = '(' + str(n) + ')'
             
             for i in range(len(mod_m)):
                 if len(mod_m[i]) > 0:
