@@ -1695,6 +1695,7 @@ class NetworkEnsemble():
                                                                           head_width=(0.4 + 0.01*count[i]*self.edgelw))
                                     
                                     if r_type[i] == 'reversible':
+                                        lpath1 = Path(stackXY.T[-n:])
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                               head_width=(0.4 + 0.01*count[i]*self.edgelw))
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
@@ -1754,6 +1755,7 @@ class NetworkEnsemble():
                                                                           head_width=(0.4 + 0.01*count[i]*self.edgelw))
                                     
                                     if r_type[i] == 'reversible':
+                                        lpath = Path(stackXY.T[-n:n])
                                         arrowstyle = ArrowStyle.CurveFilledAB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                               head_width=(0.4 + 0.01*count[i]*self.edgelw))
                                     
@@ -1815,6 +1817,7 @@ class NetworkEnsemble():
                                                                  head_width=(0.4 + 0.01*count[i]*self.edgelw))
                             
                             if r_type[i] == 'reversible':
+                                lpath = Path(stackXY.T[-n:n])
                                 arrowstyle = ArrowStyle.CurveFilledAB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                       head_width=(0.4 + 0.01*count[i]*self.edgelw))
                             e = FancyArrowPatch(path=lpath,
