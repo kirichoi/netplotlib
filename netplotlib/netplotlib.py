@@ -1235,6 +1235,7 @@ class NetworkEnsemble():
         count = []
         count_mod = []
         rid = []
+        r_type = []
         mod_type = []
         allBoundary = []
         rid_ind = 0
@@ -1285,6 +1286,7 @@ class NetworkEnsemble():
             mod_target_rct = []
             mod_target_prd = []
             kineticLaw = []
+            r_type_m = []
             mod_type_m = []
             
             doc = tesbml.readSBMLFromString(r.getSBML())
@@ -1339,6 +1341,19 @@ class NetworkEnsemble():
                         mod_type_temp.append('modifier')
                 mod_type_m.append(mod_type_temp)
                 n = '(' + str(n) + ')'
+                
+                # In case all products are in rate law, assume it is a reversible reaction
+                if (all(ext in str(n) for ext in [s + '/' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + ')' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + '*' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + ';' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + '+' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + '-' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + ' ' for s in prd[ml]])):
+                    r_type_m.append('reversible')
+                else:
+                    r_type_m.append('irreversible')
+                
             
             for i in range(len(mod_m)):
                 if len(mod_m[i]) > 0:
@@ -1353,19 +1368,41 @@ class NetworkEnsemble():
             speciesId = list(set(speciesId))
             
             for t in range(sbmlmodel.getNumReactions()):
-                if ([rct[t], prd[t]] not in allRxn):
-                    allRxn.append([rct[t], prd[t]])
-                    if len(self.weights) > 0:
-                        count.append(1*self.weights[rind])
+                if r_type_m[t] == 'irreversible':
+                    if ([rct[t], prd[t]] not in allRxn):
+                        allRxn.append([rct[t], prd[t]])
+                        if len(self.weights) > 0:
+                            count.append(1*self.weights[rind])
+                        else:
+                            count.append(1)
+                        rid.append("J" + str(rid_ind))
+                        rid_ind += 1
+                        r_type.append(r_type_m[t])
                     else:
-                        count.append(1)
-                    rid.append("J" + str(rid_ind))
-                    rid_ind += 1
+                        if len(self.weights) > 0:
+                            count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
+                        else:
+                            count[allRxn.index([rct[t], prd[t]])] += 1
                 else:
-                    if len(self.weights) > 0:
-                        count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
-                    else:
-                        count[allRxn.index([rct[t], prd[t]])] += 1
+                    if ([rct[t],prd[t]] not in allRxn) and ([prd[t],rct[t]] not in allRxn):
+                        allRxn.append([rct[t], prd[t]])
+                        if len(self.weights) > 0:
+                            count.append(1*self.weights[rind])
+                        else:
+                            count.append(1)
+                        rid.append("J" + str(rid_ind))
+                        rid_ind += 1
+                        r_type.append(r_type_m[t])
+                    elif ([rct[t],prd[t]] not in allRxn) and ([prd[t],rct[t]] in allRxn):
+                        if len(self.weights) > 0:
+                            count[allRxn.index([prd[t], rct[t]])] += 1*self.weights[rind]
+                        else:
+                            count[allRxn.index([prd[t], rct[t]])] += 1
+                    elif ([rct[t],prd[t]] in allRxn) and ([prd[t],rct[t]] not in allRxn):
+                        if len(self.weights) > 0:
+                            count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
+                        else:
+                            count[allRxn.index([rct[t], prd[t]])] += 1                    
             
             for mi in range(len(mod_m)):
                 if len(mod_m[mi]) == 0:
@@ -1398,7 +1435,7 @@ class NetworkEnsemble():
                             else:
                                 count_mod.append(1)
                             if len(mod_type_m[mi][mj]) > 0:
-                                    mod_type.append(mod_type_m[mi][mj])
+                                mod_type.append(mod_type_m[mi][mj])
         
         allRxn = allRxn + allMod
         count = count + count_mod
@@ -1657,6 +1694,12 @@ class NetworkEnsemble():
                                     arrowstyle2 = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                           head_width=(0.4 + 0.01*count[i]*self.edgelw))
                                     
+                                    if r_type[i] == 'reversible':
+                                        arrowstyle1 = ArrowStyle.CurveFilledA(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                              head_width=(0.4 + 0.01*count[i]*self.edgelw))
+                                        arrowstyle2 = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                              head_width=(0.4 + 0.01*count[i]*self.edgelw))
+                                    
                                     e1 = FancyArrowPatch(path=lpath1,
                                                         arrowstyle=arrowstyle1,
                                                         mutation_scale=10.0,
@@ -1709,6 +1752,10 @@ class NetworkEnsemble():
                                     
                                     arrowstyle = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                           head_width=(0.4 + 0.01*count[i]*self.edgelw))
+                                    
+                                    if r_type[i] == 'reversible':
+                                        arrowstyle = ArrowStyle.CurveFilledAB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                              head_width=(0.4 + 0.01*count[i]*self.edgelw))
                                     
                                     e = FancyArrowPatch(path=lpath,
                                                         arrowstyle=arrowstyle,
@@ -1767,6 +1814,9 @@ class NetworkEnsemble():
                             arrowstyle = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                  head_width=(0.4 + 0.01*count[i]*self.edgelw))
                             
+                            if r_type[i] == 'reversible':
+                                arrowstyle = ArrowStyle.CurveFilledAB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                      head_width=(0.4 + 0.01*count[i]*self.edgelw))
                             e = FancyArrowPatch(path=lpath,
                                                 arrowstyle=arrowstyle,
                                                 mutation_scale=10.0,
