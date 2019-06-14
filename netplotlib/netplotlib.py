@@ -1204,16 +1204,16 @@ class NetworkEnsemble():
         
         maxIter = 5
         maxIter_n = 0
-        
         dist_flag = True
         
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
-            for i in itertools.combinations(speciesId + rid, 2):
-                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+            for i in itertools.combinations(pos.keys(), 2):
+                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
                 if pos_dist < thres:
                     dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 4
+                    shortest_dist[i[0]][i[1]] = 2
+                    shortest_dist[i[1]][i[0]] = 2
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
         
@@ -1283,8 +1283,7 @@ class NetworkEnsemble():
             rct = []
             prd = []
             mod_m = []
-            mod_target_rct = []
-            mod_target_prd = []
+            mod_target = []
             kineticLaw = []
             r_type_m = []
             mod_type_m = []
@@ -1357,12 +1356,9 @@ class NetworkEnsemble():
             
             for i in range(len(mod_m)):
                 if len(mod_m[i]) > 0:
-                    mod_target_rct.append(np.repeat([rct[i]], len(mod_m[i])).tolist())
-                    mod_target_prd.append(np.repeat([prd[i]], len(mod_m[i])).tolist())
-                else:
-                    mod_target_rct.append([])
-                    mod_target_prd.append([])
-                
+                    for j in range(len(mod_m[i])):
+                        mod_target.append([mod_m[i][j],[rct[i]],[prd[i]],mod_type_m[i][j]])
+
             speciesId = list(rct + prd)
             speciesId = [item for sublist in speciesId for item in sublist]
             speciesId = list(set(speciesId))
@@ -1403,40 +1399,39 @@ class NetworkEnsemble():
                             count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
                         else:
                             count[allRxn.index([rct[t], prd[t]])] += 1                    
-            
-            for mi in range(len(mod_m)):
-                if len(mod_m[mi]) == 0:
-                    pass
-                else:
-                    for mj in range(len(mod_m[mi])):
-                        if [[mod_target_rct[mi][mj]], [mod_target_prd[mi][mj]]] not in allRxn:
-                            allRxn.append([[mod_target_rct[mi][mj]], [mod_target_prd[mi][mj]]])
-                        mod_ridx = allRxn.index([[mod_target_rct[mi][mj]], [mod_target_prd[mi][mj]]])
-                        if ([[mod_m[mi][mj]], ['J'+str(mod_ridx)]] in allMod):
-                            rxnind = [i for i, x in enumerate(allMod) if x == [[mod_m[mi][mj]], ['J'+str(mod_ridx)]]]
-                            if (mod_type_m[mi][mj] in np.array(mod_type)[rxnind]):
-                                modind = [i for i, x in enumerate(mod_type) if x == mod_type_m[mi][mj]]
-                                if len(self.weights) > 0:
-                                    count_mod[list(set(rxnind) & set(modind))[0]] += 1*self.weights[rind]
-                                else:
-                                    count_mod[list(set(rxnind) & set(modind))[0]] += 1
-                            else:
-                                allMod.append([[mod_m[mi][mj]], ['J'+str(mod_ridx)]])
-                                if len(self.weights) > 0:
-                                    count_mod.append(1*self.weights[rind])
-                                else:
-                                    count_mod.append(1)
-                                if len(mod_type_m[mi][mj]) > 0:
-                                    mod_type.append(mod_type_m[mi][mj])
+
+            for mi in range(len(mod_target)):
+                # Reversible reactions
+                try:
+                    mod_ridx = allRxn.index([mod_target[mi][1][0], mod_target[mi][2][0]])
+                except:
+                    mod_ridx = allRxn.index([mod_target[mi][2][0], mod_target[mi][1][0]])
+
+                if ([[mod_target[mi][0]], ['J'+str(mod_ridx)]] in allMod):
+                    rxnind = [i for i, x in enumerate(allMod) if x == [[mod_target[mi][0]], ['J'+str(mod_ridx)]]]
+                    if ([mod_target[mi][3]] in np.array(mod_type)[rxnind]):
+                        modind = [i for i, x in enumerate(mod_type) if x == mod_target[mi][3]]
+                        if len(self.weights) > 0:
+                            count_mod[list(set(rxnind) & set(modind))[0]] += 1*self.weights[rind]
                         else:
-                            allMod.append([[mod_m[mi][mj]], ['J'+str(mod_ridx)]])
-                            if len(self.weights) > 0:
-                                count_mod.append(1*self.weights[rind])
-                            else:
-                                count_mod.append(1)
-                            if len(mod_type_m[mi][mj]) > 0:
-                                mod_type.append(mod_type_m[mi][mj])
-        
+                            count_mod[list(set(rxnind) & set(modind))[0]] += 1
+                    else:
+                        allMod.append([[mod_target[mi][0]], ['J'+str(mod_ridx)]])
+                        if len(self.weights) > 0:
+                            count_mod.append(1*self.weights[rind])
+                        else:
+                            count_mod.append(1)
+                        if len(mod_target[mi][3]) > 0:
+                            mod_type.append(mod_target[mi][3])
+                else:
+                    allMod.append([[mod_target[mi][0]], ['J'+str(mod_ridx)]])
+                    if len(self.weights) > 0:
+                        count_mod.append(1*self.weights[rind])
+                    else:
+                        count_mod.append(1)
+                    if len(mod_target[mi][3]) > 0:
+                        mod_type.append(mod_target[mi][3])
+    
         allRxn = allRxn + allMod
         count = count + count_mod
         
@@ -1502,22 +1497,22 @@ class NetworkEnsemble():
         thres = 0.3
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-
+        
         maxIter = 5
         maxIter_n = 0
-        
         dist_flag = True
         
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
             for i in itertools.combinations(pos.keys(), 2):
-                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
                 if pos_dist < thres:
                     dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 4
+                    shortest_dist[i[0]][i[1]] = 2
+                    shortest_dist[i[1]][i[0]] = 2
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
-            
+        
         if not self.removeBelowThreshold:
             rid_idx = 0
             for i in range(len(allRxn)):
