@@ -89,6 +89,7 @@ class Network():
         self.simTime = 100
         self.forceAnalysisAtSimTime = False
         self.plotColorbar = False
+        self.inlineTimeCourseSelections = []
 
 
     def getLayout(self, returnState=False):
@@ -191,6 +192,7 @@ class Network():
                 else:
                     mod_type_temp.append('modifier')
             mod_type.append(mod_type_temp)
+            n = '(' + str(n) + ')'
             
             # In case all products are in rate law, assume it is a reversible reaction
             if (all(ext in str(n) for ext in [s + '/' for s in Var.prd[ml]]) or
@@ -327,19 +329,29 @@ class Network():
 
         if self.drawInlineTimeCourse:
             self.rrInstance.reset()
-            result = self.rrInstance.simulate(0, self.simTime, 300)
+            if len(self.inlineTimeCourseSelections) == 0:
+                result = self.rrInstance.simulate(0, self.simTime, 300)
+            else:
+                sel = self.inlineTimeCourseSelections
+                if 'time' not in sel:
+                    sel = ['time'] + sel
+                result = self.rrInstance.simulate(0, self.simTime, 300, selections=sel)
             
             plt.tight_layout()
-            
-            gs = gridspec.GridSpec(2, 1, height_ratios=[5, 1])
-            gs.update(wspace=0.025, hspace=0.05)
-            ax = plt.subplot(gs[1])
-                    
-            ax.plot(result[:,0], result[:,1:], lw=3)
             
             colorDict = dict(zip(self.rrInstance.getFloatingSpeciesIds(), 
                                  plt.rcParams['axes.prop_cycle'].by_key()['color'][:self.rrInstance.getNumFloatingSpecies()]))
             
+            gs = gridspec.GridSpec(2, 1, height_ratios=[5, 1])
+            gs.update(wspace=0.025, hspace=0.05)
+            ax = plt.subplot(gs[1])
+            
+            if len(self.inlineTimeCourseSelections) == 0:
+                ax.plot(result[:,0], result[:,1], lw=3)
+            else:
+                for i in range(len(sel) - 1):
+                    ax.plot(result[:,0], result[:,i+1], lw=3, c=colorDict.get(sel[i+1]))
+                
             ax = plt.subplot(gs[0])
         else:
             ax = plt.gca()
@@ -380,8 +392,8 @@ class Network():
                     rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
                     rec_height = 0.18*(self.fontsize/20)
                 else:
-                    rec_width = max(0.04*(len(n)+1), 0.13)*(self.fontsize/20)
-                    rec_height = 0.08*(self.fontsize/20)
+                    rec_width = max(0.04*(len(n)+1), 0.12)*(self.fontsize/20)
+                    rec_height = 0.07*(self.fontsize/20)
                     
                 if self.drawInlineTimeCourse:
                     node_color = colorDict[n]
@@ -543,12 +555,12 @@ class Network():
                             if j[k][0] in Var.floatingId:
                                 if (np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i]) > 1):
                                     # position calculation
-                                    slope = ((lpath1.vertices[0][1] - lpath1.vertices[10][1])/
-                                             (lpath1.vertices[0][0] - lpath1.vertices[10][0]))
+                                    slope = ((lpath1.vertices[0][1] - lpath1.vertices[35][1])/
+                                             (lpath1.vertices[0][0] - lpath1.vertices[35][0]))
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath1.vertices[10][0], 
-                                             y_prime+lpath1.vertices[10][1], 
+                                    plt.text(x_prime+lpath1.vertices[35][0], 
+                                             y_prime+lpath1.vertices[35][1], 
                                              int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
                                              fontsize=self.fontsize, 
                                              horizontalalignment='center', 
@@ -557,12 +569,12 @@ class Network():
                             
                             if j[k][1] in Var.floatingId:
                                 if (np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i]) > 1):
-                                    slope = ((lpath2.vertices[0][1] - lpath2.vertices[-20][1])/
-                                             (lpath2.vertices[0][0] - lpath2.vertices[-20][0]))
+                                    slope = ((lpath2.vertices[0][1] - lpath2.vertices[-35][1])/
+                                             (lpath2.vertices[0][0] - lpath2.vertices[-35][0]))
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath2.vertices[-20][0], 
-                                             y_prime+lpath2.vertices[-20][1], 
+                                    plt.text(x_prime+lpath2.vertices[-35][0], 
+                                             y_prime+lpath2.vertices[-35][1], 
                                              int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
                                              fontsize=self.fontsize, 
                                              horizontalalignment='center', 
@@ -684,12 +696,12 @@ class Network():
                         
                             if j[k][0] in Var.floatingId:
                                 if (np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i]) > 1):
-                                    slope = ((lpath.vertices[0][1] - lpath.vertices[10][1])/
-                                             (lpath.vertices[0][0] - lpath.vertices[10][0]))
-                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
+                                    slope = ((lpath.vertices[0][1] - lpath.vertices[35][1])/
+                                             (lpath.vertices[0][0] - lpath.vertices[35][0]))
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath.vertices[10][0], 
-                                             y_prime+lpath.vertices[10][1], 
+                                    plt.text(x_prime+lpath.vertices[35][0], 
+                                             y_prime+lpath.vertices[35][1], 
                                              int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
                                              fontsize=self.fontsize, 
                                              horizontalalignment='center', 
@@ -698,12 +710,12 @@ class Network():
                             
                             if j[k][1] in Var.floatingId:
                                 if (np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i]) > 1):
-                                    slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
-                                             (lpath.vertices[0][0] - lpath.vertices[-20][0]))
-                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
+                                    slope = ((lpath.vertices[0][1] - lpath.vertices[-25][1])/
+                                             (lpath.vertices[0][0] - lpath.vertices[-25][0]))
+                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath.vertices[-20][0], 
-                                             y_prime+lpath.vertices[-20][1],
+                                    plt.text(x_prime+lpath.vertices[-25][0], 
+                                             y_prime+lpath.vertices[-25][1],
                                              int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
                                              fontsize=self.fontsize, 
                                              horizontalalignment='center', 
@@ -932,7 +944,9 @@ class Network():
             sm.set_array([])
             plt.colorbar(sm)        
         plt.axis('off')
-        plt.tight_layout()
+        
+        if not self.drawInlineTimeCourse:
+            plt.tight_layout()
         
         if savePath != None:
             fig.savefig(savePath, bbox_inches='tight')
@@ -1117,6 +1131,7 @@ class NetworkEnsemble():
                     else:
                         mod_type_temp.append('modifier')
                 mod_type_m.append(mod_type_temp)
+                n = '(' + str(n) + ')'
             
             for i in range(len(mod_m)):
                 if len(mod_m[i]) > 0:
@@ -1189,16 +1204,16 @@ class NetworkEnsemble():
         
         maxIter = 5
         maxIter_n = 0
-        
         dist_flag = True
         
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
-            for i in itertools.combinations(speciesId + rid, 2):
-                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+            for i in itertools.combinations(pos.keys(), 2):
+                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
                 if pos_dist < thres:
                     dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 4
+                    shortest_dist[i[0]][i[1]] = 2
+                    shortest_dist[i[1]][i[0]] = 2
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
         
@@ -1216,8 +1231,11 @@ class NetworkEnsemble():
         
         # extract reactant, product, modifiers, and kinetic laws
         allRxn = []
+        allMod = []
         count = []
+        count_mod = []
         rid = []
+        r_type = []
         mod_type = []
         allBoundary = []
         rid_ind = 0
@@ -1265,9 +1283,9 @@ class NetworkEnsemble():
             rct = []
             prd = []
             mod_m = []
-            mod_target_rct = []
-            mod_target_prd = []
+            mod_target = []
             kineticLaw = []
+            r_type_m = []
             mod_type_m = []
             
             doc = tesbml.readSBMLFromString(r.getSBML())
@@ -1321,60 +1339,101 @@ class NetworkEnsemble():
                     else:
                         mod_type_temp.append('modifier')
                 mod_type_m.append(mod_type_temp)
+                n = '(' + str(n) + ')'
+                
+                # In case all products are in rate law, assume it is a reversible reaction
+                if (all(ext in str(n) for ext in [s + '/' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + ')' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + '*' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + ';' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + '+' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + '-' for s in prd[ml]]) or
+                    all(ext in str(n) for ext in [s + ' ' for s in prd[ml]])):
+                    r_type_m.append('reversible')
+                else:
+                    r_type_m.append('irreversible')
+                
             
             for i in range(len(mod_m)):
                 if len(mod_m[i]) > 0:
-                    mod_target_rct.append(np.repeat([rct[i]], len(mod_m[i])).tolist())
-                    mod_target_prd.append(np.repeat([prd[i]], len(mod_m[i])).tolist())
-                else:
-                    mod_target_rct.append([])
-                    mod_target_prd.append([])
-                
+                    for j in range(len(mod_m[i])):
+                        mod_target.append([mod_m[i][j],[rct[i]],[prd[i]],mod_type_m[i][j]])
+
             speciesId = list(rct + prd)
             speciesId = [item for sublist in speciesId for item in sublist]
             speciesId = list(set(speciesId))
             
             for t in range(sbmlmodel.getNumReactions()):
-                if [rct[t], prd[t]] not in allRxn:
-                    allRxn.append([rct[t], prd[t]])
-                    if len(self.weights) > 0:
-                        count.append(1*self.weights[rind])
-                    else:
-                        count.append(1)
-                    rid.append("J" + str(rid_ind))
-                    rid_ind += 1
-                else:
-                    if len(self.weights) > 0:
-                        count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
-                    else:
-                        count[allRxn.index([rct[t], prd[t]])] += 1
-
-            for mi in range(len(mod_m)):
-                mod_type_full = []
-                if len(mod_m[mi]) == 0:
-                    pass
-                else:
-                    for mj in range(len(mod_m[mi])):
-                        if [[mod_target_rct[mi][mj]], [mod_target_prd[mi][mj]]] not in allRxn:
-                            allRxn.append([[mod_target_rct[mi][mj]], [mod_target_prd[mi][mj]]])
-                        mod_ridx = allRxn.index([[mod_target_rct[mi][mj]], [mod_target_prd[mi][mj]]])
-                        
-                        if [[mod_m[mi][mj]], ['J'+str(mod_ridx)]] in allRxn:
-                            if len(self.weights) > 0:
-                                count[allRxn.index([[mod_m[mi][mj]], ['J'+str(mod_ridx)]])] += 1*self.weights[rind]
-                            else:
-                                count[allRxn.index([[mod_m[mi][mj]], ['J'+str(mod_ridx)]])] += 1
+                if r_type_m[t] == 'irreversible':
+                    if ([rct[t], prd[t]] not in allRxn):
+                        allRxn.append([rct[t], prd[t]])
+                        if len(self.weights) > 0:
+                            count.append(1*self.weights[rind])
                         else:
-                            allRxn.append([[mod_m[mi][mj]], ['J'+str(mod_ridx)]])
-                            if len(self.weights) > 0:
-                                count.append(1*self.weights[rind])
-                            else:
-                                count.append(1)
-                            mod_type_full.append(mod_type_m[mi][mj])
-                    if len(mod_type_full) > 0:
-                        mod_type.append(mod_type_full)
-        
-        mod_type_flat = [item for sublist in mod_type for item in sublist]
+                            count.append(1)
+                        rid.append("J" + str(rid_ind))
+                        rid_ind += 1
+                        r_type.append(r_type_m[t])
+                    else:
+                        if len(self.weights) > 0:
+                            count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
+                        else:
+                            count[allRxn.index([rct[t], prd[t]])] += 1
+                else:
+                    if ([rct[t],prd[t]] not in allRxn) and ([prd[t],rct[t]] not in allRxn):
+                        allRxn.append([rct[t], prd[t]])
+                        if len(self.weights) > 0:
+                            count.append(1*self.weights[rind])
+                        else:
+                            count.append(1)
+                        rid.append("J" + str(rid_ind))
+                        rid_ind += 1
+                        r_type.append(r_type_m[t])
+                    elif ([rct[t],prd[t]] not in allRxn) and ([prd[t],rct[t]] in allRxn):
+                        if len(self.weights) > 0:
+                            count[allRxn.index([prd[t], rct[t]])] += 1*self.weights[rind]
+                        else:
+                            count[allRxn.index([prd[t], rct[t]])] += 1
+                    elif ([rct[t],prd[t]] in allRxn) and ([prd[t],rct[t]] not in allRxn):
+                        if len(self.weights) > 0:
+                            count[allRxn.index([rct[t], prd[t]])] += 1*self.weights[rind]
+                        else:
+                            count[allRxn.index([rct[t], prd[t]])] += 1                    
+
+            for mi in range(len(mod_target)):
+                # Reversible reactions
+                try:
+                    mod_ridx = allRxn.index([mod_target[mi][1][0], mod_target[mi][2][0]])
+                except:
+                    mod_ridx = allRxn.index([mod_target[mi][2][0], mod_target[mi][1][0]])
+
+                if ([[mod_target[mi][0]], ['J'+str(mod_ridx)]] in allMod):
+                    rxnind = [i for i, x in enumerate(allMod) if x == [[mod_target[mi][0]], ['J'+str(mod_ridx)]]]
+                    if ([mod_target[mi][3]] in np.array(mod_type)[rxnind]):
+                        modind = [i for i, x in enumerate(mod_type) if x == mod_target[mi][3]]
+                        if len(self.weights) > 0:
+                            count_mod[list(set(rxnind) & set(modind))[0]] += 1*self.weights[rind]
+                        else:
+                            count_mod[list(set(rxnind) & set(modind))[0]] += 1
+                    else:
+                        allMod.append([[mod_target[mi][0]], ['J'+str(mod_ridx)]])
+                        if len(self.weights) > 0:
+                            count_mod.append(1*self.weights[rind])
+                        else:
+                            count_mod.append(1)
+                        if len(mod_target[mi][3]) > 0:
+                            mod_type.append(mod_target[mi][3])
+                else:
+                    allMod.append([[mod_target[mi][0]], ['J'+str(mod_ridx)]])
+                    if len(self.weights) > 0:
+                        count_mod.append(1*self.weights[rind])
+                    else:
+                        count_mod.append(1)
+                    if len(mod_target[mi][3]) > 0:
+                        mod_type.append(mod_target[mi][3])
+    
+        allRxn = allRxn + allMod
+        count = count + count_mod
         
         # Break boundary
         allBoundary = np.unique(allBoundary).tolist()
@@ -1438,22 +1497,22 @@ class NetworkEnsemble():
         thres = 0.3
         shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
         pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-
+        
         maxIter = 5
         maxIter_n = 0
-        
         dist_flag = True
         
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
             for i in itertools.combinations(pos.keys(), 2):
-                pos_dist = np.linalg.norm(pos[i[0]] - pos[i[1]])
+                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
                 if pos_dist < thres:
                     dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 4
+                    shortest_dist[i[0]][i[1]] = 2
+                    shortest_dist[i[1]][i[0]] = 2
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
             maxIter_n += 1
-            
+        
         if not self.removeBelowThreshold:
             rid_idx = 0
             for i in range(len(allRxn)):
@@ -1563,7 +1622,9 @@ class NetworkEnsemble():
         # add edges to the figure
         mod_idx = 0
         rid_idx = 0
+        rad_track = True
         
+        seen={}
         for i in range(len(allRxn)):
             if allRxn[i][1][0] not in rid:
                 if count[i] > self.plottingThreshold or not self.removeBelowThreshold:
@@ -1628,6 +1689,13 @@ class NetworkEnsemble():
                                     arrowstyle2 = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                           head_width=(0.4 + 0.01*count[i]*self.edgelw))
                                     
+                                    if r_type[i] == 'reversible':
+                                        lpath1 = Path(stackXY.T[-n:])
+                                        arrowstyle1 = ArrowStyle.CurveFilledA(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                              head_width=(0.4 + 0.01*count[i]*self.edgelw))
+                                        arrowstyle2 = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                              head_width=(0.4 + 0.01*count[i]*self.edgelw))
+                                    
                                     e1 = FancyArrowPatch(path=lpath1,
                                                         arrowstyle=arrowstyle1,
                                                         mutation_scale=10.0,
@@ -1680,6 +1748,11 @@ class NetworkEnsemble():
                                     
                                     arrowstyle = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                           head_width=(0.4 + 0.01*count[i]*self.edgelw))
+                                    
+                                    if r_type[i] == 'reversible':
+                                        lpath = Path(stackXY.T[-n:n])
+                                        arrowstyle = ArrowStyle.CurveFilledAB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                              head_width=(0.4 + 0.01*count[i]*self.edgelw))
                                     
                                     e = FancyArrowPatch(path=lpath,
                                                         arrowstyle=arrowstyle,
@@ -1738,6 +1811,10 @@ class NetworkEnsemble():
                             arrowstyle = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                  head_width=(0.4 + 0.01*count[i]*self.edgelw))
                             
+                            if r_type[i] == 'reversible':
+                                lpath = Path(stackXY.T[-n:n])
+                                arrowstyle = ArrowStyle.CurveFilledAB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
+                                                                      head_width=(0.4 + 0.01*count[i]*self.edgelw))
                             e = FancyArrowPatch(path=lpath,
                                                 arrowstyle=arrowstyle,
                                                 mutation_scale=10.0,
@@ -1760,16 +1837,15 @@ class NetworkEnsemble():
             else:
                 # Modifiers
                 if count[i] > self.plottingThreshold or not self.removeBelowThreshold:
-                    seen={}
                     for m, e in enumerate(allRxn[i][0]):
                         n1 = G.node[e]['patch']
                         n2 = G.node[allRxn[i][1][0]]['patch']
-                        rad = 0.1
+                        rad = 0.15
                         shrinkB = 2.
                         
-                        if (e,allRxn[i][1][0]) in seen:
+                        if (allRxn[i][0][0],allRxn[i][1][0]) in seen:
                             rad = seen.get((e,allRxn[i][1][0])) # TODO: No curvature when there is just a single line between two nodes
-                            rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
+                            rad = (rad+np.sign(rad)*0.15)*-1 # TODO: Change curvature
                             
                         X1 = (n1.get_x()+n1.get_width()/2,
                               n1.get_y()+n1.get_height()/2)
@@ -1782,17 +1858,17 @@ class NetworkEnsemble():
                         intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
                         stackXY = np.vstack((intX, intY))
                         
-                        if mod_type_flat[mod_idx] == 'inhibitor': # inhibition
+                        if mod_type[mod_idx] == 'inhibitor': # inhibition
                             color = self.modifierColor
                             arrowstyle = ArrowStyle.BarAB(widthA=0.0, angleA=None, widthB=1.0, angleB=None)
                             shrinkB = 10.
                             linestyle = '-'
-                        elif mod_type_flat[mod_idx] == 'activator': # activation
+                        elif mod_type[mod_idx] == 'activator': # activation
                             color = self.modifierColor
                             arrowstyle = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                  head_width=(0.4 + 0.01*count[i]*self.edgelw))
                             linestyle = '-'
-                        elif mod_type_flat[mod_idx] == 'modifier': # Unknown modifier
+                        elif mod_type[mod_idx] == 'modifier': # Unknown modifier
                             color = self.modifierColor
                             arrowstyle = ArrowStyle.CurveFilledB(head_length=(0.8 + 0.01*count[i]*self.edgelw), 
                                                                  head_width=(0.4 + 0.01*count[i]*self.edgelw))
@@ -1802,7 +1878,7 @@ class NetworkEnsemble():
                             alpha = count[i]
                         else:
                             alpha = None
-                            
+                        
                         e = FancyArrowPatch(X1,
                                             X2,
                                             patchA=n1,
@@ -1816,19 +1892,45 @@ class NetworkEnsemble():
                                             alpha=alpha,
                                             linestyle=linestyle)
                         
-                        seen[(e,allRxn[i][1][0])]=rad
+                        seen[(allRxn[i][0][0],allRxn[i][1][0])]=rad
                         ax.add_patch(e)
-                    # Edge labels
-                    if self.edgeLabel:
-                        c = FancyBboxPatch((stackXY.T[50,0]-0.0325, stackXY.T[50,1]+0.005),
-                                           0.125, 
-                                           0.05,
-                                           boxstyle="round,pad=0.01, rounding_size=0.01",
-                                           color='w')
-                        ax.add_patch(c)
-                        plt.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(count[i], 3), 
-                             fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
-                             verticalalignment='center', color='r')
+                        
+                        # Edge labels
+                        if self.edgeLabel:
+                            verts = e.get_path().vertices
+                            trans = e.get_patch_transform()
+                            points = trans.transform(verts)
+                            if mod_type[mod_idx] == 'inhibitor':
+                                c = FancyBboxPatch((stackXY.T[50,0]+((points[5,0]-stackXY.T[50,0])/2)-0.0625,
+                                                    stackXY.T[50,1]+((points[5,1]-stackXY.T[50,1])/2)-0.025),
+                                                   0.125, 
+                                                   0.05,
+                                                   boxstyle="round,pad=0.01, rounding_size=0.01",
+                                                   color='w')
+                                ax.add_patch(c)
+                                plt.text(stackXY.T[50,0]+((points[5,0]-stackXY.T[50,0])/2),
+                                         stackXY.T[50,1]+((points[5,1]-stackXY.T[50,1])/2),
+                                         round(count[i], 3), 
+                                         fontsize=self.edgeLabelFontSize, 
+                                         horizontalalignment='center', 
+                                         verticalalignment='center', 
+                                         color='r')
+                            elif mod_type[mod_idx] == 'activator':
+                                plt.plot(points[:1,0],points[:1,1])
+                                c = FancyBboxPatch((stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2)-0.0625,
+                                                    stackXY.T[50,1]+((points[1,1]-stackXY.T[50,1])/2)-0.025),
+                                                   0.125, 
+                                                   0.05,
+                                                   boxstyle="round,pad=0.01, rounding_size=0.01",
+                                                   color='w')
+                                ax.add_patch(c)
+                                plt.text(stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2),
+                                         stackXY.T[50,1]+((points[1,1]-stackXY.T[50,1])/2),
+                                         round(count[i], 3), 
+                                         fontsize=self.edgeLabelFontSize, 
+                                         horizontalalignment='center', 
+                                         verticalalignment='center', 
+                                         color='r')
                     
                 mod_idx += 1
             
@@ -1854,6 +1956,7 @@ class NetworkEnsemble():
         
         if savePath != None:
             fig.savefig(savePath, bbox_inches='tight')
+            return allRxn, count
         else:
             if show:
                 plt.show()

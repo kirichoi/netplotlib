@@ -4,13 +4,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI version](https://badge.fury.io/py/netplotlib.svg)](https://badge.fury.io/py/netplotlib)
 
-A simple package for visualizing reaction network models
+A simple package for visualizing and analyzing reaction network models
 
 Copyright 2018-2019 Kiri Choi
 
 ## Introduction
 
-Netplotlib is a simple extension to [NetworkX](https://networkx.github.io/) and [matplotlib](https://matplotlib.org/) to draw reaction network diagrams from SBML or Antimony strings with ease. Netplotlib also supports drawing weighted reaction network diagrams from an ensemble of models based on reaction frequency or user-supplied weights.
+Netplotlib is an extension to [NetworkX](https://networkx.github.io/) and [matplotlib](https://matplotlib.org/) to draw and analyze reaction network diagrams in SBML or Antimony strings with ease. Netplotlib supports visualization of quantities such as flux and species rate of change. Netplotlib provides functions to visualize network model ensemble.
 
 ```{python}
 import netplotlib as npl
