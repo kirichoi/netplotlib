@@ -404,7 +404,7 @@ class Network():
                         if self.analyzeRates:
                             norm = colors.Normalize(vmin=np.min(Var.reaction_rate),vmax=np.max(Var.reaction_rate))
                             colormap = cm.get_cmap(self.analyzeColorMap)
-                            node_color = colormap(norm(Var.reaction_rate[0][Var.reaction_rate.colnames.index(n)]))
+                            node_color = colormap(norm(Var.reaction_rate[Var.floatingId.index(n)]))
                         else:
                             node_color = self.nodeColor
                     
