@@ -23,6 +23,13 @@ MAPK Cascade
     :width: 55%
 
     
+Glycolysis
+------------
+    
+.. image:: ../images/glycolysis.png
+    :width: 55%
+    
+    
 Network Ensemble
 ----------------
 

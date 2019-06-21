@@ -20,6 +20,7 @@ Netplotlib is an extension to `NetworkX <https://networkx.github.io/>`_ and `mat
    
    installation.rst
    start.rst
+   tutorial.rst
    examples.rst
    API.rst
 

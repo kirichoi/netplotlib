@@ -4,9 +4,6 @@ Quick Start
 
 To start using netplotlib, `install the package using pip <https://netplotlib.readthedocs.io/en/latest/installation.html>`_ or use `Tellurium <http://tellurium.analogmachine.org/>`_. 
 
-Simple Example
---------------
-
 This section demonstrates how to load in a model and draw network diagrams. To start with, lets import netplotlib package and define a model. Here, we use a simple feed forward loop as an example.
 
 .. code-block:: python
@@ -40,43 +37,5 @@ To generate network diagrams, simply run `draw() <https://netplotlib.readthedocs
 .. image:: ../images/ffl.png
     :width: 55%
 
-Advanced Configuration
-----------------------
-
-Network object has various properties for configuring the network diagram. 
-
-- scale: scaling factor for layout algorithm
-- fontsize: fontsize for labels
-- edgelw: linewidth of edges
-- nodeColor: node color
-- reactionNodeColor: reaction node color
-- labelColor: label color
-- reactionColor: edge color
-- modifierColor: modifier edge color
-- boundaryColor: boundary node color
-- nodeEdgeColor: node edge color
-- nodeEdgelw: linewidth of node edges
-- highlight: list of species ids or reaction ids to highlight
-- hlNodeColor: node color of highlighted nodes
-- hlNodeEdgeColor: node edge color of highlighted nodes
-- drawReactionNode: flag for drawing reaction nodes
-- breakBoundary: flag for breaking all boundary species into separate nodes
-
-You can define these properties and run `draw() <https://netplotlib.readthedocs.io/en/latest/API.html#netplotlib.Network.draw>`_ to generate customized network diagrams. For example, by running the following code, you can generate a network diagram with node edges, species S1 highlighted, and reaction nodes removed.
-
-.. code-block:: python
-
-    net.drawReactionNode = False
-    net.nodeEdgelw = 3
-    net.highlight = ['S1']
-    net.draw()
-
-.. image:: ../images/ffl_mod.png
-    :width: 55%
-
-Test Cases
-----------
-
-Netplotlib comes with set of test cases. All test cases are available under netplotlib.testmodels submodule.
 
 
