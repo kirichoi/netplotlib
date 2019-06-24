@@ -304,7 +304,7 @@ class Network():
             return pos
     
     
-    def draw(self, show=True, savePath=None):
+    def draw(self, show=True, savePath=None, dpi=150):
         """
         Draw network diagram
         
@@ -404,7 +404,7 @@ class Network():
                         if self.analyzeRates:
                             norm = colors.Normalize(vmin=np.min(Var.reaction_rate),vmax=np.max(Var.reaction_rate))
                             colormap = cm.get_cmap(self.analyzeColorMap)
-                            node_color = colormap(norm(Var.reaction_rate[Var.floatingId.index(n)]))
+                            node_color = colormap(norm(Var.reaction_rate[0][Var.reaction_rate.colnames.index(n)]))
                         else:
                             node_color = self.nodeColor
                     
@@ -949,20 +949,20 @@ class Network():
             plt.tight_layout()
         
         if savePath != None:
-            fig.savefig(savePath, bbox_inches='tight')
+            fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
         else:
             plt.show()
         plt.close()
 
 
-    def savefig(self, path):
+    def savefig(self, path, dpi=150):
         """
         Save network diagram to specified location
         
         :param path: path to save the diagram
         """
         
-        self.draw(savePath=path)
+        self.draw(savePath=path, dpi=dpi)
         
 
 class NetworkEnsemble():
