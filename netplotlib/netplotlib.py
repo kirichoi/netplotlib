@@ -79,6 +79,7 @@ class Network():
         self.hlNodeEdgeColor = 'tab:pink'
         self.drawReactionNode = True
         self.breakBoundary = False
+        self.tightLayout = False
         self.analyzeFlux = False
         self.analyzeRates = False
         self.analyzeColorHigh = 'k'
@@ -288,9 +289,14 @@ class Network():
         maxIter_n = 0
         dist_flag = True
         
+        if self.tightLayout:
+            comId = Var.speciesId
+        else:
+            comId = Var.speciesId + Var.rid
+        
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
-            for i in itertools.combinations(Var.speciesId + Var.rid, 2):
+            for i in itertools.combinations(comId, 2):
                 pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
                 if pos_dist < thres:
                     dist_flag = True
@@ -356,20 +362,32 @@ class Network():
         else:
             ax = plt.gca()
         
+        hlInd = 0
         # add nodes to the figure
         for n in Var.G:
             if n in Var.rid:
                 rec_width = 0.05*(self.fontsize/20)
                 rec_height = 0.05*(self.fontsize/20)
                 if n in self.highlight:
+                    if type(self.hlNodeEdgeColor) == list:
+                        currHlNodeEdgeColor = self.hlNodeEdgeColor[hlInd]
+                        hlInd += 1
+                    else:
+                        currHlNodeEdgeColor = self.hlNodeEdgeColor
+                    if type(self.hlNodeColor) == list:
+                        currHlNodeColor = self.hlNodeColor[hlInd]
+                        hlInd += 1
+                    else:
+                        currHlNodeColor = self.hlNodeColor
+                        
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, 
                                         pos[n][1]-rec_height/2),
                                         rec_width, 
                                         rec_height,
                                         boxstyle="round,pad=0.01, rounding_size=0.01",
                                         linewidth=self.nodeEdgelw, 
-                                        edgecolor=self.hlNodeEdgeColor, 
-                                        facecolor=self.hlNodeColor)
+                                        edgecolor=currHlNodeEdgeColor, 
+                                        facecolor=currHlNodeColor)
                 else:
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, 
                                         pos[n][1]-rec_height/2), 
@@ -409,14 +427,25 @@ class Network():
                             node_color = self.nodeColor
                     
                 if n in self.highlight:
+                    if type(self.hlNodeEdgeColor) == list:
+                        currHlNodeEdgeColor = self.hlNodeEdgeColor[hlInd]
+                        hlInd += 1
+                    else:
+                        currHlNodeEdgeColor = self.hlNodeEdgeColor
+                    if type(self.hlNodeColor) == list:
+                        currHlNodeColor = self.hlNodeColor[hlInd]
+                        hlInd += 1
+                    else:
+                        currHlNodeColor = self.hlNodeColor
+                        
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, 
                                         pos[n][1]-rec_height/2),
                                         rec_width, 
                                         rec_height,
                                         boxstyle="round,pad=0.01, rounding_size=0.02",
                                         linewidth=self.nodeEdgelw, 
-                                        edgecolor=self.hlNodeEdgeColor, 
-                                        facecolor=self.hlNodeColor)
+                                        edgecolor=currHlNodeEdgeColor, 
+                                        facecolor=currHlNodeColor)
                 else:
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, 
                                         pos[n][1]-rec_height/2), 
