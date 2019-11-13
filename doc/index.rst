@@ -6,7 +6,7 @@
 Welcome to netplotlib's documentation!
 =====================================
 
-netplotlib is a simple extension to `NetworkX <https://networkx.github.io/>`_ and `matplotlib <https://matplotlib.org/>`_ to draw reaction network diagrams from SBML or Antimony strings with ease. netplotlib also supports drawing weighted reaction network diagrams from an ensemble of models based on reaction frequency or user-supplied weights.
+Netplotlib is an extension to `NetworkX <https://networkx.github.io/>`_ and `matplotlib <https://matplotlib.org/>`_ to draw and analyze reaction network diagrams in SBML or Antimony strings with ease. Netplotlib supports visualization of quantities such as flux and species rate of change. Netplotlib provides functions to visualize network model ensemble.
 
 
 .. image:: ../images/mapk.png
@@ -20,6 +20,7 @@ netplotlib is a simple extension to `NetworkX <https://networkx.github.io/>`_ an
    
    installation.rst
    start.rst
+   tutorial.rst
    examples.rst
    API.rst
 

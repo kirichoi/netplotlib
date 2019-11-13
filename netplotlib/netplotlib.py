@@ -79,6 +79,7 @@ class Network():
         self.hlNodeEdgeColor = 'tab:pink'
         self.drawReactionNode = True
         self.breakBoundary = False
+        self.tightLayout = False
         self.analyzeFlux = False
         self.analyzeRates = False
         self.analyzeColorHigh = 'k'
@@ -288,9 +289,14 @@ class Network():
         maxIter_n = 0
         dist_flag = True
         
+        if self.tightLayout:
+            comId = Var.speciesId
+        else:
+            comId = Var.speciesId + Var.rid
+        
         while dist_flag and (maxIter_n < maxIter):
             dist_flag = False
-            for i in itertools.combinations(Var.speciesId + Var.rid, 2):
+            for i in itertools.combinations(comId, 2):
                 pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
                 if pos_dist < thres:
                     dist_flag = True
@@ -304,7 +310,7 @@ class Network():
             return pos
     
     
-    def draw(self, show=True, savePath=None):
+    def draw(self, show=True, savePath=None, dpi=150):
         """
         Draw network diagram
         
@@ -356,20 +362,32 @@ class Network():
         else:
             ax = plt.gca()
         
+        hlInd = 0
         # add nodes to the figure
         for n in Var.G:
             if n in Var.rid:
                 rec_width = 0.05*(self.fontsize/20)
                 rec_height = 0.05*(self.fontsize/20)
                 if n in self.highlight:
+                    if type(self.hlNodeEdgeColor) == list:
+                        currHlNodeEdgeColor = self.hlNodeEdgeColor[hlInd]
+                        hlInd += 1
+                    else:
+                        currHlNodeEdgeColor = self.hlNodeEdgeColor
+                    if type(self.hlNodeColor) == list:
+                        currHlNodeColor = self.hlNodeColor[hlInd]
+                        hlInd += 1
+                    else:
+                        currHlNodeColor = self.hlNodeColor
+                        
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, 
                                         pos[n][1]-rec_height/2),
                                         rec_width, 
                                         rec_height,
                                         boxstyle="round,pad=0.01, rounding_size=0.01",
                                         linewidth=self.nodeEdgelw, 
-                                        edgecolor=self.hlNodeEdgeColor, 
-                                        facecolor=self.hlNodeColor)
+                                        edgecolor=currHlNodeEdgeColor, 
+                                        facecolor=currHlNodeColor)
                 else:
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, 
                                         pos[n][1]-rec_height/2), 
@@ -409,14 +427,25 @@ class Network():
                             node_color = self.nodeColor
                     
                 if n in self.highlight:
+                    if type(self.hlNodeEdgeColor) == list:
+                        currHlNodeEdgeColor = self.hlNodeEdgeColor[hlInd]
+                        hlInd += 1
+                    else:
+                        currHlNodeEdgeColor = self.hlNodeEdgeColor
+                    if type(self.hlNodeColor) == list:
+                        currHlNodeColor = self.hlNodeColor[hlInd]
+                        hlInd += 1
+                    else:
+                        currHlNodeColor = self.hlNodeColor
+                        
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, 
                                         pos[n][1]-rec_height/2),
                                         rec_width, 
                                         rec_height,
                                         boxstyle="round,pad=0.01, rounding_size=0.02",
                                         linewidth=self.nodeEdgelw, 
-                                        edgecolor=self.hlNodeEdgeColor, 
-                                        facecolor=self.hlNodeColor)
+                                        edgecolor=currHlNodeEdgeColor, 
+                                        facecolor=currHlNodeColor)
                 else:
                     c = FancyBboxPatch((pos[n][0]-rec_width/2, 
                                         pos[n][1]-rec_height/2), 
@@ -434,7 +463,7 @@ class Network():
                     plt.text(pos[n][0], pos[n][1], n, 
                              fontsize=self.fontsize, horizontalalignment='center', 
                              verticalalignment='center', color=self.labelColor)
-            Var.G.node[n]['patch'] = c
+            Var.G.nodes[n]['patch'] = c
         
         # add edges to the figure
         for i in range(len(Var.rid)):
@@ -442,9 +471,9 @@ class Network():
                 comb = list(itertools.combinations_with_replacement(Var.rct[i],len(Var.prd[i])))
                 for j in [list(zip(x,Var.prd[i])) for x in comb]:
                     for k in range(len(j)):
-                        p1 = Var.G.node[j[k][0]]['patch']
-                        p2 = Var.G.node[Var.rid[i]]['patch']
-                        p3 = Var.G.node[j[k][1]]['patch']
+                        p1 = Var.G.nodes[j[k][0]]['patch']
+                        p2 = Var.G.nodes[Var.rid[i]]['patch']
+                        p3 = Var.G.nodes[j[k][1]]['patch']
                         
                         X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
                         X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
@@ -729,9 +758,9 @@ class Network():
                     rVal = len(Var.prd[i])
                     
                 for j in [list(zip(x,Var.prd[i])) for x in itertools.combinations(Var.rct[i],rVal)][0]:
-                    p1 = Var.G.node[j[0]]['patch']
-                    p2 = Var.G.node[Var.rid[i]]['patch']
-                    p3 = Var.G.node[j[1]]['patch']
+                    p1 = Var.G.nodes[j[0]]['patch']
+                    p2 = Var.G.nodes[Var.rid[i]]['patch']
+                    p3 = Var.G.nodes[j[1]]['patch']
                     
                     X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
                     X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
@@ -879,8 +908,8 @@ class Network():
         # Modifiers
         seen={}
         for i, e in enumerate(Var.mod_flat):
-            n1 = Var.G.node[e]['patch']
-            n2 = Var.G.node[Var.modtarget_flat[i]]['patch']
+            n1 = Var.G.nodes[e]['patch']
+            n2 = Var.G.nodes[Var.modtarget_flat[i]]['patch']
             rad = 0.1
             shrinkB = 2.
             
@@ -927,12 +956,12 @@ class Network():
         else:
             allnodes = Var.speciesId
         
-        if 'Input' in Var.G.node:
+        if 'Input' in Var.G.nodes:
             allnodes += ['Input']
-        if 'Output' in Var.G.node:
+        if 'Output' in Var.G.nodes:
             allnodes += ['Output']
         for i in range(len(allnodes)):
-            ax.add_patch(Var.G.node[allnodes[i]]['patch'])
+            ax.add_patch(Var.G.nodes[allnodes[i]]['patch'])
         
         # reset width and height
         ax.autoscale()
@@ -949,20 +978,20 @@ class Network():
             plt.tight_layout()
         
         if savePath != None:
-            fig.savefig(savePath, bbox_inches='tight')
+            fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
         else:
             plt.show()
         plt.close()
 
 
-    def savefig(self, path):
+    def savefig(self, path, dpi=150):
         """
         Save network diagram to specified location
         
         :param path: path to save the diagram
         """
         
-        self.draw(savePath=path)
+        self.draw(savePath=path, dpi=dpi)
         
 
 class NetworkEnsemble():
@@ -1617,7 +1646,7 @@ class NetworkEnsemble():
                     plt.text(pos[n][0], pos[n][1], n, 
                              fontsize=self.fontsize, horizontalalignment='center', 
                              verticalalignment='center', color=self.labelColor)
-            G.node[n]['patch'] = c
+            G.nodes[n]['patch'] = c
         
         # add edges to the figure
         mod_idx = 0
@@ -1632,9 +1661,9 @@ class NetworkEnsemble():
                         comb = list(itertools.combinations_with_replacement(allRxn[i][0],len(allRxn[i][1])))
                         for j in [list(zip(x,allRxn[i][1])) for x in comb]:
                             for k in range(len(j)):
-                                p1 = G.node[j[k][0]]['patch']
-                                p2 = G.node[rid[rid_idx]]['patch']
-                                p3 = G.node[j[k][1]]['patch']
+                                p1 = G.nodes[j[k][0]]['patch']
+                                p2 = G.nodes[rid[rid_idx]]['patch']
+                                p3 = G.nodes[j[k][1]]['patch']
                     
                                 X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
                                 X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
@@ -1768,9 +1797,9 @@ class NetworkEnsemble():
                             rVal = len(allRxn[i][1])
                             
                         for j in [list(zip(x,allRxn[i][1])) for x in itertools.combinations(allRxn[i][0],rVal)][0]:
-                            p1 = G.node[j[0]]['patch']
-                            p2 = G.node[rid[rid_idx]]['patch']
-                            p3 = G.node[j[1]]['patch']
+                            p1 = G.nodes[j[0]]['patch']
+                            p2 = G.nodes[rid[rid_idx]]['patch']
+                            p3 = G.nodes[j[1]]['patch']
                             
                             X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
                             X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
@@ -1838,8 +1867,8 @@ class NetworkEnsemble():
                 # Modifiers
                 if count[i] > self.plottingThreshold or not self.removeBelowThreshold:
                     for m, e in enumerate(allRxn[i][0]):
-                        n1 = G.node[e]['patch']
-                        n2 = G.node[allRxn[i][1][0]]['patch']
+                        n1 = G.nodes[e]['patch']
+                        n2 = G.nodes[allRxn[i][1][0]]['patch']
                         rad = 0.15
                         shrinkB = 2.
                         
@@ -1940,12 +1969,12 @@ class NetworkEnsemble():
         else:
             allnodes = sid_used
             
-        if 'Input' in G.node:
+        if 'Input' in G.nodes:
             allnodes += ['Input']
-        if 'Output' in G.node:
+        if 'Output' in G.nodes:
             allnodes += ['Output']
         for i in range(len(allnodes)):
-            ax.add_patch(G.node[allnodes[i]]['patch'])
+            ax.add_patch(G.nodes[allnodes[i]]['patch'])
         
         # reset width and height
         ax.autoscale()
@@ -2068,7 +2097,7 @@ class NetworkEnsemble():
                             plt.text(pos[n][0], pos[n][1], n, 
                                      fontsize=self.fontsize, horizontalalignment='center', 
                                      verticalalignment='center', color=self.labelColor)
-                    Var.G.node[n]['patch'] = c
+                    Var.G.nodes[n]['patch'] = c
                 
                 # add edges to the figure
                 for i in range(len(Var.rid)):
@@ -2076,9 +2105,9 @@ class NetworkEnsemble():
                         comb = list(itertools.combinations_with_replacement(Var.rct[i],len(Var.prd[i])))
                         for j in [list(zip(x,Var.prd[i])) for x in comb]:
                             for k in range(len(j)):
-                                p1 = Var.G.node[j[k][0]]['patch']
-                                p2 = Var.G.node[Var.rid[i]]['patch']
-                                p3 = Var.G.node[j[k][1]]['patch']
+                                p1 = Var.G.nodes[j[k][0]]['patch']
+                                p2 = Var.G.nodes[Var.rid[i]]['patch']
+                                p3 = Var.G.nodes[j[k][1]]['patch']
                                 
                                 X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
                                 X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
@@ -2333,9 +2362,9 @@ class NetworkEnsemble():
                             rVal = len(Var.prd[i])
                             
                         for j in [list(zip(x,Var.prd[i])) for x in itertools.combinations(Var.rct[i],rVal)][0]:
-                            p1 = Var.G.node[j[0]]['patch']
-                            p2 = Var.G.node[Var.rid[i]]['patch']
-                            p3 = Var.G.node[j[1]]['patch']
+                            p1 = Var.G.nodes[j[0]]['patch']
+                            p2 = Var.G.nodes[Var.rid[i]]['patch']
+                            p3 = Var.G.nodes[j[1]]['patch']
                             
                             X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
                             X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
@@ -2464,8 +2493,8 @@ class NetworkEnsemble():
                 # Modifiers
                 seen={}
                 for i, e in enumerate(Var.mod_flat):
-                    n1 = Var.G.node[e]['patch']
-                    n2 = Var.G.node[Var.modtarget_flat[i]]['patch']
+                    n1 = Var.G.nodes[e]['patch']
+                    n2 = Var.G.nodes[Var.modtarget_flat[i]]['patch']
                     rad = 0.1
                     shrinkB = 2.
                     
@@ -2512,12 +2541,12 @@ class NetworkEnsemble():
                 else:
                     allnodes = Var.speciesId
                 
-                if 'Input' in Var.G.node:
+                if 'Input' in Var.G.nodes:
                     allnodes += ['Input']
-                if 'Output' in Var.G.node:
+                if 'Output' in Var.G.nodes:
                     allnodes += ['Output']
                 for i in range(len(allnodes)):
-                    fig.axes[mdl].add_patch(Var.G.node[allnodes[i]]['patch'])
+                    fig.axes[mdl].add_patch(Var.G.nodes[allnodes[i]]['patch'])
                 
                 fig.axes[mdl].autoscale()
         
