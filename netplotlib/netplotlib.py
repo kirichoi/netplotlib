@@ -138,13 +138,14 @@ class Network():
         Var.prd = []
         Var.mod = []
         Var.r_type = []
+        rr_type = []
         mod_target = []
         kineticLaw = []
         mod_type = []
         
         doc = tesbml.readSBMLFromString(self.rrInstance.getSBML())
         sbmlmodel = doc.getModel()
-    
+        
         for slr in sbmlmodel.getListOfReactions():
             temprct = []
             tempprd = []
@@ -172,17 +173,24 @@ class Network():
                 Var.prd.append(sorted(tempprd, key=lambda v: (v.upper(), v[0].islower())))
             Var.mod.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
             
-            # Update kinetic law according to change in species name
+            if sbmlreaction.getReversible():
+                rr_type.append('reversible')
+            else:
+                rr_type.append('irreversible')
+                
             if kl == None:
                 kineticLaw.append(None)
             else:
+                # Update kinetic law according to change in species name
                 kl_split = kl.getFormula().split(' ')
                 for i in range(len(kl_split)):
                     if kl_split[i] == 'S':
                         kl_split[i] = '_S'
                 
                 kineticLaw.append(' '.join(kl_split))
+            
         
+        nkl = 0
         # use sympy for analyzing modifiers weSmart
         for ml in range(len(Var.mod)):
             mod_type_temp = []
@@ -190,7 +198,8 @@ class Network():
             if expression == None:
                 for ml_i in range(len(Var.mod[ml])):
                     mod_type_temp.append('modifier')
-                Var.r_type.append('irreversible')
+                Var.r_type.append(rr_type[nkl])
+                nkl += 1
             else:
                 n,d = sympy.fraction(expression)
                 for ml_i in range(len(Var.mod[ml])):
@@ -1330,6 +1339,7 @@ class NetworkEnsemble():
             mod_target = []
             kineticLaw = []
             r_type_m = []
+            rr_type_m = []
             mod_type_m = []
             
             doc = tesbml.readSBMLFromString(r.getSBML())
@@ -1362,6 +1372,11 @@ class NetworkEnsemble():
                     prd.append(sorted(tempprd, key=lambda v: (v.upper(), v[0].islower())))
                 mod_m.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
                 
+                if sbmlreaction.getReversible():
+                    rr_type_m.append('reversible')
+                else:
+                    rr_type_m.append('irreversible')
+                
                 if kl == None:
                     kineticLaw.append(None)
                 else:
@@ -1373,6 +1388,7 @@ class NetworkEnsemble():
                     
                     kineticLaw.append(' '.join(kl_split))
             
+            nkl = 0
             # use sympy for analyzing modifiers weSmart
             for ml in range(len(mod_m)):
                 mod_type_temp = []
@@ -1380,7 +1396,8 @@ class NetworkEnsemble():
                 if expression == None:
                     for ml_i in range(len(mod_m[ml])):
                         mod_type_temp.append('modifier')
-                    r_type_m.append('irreversible')
+                    r_type_m.append(rr_type_m[nkl])
+                    nkl += 1
                 else:
                     n,d = sympy.fraction(expression)
                     for ml_i in range(len(mod_m[ml])):
