@@ -51,6 +51,12 @@ class testmodels():
     TWOCYCLES = content[testfiles.index('test_twocycles.xml')]
     UNDEF = content[testfiles.index('test_undefBoundary.xml')]
     UNIBI = content[testfiles.index('test_unibi.xml')]
+    NOKINETICS = content[testfiles.index('test_no_kl.xml')]
+    NOKINETICSREVERSIBLE = content[testfiles.index('test_no_kl_reversible.xml')]
+    AUTOACTIVATION = content[testfiles.index('test_autoreg_act.xml')]
+    AUTOACTBOUNDARY = content[testfiles.index('test_autoreg_act_conn.xml')]
+    AUTOINHIBITION = content[testfiles.index('test_autoreg_inb.xml')]
+    AUTOINHBOUNDARY = content[testfiles.index('test_autoreg_inb_conn.xml')]
     LIST1 = _LIST1
     LIST2 = _LIST2
     

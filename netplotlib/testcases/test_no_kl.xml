@@ -1,0 +1,21 @@
+<sbml xmlns="http://www.sbml.org/sbml/level3/version2/core" level="3" version="2">
+  <model id="CF_fact2">
+    <listOfCompartments>
+      <compartment id="Implicit_Compartment" name="Implicit Compartment" spatialDimensions="NaN" size="NaN" constant="false"/>
+    </listOfCompartments>
+    <listOfSpecies>
+      <species id="Asthma" name="Asthma" compartment="Implicit_Compartment" initialAmount="0" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Obesity" name="Obesity" compartment="Implicit_Compartment" initialConcentration="0" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+    </listOfSpecies>
+    <listOfReactions>
+      <reaction id="R1" name="R1" reversible="false">
+        <listOfReactants>
+          <speciesReference species="Obesity" stoichiometry="NaN" constant="false"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Asthma" stoichiometry="NaN" constant="false"/>
+        </listOfProducts>
+      </reaction>
+    </listOfReactions>
+  </model>
+</sbml>
