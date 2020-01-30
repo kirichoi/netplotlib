@@ -173,39 +173,47 @@ class Network():
             Var.mod.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
             
             # Update kinetic law according to change in species name
-            kl_split = kl.getFormula().split(' ')
-            for i in range(len(kl_split)):
-                if kl_split[i] == 'S':
-                    kl_split[i] = '_S'
-            
-            kineticLaw.append(' '.join(kl_split))
+            if kl == None:
+                kineticLaw.append(None)
+            else:
+                kl_split = kl.getFormula().split(' ')
+                for i in range(len(kl_split)):
+                    if kl_split[i] == 'S':
+                        kl_split[i] = '_S'
+                
+                kineticLaw.append(' '.join(kl_split))
         
         # use sympy for analyzing modifiers weSmart
         for ml in range(len(Var.mod)):
             mod_type_temp = []
             expression = kineticLaw[ml]
-            n,d = sympy.fraction(expression)
-            for ml_i in range(len(Var.mod[ml])):
-                if n.has(Var.mod[ml][ml_i]):
-                    mod_type_temp.append('activator')
-                elif d.has(Var.mod[ml][ml_i]):
-                    mod_type_temp.append('inhibitor')
-                else:
+            if expression == None:
+                for ml_i in range(len(Var.mod[ml])):
                     mod_type_temp.append('modifier')
-            mod_type.append(mod_type_temp)
-            n = '(' + str(n) + ')'
-            
-            # In case all products are in rate law, assume it is a reversible reaction
-            if (all(ext in str(n) for ext in [s + '/' for s in Var.prd[ml]]) or
-                all(ext in str(n) for ext in [s + ')' for s in Var.prd[ml]]) or
-                all(ext in str(n) for ext in [s + '*' for s in Var.prd[ml]]) or
-                all(ext in str(n) for ext in [s + ';' for s in Var.prd[ml]]) or
-                all(ext in str(n) for ext in [s + '+' for s in Var.prd[ml]]) or
-                all(ext in str(n) for ext in [s + '-' for s in Var.prd[ml]]) or
-                all(ext in str(n) for ext in [s + ' ' for s in Var.prd[ml]])):
-                Var.r_type.append('reversible')
-            else:
                 Var.r_type.append('irreversible')
+            else:
+                n,d = sympy.fraction(expression)
+                for ml_i in range(len(Var.mod[ml])):
+                    if n.has(Var.mod[ml][ml_i]):
+                        mod_type_temp.append('activator')
+                    elif d.has(Var.mod[ml][ml_i]):
+                        mod_type_temp.append('inhibitor')
+                    else:
+                        mod_type_temp.append('modifier')
+                n = '(' + str(n) + ')'
+            
+                # In case all products are in rate law, assume it is a reversible reaction
+                if (all(ext in str(n) for ext in [s + '/' for s in Var.prd[ml]]) or
+                    all(ext in str(n) for ext in [s + ')' for s in Var.prd[ml]]) or
+                    all(ext in str(n) for ext in [s + '*' for s in Var.prd[ml]]) or
+                    all(ext in str(n) for ext in [s + ';' for s in Var.prd[ml]]) or
+                    all(ext in str(n) for ext in [s + '+' for s in Var.prd[ml]]) or
+                    all(ext in str(n) for ext in [s + '-' for s in Var.prd[ml]]) or
+                    all(ext in str(n) for ext in [s + ' ' for s in Var.prd[ml]])):
+                    Var.r_type.append('reversible')
+                else:
+                    Var.r_type.append('irreversible')
+            mod_type.append(mod_type_temp)
         
         for i in range(len(Var.mod)):
             if len(Var.mod[i]) > 0:
@@ -1139,28 +1147,35 @@ class NetworkEnsemble():
                     prd.append(sorted(tempprd, key=lambda v: (v.upper(), v[0].islower())))
                 mod_m.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
                 
-                # Update kinetic law according to change in species name
-                kl_split = kl.getFormula().split(' ')
-                for i in range(len(kl_split)):
-                    if kl_split[i] == 'S':
-                        kl_split[i] = '_S'
-                
-                kineticLaw.append(' '.join(kl_split))
+                if kl == None:
+                    kineticLaw.append(None)
+                else:
+                    # Update kinetic law according to change in species name
+                    kl_split = kl.getFormula().split(' ')
+                    for i in range(len(kl_split)):
+                        if kl_split[i] == 'S':
+                            kl_split[i] = '_S'
+                    
+                    kineticLaw.append(' '.join(kl_split))
             
             # use sympy for analyzing modifiers weSmart
             for ml in range(len(mod_m)):
                 mod_type_temp = []
                 expression = kineticLaw[ml]
-                n,d = sympy.fraction(expression)
-                for ml_i in range(len(mod_m[ml])):
-                    if n.has(mod_m[ml][ml_i]):
-                        mod_type_temp.append('activator')
-                    elif d.has(mod_m[ml][ml_i]):
-                        mod_type_temp.append('inhibitor')
-                    else:
+                if expression == None:
+                    for ml_i in range(len(mod_m[ml])):
                         mod_type_temp.append('modifier')
+                else:
+                    n,d = sympy.fraction(expression)
+                    for ml_i in range(len(mod_m[ml])):
+                        if n.has(mod_m[ml][ml_i]):
+                            mod_type_temp.append('activator')
+                        elif d.has(mod_m[ml][ml_i]):
+                            mod_type_temp.append('inhibitor')
+                        else:
+                            mod_type_temp.append('modifier')
+                    n = '(' + str(n) + ')'
                 mod_type_m.append(mod_type_temp)
-                n = '(' + str(n) + ')'
             
             for i in range(len(mod_m)):
                 if len(mod_m[i]) > 0:
@@ -1347,41 +1362,48 @@ class NetworkEnsemble():
                     prd.append(sorted(tempprd, key=lambda v: (v.upper(), v[0].islower())))
                 mod_m.append(sorted(tempmod, key=lambda v: (v.upper(), v[0].islower())))
                 
-                # Update kinetic law according to change in species name
-                kl_split = kl.getFormula().split(' ')
-                for i in range(len(kl_split)):
-                    if kl_split[i] == 'S':
-                        kl_split[i] = '_S'
-                
-                kineticLaw.append(' '.join(kl_split))
+                if kl == None:
+                    kineticLaw.append(None)
+                else:
+                    # Update kinetic law according to change in species name
+                    kl_split = kl.getFormula().split(' ')
+                    for i in range(len(kl_split)):
+                        if kl_split[i] == 'S':
+                            kl_split[i] = '_S'
+                    
+                    kineticLaw.append(' '.join(kl_split))
             
             # use sympy for analyzing modifiers weSmart
             for ml in range(len(mod_m)):
                 mod_type_temp = []
                 expression = kineticLaw[ml]
-                n,d = sympy.fraction(expression)
-                for ml_i in range(len(mod_m[ml])):
-                    if n.has(mod_m[ml][ml_i]):
-                        mod_type_temp.append('activator')
-                    elif d.has(mod_m[ml][ml_i]):
-                        mod_type_temp.append('inhibitor')
-                    else:
+                if expression == None:
+                    for ml_i in range(len(mod_m[ml])):
                         mod_type_temp.append('modifier')
-                mod_type_m.append(mod_type_temp)
-                n = '(' + str(n) + ')'
-                
-                # In case all products are in rate law, assume it is a reversible reaction
-                if (all(ext in str(n) for ext in [s + '/' for s in prd[ml]]) or
-                    all(ext in str(n) for ext in [s + ')' for s in prd[ml]]) or
-                    all(ext in str(n) for ext in [s + '*' for s in prd[ml]]) or
-                    all(ext in str(n) for ext in [s + ';' for s in prd[ml]]) or
-                    all(ext in str(n) for ext in [s + '+' for s in prd[ml]]) or
-                    all(ext in str(n) for ext in [s + '-' for s in prd[ml]]) or
-                    all(ext in str(n) for ext in [s + ' ' for s in prd[ml]])):
-                    r_type_m.append('reversible')
-                else:
                     r_type_m.append('irreversible')
-                
+                else:
+                    n,d = sympy.fraction(expression)
+                    for ml_i in range(len(mod_m[ml])):
+                        if n.has(mod_m[ml][ml_i]):
+                            mod_type_temp.append('activator')
+                        elif d.has(mod_m[ml][ml_i]):
+                            mod_type_temp.append('inhibitor')
+                        else:
+                            mod_type_temp.append('modifier')
+                    n = '(' + str(n) + ')'
+                    
+                    # In case all products are in rate law, assume it is a reversible reaction
+                    if (all(ext in str(n) for ext in [s + '/' for s in prd[ml]]) or
+                        all(ext in str(n) for ext in [s + ')' for s in prd[ml]]) or
+                        all(ext in str(n) for ext in [s + '*' for s in prd[ml]]) or
+                        all(ext in str(n) for ext in [s + ';' for s in prd[ml]]) or
+                        all(ext in str(n) for ext in [s + '+' for s in prd[ml]]) or
+                        all(ext in str(n) for ext in [s + '-' for s in prd[ml]]) or
+                        all(ext in str(n) for ext in [s + ' ' for s in prd[ml]])):
+                        r_type_m.append('reversible')
+                    else:
+                        r_type_m.append('irreversible')
+                mod_type_m.append(mod_type_temp)
             
             for i in range(len(mod_m)):
                 if len(mod_m[i]) > 0:
