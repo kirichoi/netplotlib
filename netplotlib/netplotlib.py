@@ -436,13 +436,13 @@ class Network():
                                         edgecolor=self.nodeEdgeColor, 
                                         facecolor=self.reactionNodeColor)
                 if self.labelReactionIds:
-                    plt.text(pos[n][0], 
-                             pos[n][1], 
-                             n, 
-                             fontsize=self.fontsize, 
-                             horizontalalignment='center', 
-                             verticalalignment='center', 
-                             color=self.labelColor)
+                    ax.text(pos[n][0], 
+                            pos[n][1], 
+                            n, 
+                            fontsize=self.fontsize, 
+                            horizontalalignment='center', 
+                            verticalalignment='center', 
+                            color=self.labelColor)
             else:
                 if len(n) > 10:
                     rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
@@ -494,13 +494,13 @@ class Network():
                                         edgecolor=self.nodeEdgeColor, 
                                         facecolor=node_color)
                 if len(n) > 10:
-                    plt.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
-                             fontsize=self.fontsize, horizontalalignment='center', 
-                             verticalalignment='center', color=self.labelColor)
+                    ax.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
+                            fontsize=self.fontsize, horizontalalignment='center', 
+                            verticalalignment='center', color=self.labelColor)
                 else:
-                    plt.text(pos[n][0], pos[n][1], n, 
-                             fontsize=self.fontsize, horizontalalignment='center', 
-                             verticalalignment='center', color=self.labelColor)
+                    ax.text(pos[n][0], pos[n][1], n, 
+                            fontsize=self.fontsize, horizontalalignment='center', 
+                            verticalalignment='center', color=self.labelColor)
             Var.G.nodes[n]['patch'] = c
         
         # add edges to the figure
@@ -644,13 +644,13 @@ class Network():
                                              (lpath1.vertices[0][0] - lpath1.vertices[35][0]))
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath1.vertices[35][0], 
-                                             y_prime+lpath1.vertices[35][1], 
-                                             int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
-                                             fontsize=self.fontsize, 
-                                             horizontalalignment='center', 
-                                             verticalalignment='center', 
-                                             color=self.reactionColor)
+                                    ax.text(x_prime+lpath1.vertices[35][0], 
+                                            y_prime+lpath1.vertices[35][1], 
+                                            int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
+                                            fontsize=self.fontsize, 
+                                            horizontalalignment='center', 
+                                            verticalalignment='center', 
+                                            color=self.reactionColor)
                             
                             if j[k][1] in Var.floatingId:
                                 if (np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i]) > 1):
@@ -658,13 +658,13 @@ class Network():
                                              (lpath2.vertices[0][0] - lpath2.vertices[-35][0]))
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath2.vertices[-35][0], 
-                                             y_prime+lpath2.vertices[-35][1], 
-                                             int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
-                                             fontsize=self.fontsize, 
-                                             horizontalalignment='center', 
-                                             verticalalignment='center', 
-                                             color=self.reactionColor)
+                                    ax.text(x_prime+lpath2.vertices[-35][0], 
+                                            y_prime+lpath2.vertices[-35][1], 
+                                            int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
+                                            fontsize=self.fontsize, 
+                                            horizontalalignment='center', 
+                                            verticalalignment='center', 
+                                            color=self.reactionColor)
                             
                         else: 
                             if ((Var.rct[i] == Var.prd[i]) and (Var.rct[i] == Var.mod[i])): # Autoregulation
@@ -855,13 +855,13 @@ class Network():
                                                  (lpath.vertices[0][0] - lpath.vertices[35][0]))
                                         x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                         y_prime = -slope*x_prime
-                                        plt.text(x_prime+lpath.vertices[35][0], 
-                                                 y_prime+lpath.vertices[35][1], 
-                                                 int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
-                                                 fontsize=self.fontsize, 
-                                                 horizontalalignment='center', 
-                                                 verticalalignment='center', 
-                                                 color=self.reactionColor)
+                                        ax.text(x_prime+lpath.vertices[35][0], 
+                                                y_prime+lpath.vertices[35][1], 
+                                                int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
+                                                fontsize=self.fontsize, 
+                                                horizontalalignment='center', 
+                                                verticalalignment='center', 
+                                                color=self.reactionColor)
                                 
                                 if j[k][1] in Var.floatingId:
                                     if (np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i]) > 1):
@@ -869,13 +869,13 @@ class Network():
                                                  (lpath.vertices[0][0] - lpath.vertices[-25][0]))
                                         x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                         y_prime = -slope*x_prime
-                                        plt.text(x_prime+lpath.vertices[-25][0], 
-                                                 y_prime+lpath.vertices[-25][1],
-                                                 int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
-                                                 fontsize=self.fontsize, 
-                                                 horizontalalignment='center', 
-                                                 verticalalignment='center',
-                                                 color=self.reactionColor)
+                                        ax.text(x_prime+lpath.vertices[-25][0], 
+                                                y_prime+lpath.vertices[-25][1],
+                                                int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
+                                                fontsize=self.fontsize, 
+                                                horizontalalignment='center', 
+                                                verticalalignment='center',
+                                                color=self.reactionColor)
                     
             else: # BIBI or larger
                 if len(Var.rct[i]) < len(Var.prd[i]):
@@ -1019,26 +1019,26 @@ class Network():
                                      (lpath.vertices[0][0] - lpath.vertices[15][0]))
                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                             y_prime = -slope*x_prime
-                            plt.text(x_prime+lpath.vertices[15][0], 
-                                     y_prime+lpath.vertices[15][1], 
-                                     int(np.abs(Var.stoch[Var.stoch_row.index(j[0])][i])), 
-                                     fontsize=self.fontsize, 
-                                     horizontalalignment='center', 
-                                     verticalalignment='center', 
-                                     color=self.reactionColor)
+                            ax.text(x_prime+lpath.vertices[15][0], 
+                                    y_prime+lpath.vertices[15][1], 
+                                    int(np.abs(Var.stoch[Var.stoch_row.index(j[0])][i])), 
+                                    fontsize=self.fontsize, 
+                                    horizontalalignment='center', 
+                                    verticalalignment='center', 
+                                    color=self.reactionColor)
                     if j[1] in Var.floatingId:
                         if (np.abs(Var.stoch[Var.stoch_row.index(j[1])][i]) > 1):
                             slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
                                      (lpath.vertices[0][0] - lpath.vertices[-20][0]))
                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                             y_prime = -slope*x_prime
-                            plt.text(x_prime+lpath.vertices[-20][0], 
-                                     y_prime+lpath.vertices[-20][1], 
-                                     int(np.abs(Var.stoch[Var.stoch_row.index(j[1])][i])), 
-                                     fontsize=self.fontsize,
-                                     horizontalalignment='center', 
-                                     verticalalignment='center', 
-                                     color=self.reactionColor)
+                            ax.text(x_prime+lpath.vertices[-20][0], 
+                                    y_prime+lpath.vertices[-20][1], 
+                                    int(np.abs(Var.stoch[Var.stoch_row.index(j[1])][i])), 
+                                    fontsize=self.fontsize,
+                                    horizontalalignment='center', 
+                                    verticalalignment='center', 
+                                    color=self.reactionColor)
                     
         # Modifiers
         seen={}
@@ -1790,13 +1790,13 @@ class NetworkEnsemble():
                                         edgecolor=self.nodeEdgeColor, 
                                         facecolor=self.reactionNodeColor)
                 if self.labelReactionIds:
-                    plt.text(pos[n][0], 
-                             pos[n][1], 
-                             n, 
-                             fontsize=self.fontsize, 
-                             horizontalalignment='center', 
-                             verticalalignment='center', 
-                             color=self.labelColor)
+                    ax.text(pos[n][0], 
+                            pos[n][1], 
+                            n, 
+                            fontsize=self.fontsize, 
+                            horizontalalignment='center', 
+                            verticalalignment='center', 
+                            color=self.labelColor)
             else:
                 if len(n) > 10:
                     rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
@@ -1829,13 +1829,13 @@ class NetworkEnsemble():
                                         edgecolor=self.nodeEdgeColor, 
                                         facecolor=node_color)
                 if len(n) > 10:
-                    plt.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
-                             fontsize=self.fontsize, horizontalalignment='center', 
-                             verticalalignment='center', color=self.labelColor)
+                    ax.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
+                            fontsize=self.fontsize, horizontalalignment='center', 
+                            verticalalignment='center', color=self.labelColor)
                 else:
-                    plt.text(pos[n][0], pos[n][1], n, 
-                             fontsize=self.fontsize, horizontalalignment='center', 
-                             verticalalignment='center', color=self.labelColor)
+                    ax.text(pos[n][0], pos[n][1], n, 
+                            fontsize=self.fontsize, horizontalalignment='center', 
+                            verticalalignment='center', color=self.labelColor)
             G.nodes[n]['patch'] = c
         
         # add edges to the figure
@@ -2085,9 +2085,9 @@ class NetworkEnsemble():
                                            boxstyle="round,pad=0.01, rounding_size=0.01",
                                            color='w')
                         ax.add_patch(c)
-                        plt.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(count[i], 3), 
-                             fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
-                             verticalalignment='center')
+                        ax.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(count[i], 3), 
+                                fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
+                                verticalalignment='center')
                 rid_idx += 1
             else:
                 # Modifiers
@@ -2163,13 +2163,13 @@ class NetworkEnsemble():
                                                    boxstyle="round,pad=0.01, rounding_size=0.01",
                                                    color='w')
                                 ax.add_patch(c)
-                                plt.text(stackXY.T[50,0]+((points[5,0]-stackXY.T[50,0])/2),
-                                         stackXY.T[50,1]+((points[5,1]-stackXY.T[50,1])/2),
-                                         round(count[i], 3), 
-                                         fontsize=self.edgeLabelFontSize, 
-                                         horizontalalignment='center', 
-                                         verticalalignment='center', 
-                                         color='r')
+                                ax.text(stackXY.T[50,0]+((points[5,0]-stackXY.T[50,0])/2),
+                                        stackXY.T[50,1]+((points[5,1]-stackXY.T[50,1])/2),
+                                        round(count[i], 3), 
+                                        fontsize=self.edgeLabelFontSize, 
+                                        horizontalalignment='center', 
+                                        verticalalignment='center', 
+                                        color='r')
                             elif mod_type[mod_idx] == 'activator':
                                 plt.plot(points[:1,0],points[:1,1])
                                 c = FancyBboxPatch((stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2)-0.0625,
@@ -2179,13 +2179,13 @@ class NetworkEnsemble():
                                                    boxstyle="round,pad=0.01, rounding_size=0.01",
                                                    color='w')
                                 ax.add_patch(c)
-                                plt.text(stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2),
-                                         stackXY.T[50,1]+((points[1,1]-stackXY.T[50,1])/2),
-                                         round(count[i], 3), 
-                                         fontsize=self.edgeLabelFontSize, 
-                                         horizontalalignment='center', 
-                                         verticalalignment='center', 
-                                         color='r')
+                                ax.text(stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2),
+                                        stackXY.T[50,1]+((points[1,1]-stackXY.T[50,1])/2),
+                                        round(count[i], 3), 
+                                        fontsize=self.edgeLabelFontSize, 
+                                        horizontalalignment='center', 
+                                        verticalalignment='center', 
+                                        color='r')
                     
                 mod_idx += 1
             
