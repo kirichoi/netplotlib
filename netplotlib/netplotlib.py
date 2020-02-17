@@ -92,6 +92,8 @@ class Network():
         self.forceAnalysisAtSimTime = False
         self.plotColorbar = False
         self.inlineTimeCourseSelections = []
+        self.customAxis = None
+        self.layoutAlgorithm = 'kamada-kawai'
 
 
     def getLayout(self, returnState=False):
@@ -304,28 +306,39 @@ class Network():
             
         # calcutate positions
         thres = 0.3
-        shortest_dist = dict(nx.shortest_path_length(Var.G, weight='weight'))
-        pos = nx.kamada_kawai_layout(Var.G, dist=shortest_dist, scale=self.scale)
-        
-        maxIter = 5
-        maxIter_n = 0
-        dist_flag = True
-        
-        if self.tightLayout:
-            comId = Var.speciesId
-        else:
-            comId = Var.speciesId + Var.rid
-        
-        while dist_flag and (maxIter_n < maxIter):
-            dist_flag = False
-            for i in itertools.combinations(comId, 2):
-                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
-                if pos_dist < thres:
-                    dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 2
-                    shortest_dist[i[1]][i[0]] = 2
+        if self.layoutAlgorithm == 'spring':
+            pos = nx.spring_layout(self.neuron_id)
+        elif self.layoutAlgorithm == 'kamada-kawai':
+            shortest_dist = dict(nx.shortest_path_length(Var.G, weight='weight'))
             pos = nx.kamada_kawai_layout(Var.G, dist=shortest_dist, scale=self.scale)
-            maxIter_n += 1
+            
+            maxIter = 5
+            maxIter_n = 0
+            dist_flag = True
+            
+            if self.tightLayout:
+                comId = Var.speciesId
+            else:
+                comId = Var.speciesId + Var.rid
+            
+            while dist_flag and (maxIter_n < maxIter):
+                dist_flag = False
+                for i in itertools.combinations(comId, 2):
+                    pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
+                    if pos_dist < thres:
+                        dist_flag = True
+                        shortest_dist[i[0]][i[1]] = 2
+                        shortest_dist[i[1]][i[0]] = 2
+                pos = nx.kamada_kawai_layout(Var.G, dist=shortest_dist, scale=self.scale)
+                maxIter_n += 1
+        elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
+            from networkx.drawing.nx_pydot import graphviz_layout
+            pos = graphviz_layout(Var.G, prog=self.layoutAlgorithm)
+            keylist = np.array(list(pos.keys()))
+            poslist = np.array(list(pos.values()))
+            poslist /= np.max(np.abs(poslist),axis=0)
+            pos = dict(zip(keylist, poslist))
+        
         if returnState:
             return pos, Var
         else:
@@ -382,7 +395,10 @@ class Network():
                 
             ax = plt.subplot(gs[0])
         else:
-            ax = plt.gca()
+            if self.customAxis != None:
+                ax = self.customAxis
+            else:
+                ax = plt.gca()
         
         hlInd = 0
         # add nodes to the figure
@@ -420,13 +436,13 @@ class Network():
                                         edgecolor=self.nodeEdgeColor, 
                                         facecolor=self.reactionNodeColor)
                 if self.labelReactionIds:
-                    plt.text(pos[n][0], 
-                             pos[n][1], 
-                             n, 
-                             fontsize=self.fontsize, 
-                             horizontalalignment='center', 
-                             verticalalignment='center', 
-                             color=self.labelColor)
+                    ax.text(pos[n][0], 
+                            pos[n][1], 
+                            n, 
+                            fontsize=self.fontsize, 
+                            horizontalalignment='center', 
+                            verticalalignment='center', 
+                            color=self.labelColor)
             else:
                 if len(n) > 10:
                     rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
@@ -478,13 +494,13 @@ class Network():
                                         edgecolor=self.nodeEdgeColor, 
                                         facecolor=node_color)
                 if len(n) > 10:
-                    plt.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
-                             fontsize=self.fontsize, horizontalalignment='center', 
-                             verticalalignment='center', color=self.labelColor)
+                    ax.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
+                            fontsize=self.fontsize, horizontalalignment='center', 
+                            verticalalignment='center', color=self.labelColor)
                 else:
-                    plt.text(pos[n][0], pos[n][1], n, 
-                             fontsize=self.fontsize, horizontalalignment='center', 
-                             verticalalignment='center', color=self.labelColor)
+                    ax.text(pos[n][0], pos[n][1], n, 
+                            fontsize=self.fontsize, horizontalalignment='center', 
+                            verticalalignment='center', color=self.labelColor)
             Var.G.nodes[n]['patch'] = c
         
         # add edges to the figure
@@ -628,13 +644,13 @@ class Network():
                                              (lpath1.vertices[0][0] - lpath1.vertices[35][0]))
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath1.vertices[35][0], 
-                                             y_prime+lpath1.vertices[35][1], 
-                                             int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
-                                             fontsize=self.fontsize, 
-                                             horizontalalignment='center', 
-                                             verticalalignment='center', 
-                                             color=self.reactionColor)
+                                    ax.text(x_prime+lpath1.vertices[35][0], 
+                                            y_prime+lpath1.vertices[35][1], 
+                                            int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
+                                            fontsize=self.fontsize, 
+                                            horizontalalignment='center', 
+                                            verticalalignment='center', 
+                                            color=self.reactionColor)
                             
                             if j[k][1] in Var.floatingId:
                                 if (np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i]) > 1):
@@ -642,13 +658,13 @@ class Network():
                                              (lpath2.vertices[0][0] - lpath2.vertices[-35][0]))
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
-                                    plt.text(x_prime+lpath2.vertices[-35][0], 
-                                             y_prime+lpath2.vertices[-35][1], 
-                                             int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
-                                             fontsize=self.fontsize, 
-                                             horizontalalignment='center', 
-                                             verticalalignment='center', 
-                                             color=self.reactionColor)
+                                    ax.text(x_prime+lpath2.vertices[-35][0], 
+                                            y_prime+lpath2.vertices[-35][1], 
+                                            int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
+                                            fontsize=self.fontsize, 
+                                            horizontalalignment='center', 
+                                            verticalalignment='center', 
+                                            color=self.reactionColor)
                             
                         else: 
                             if ((Var.rct[i] == Var.prd[i]) and (Var.rct[i] == Var.mod[i])): # Autoregulation
@@ -839,13 +855,13 @@ class Network():
                                                  (lpath.vertices[0][0] - lpath.vertices[35][0]))
                                         x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                         y_prime = -slope*x_prime
-                                        plt.text(x_prime+lpath.vertices[35][0], 
-                                                 y_prime+lpath.vertices[35][1], 
-                                                 int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
-                                                 fontsize=self.fontsize, 
-                                                 horizontalalignment='center', 
-                                                 verticalalignment='center', 
-                                                 color=self.reactionColor)
+                                        ax.text(x_prime+lpath.vertices[35][0], 
+                                                y_prime+lpath.vertices[35][1], 
+                                                int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
+                                                fontsize=self.fontsize, 
+                                                horizontalalignment='center', 
+                                                verticalalignment='center', 
+                                                color=self.reactionColor)
                                 
                                 if j[k][1] in Var.floatingId:
                                     if (np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i]) > 1):
@@ -853,13 +869,13 @@ class Network():
                                                  (lpath.vertices[0][0] - lpath.vertices[-25][0]))
                                         x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                         y_prime = -slope*x_prime
-                                        plt.text(x_prime+lpath.vertices[-25][0], 
-                                                 y_prime+lpath.vertices[-25][1],
-                                                 int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
-                                                 fontsize=self.fontsize, 
-                                                 horizontalalignment='center', 
-                                                 verticalalignment='center',
-                                                 color=self.reactionColor)
+                                        ax.text(x_prime+lpath.vertices[-25][0], 
+                                                y_prime+lpath.vertices[-25][1],
+                                                int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
+                                                fontsize=self.fontsize, 
+                                                horizontalalignment='center', 
+                                                verticalalignment='center',
+                                                color=self.reactionColor)
                     
             else: # BIBI or larger
                 if len(Var.rct[i]) < len(Var.prd[i]):
@@ -1003,26 +1019,26 @@ class Network():
                                      (lpath.vertices[0][0] - lpath.vertices[15][0]))
                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                             y_prime = -slope*x_prime
-                            plt.text(x_prime+lpath.vertices[15][0], 
-                                     y_prime+lpath.vertices[15][1], 
-                                     int(np.abs(Var.stoch[Var.stoch_row.index(j[0])][i])), 
-                                     fontsize=self.fontsize, 
-                                     horizontalalignment='center', 
-                                     verticalalignment='center', 
-                                     color=self.reactionColor)
+                            ax.text(x_prime+lpath.vertices[15][0], 
+                                    y_prime+lpath.vertices[15][1], 
+                                    int(np.abs(Var.stoch[Var.stoch_row.index(j[0])][i])), 
+                                    fontsize=self.fontsize, 
+                                    horizontalalignment='center', 
+                                    verticalalignment='center', 
+                                    color=self.reactionColor)
                     if j[1] in Var.floatingId:
                         if (np.abs(Var.stoch[Var.stoch_row.index(j[1])][i]) > 1):
                             slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
                                      (lpath.vertices[0][0] - lpath.vertices[-20][0]))
                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                             y_prime = -slope*x_prime
-                            plt.text(x_prime+lpath.vertices[-20][0], 
-                                     y_prime+lpath.vertices[-20][1], 
-                                     int(np.abs(Var.stoch[Var.stoch_row.index(j[1])][i])), 
-                                     fontsize=self.fontsize,
-                                     horizontalalignment='center', 
-                                     verticalalignment='center', 
-                                     color=self.reactionColor)
+                            ax.text(x_prime+lpath.vertices[-20][0], 
+                                    y_prime+lpath.vertices[-20][1], 
+                                    int(np.abs(Var.stoch[Var.stoch_row.index(j[1])][i])), 
+                                    fontsize=self.fontsize,
+                                    horizontalalignment='center', 
+                                    verticalalignment='center', 
+                                    color=self.reactionColor)
                     
         # Modifiers
         seen={}
@@ -1106,7 +1122,8 @@ class Network():
         if savePath != None:
             fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
         else:
-            plt.show()
+            if self.customAxis == None:
+                plt.show()
         plt.close()
 
 
@@ -1174,6 +1191,8 @@ class NetworkEnsemble():
         self.plottingThreshold = 0.
         self.removeBelowThreshold = True
         self.analyzeFlux = False
+        self.customAxis = None
+        self.layoutAlgorithm = 'kamada-kawai'
         
     
     def getLayout(self):
@@ -1361,23 +1380,33 @@ class NetworkEnsemble():
     
         # calcutate positions
         thres = 0.3
-        shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
-        pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-        
-        maxIter = 5
-        maxIter_n = 0
-        dist_flag = True
-        
-        while dist_flag and (maxIter_n < maxIter):
-            dist_flag = False
-            for i in itertools.combinations(pos.keys(), 2):
-                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
-                if pos_dist < thres:
-                    dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 2
-                    shortest_dist[i[1]][i[0]] = 2
+        if self.layoutAlgorithm == 'spring':
+            pos = nx.spring_layout(self.neuron_id)
+        elif self.layoutAlgorithm == 'kamada-kawai':
+            shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-            maxIter_n += 1
+            
+            maxIter = 5
+            maxIter_n = 0
+            dist_flag = True
+            
+            while dist_flag and (maxIter_n < maxIter):
+                dist_flag = False
+                for i in itertools.combinations(pos.keys(), 2):
+                    pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
+                    if pos_dist < thres:
+                        dist_flag = True
+                        shortest_dist[i[0]][i[1]] = 2
+                        shortest_dist[i[1]][i[0]] = 2
+                pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+                maxIter_n += 1
+        elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
+            from networkx.drawing.nx_pydot import graphviz_layout
+            pos = graphviz_layout(G, prog=self.layoutAlgorithm)
+            keylist = np.array(list(pos.keys()))
+            poslist = np.array(list(pos.values()))
+            poslist /= np.max(np.abs(poslist),axis=0)
+            pos = dict(zip(keylist, poslist))
         
         return pos
     
@@ -1672,23 +1701,33 @@ class NetworkEnsemble():
         
         # calcutate positions
         thres = 0.3
-        shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
-        pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-        
-        maxIter = 5
-        maxIter_n = 0
-        dist_flag = True
-        
-        while dist_flag and (maxIter_n < maxIter):
-            dist_flag = False
-            for i in itertools.combinations(pos.keys(), 2):
-                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
-                if pos_dist < thres:
-                    dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 2
-                    shortest_dist[i[1]][i[0]] = 2
+        if self.layoutAlgorithm == 'spring':
+            pos = nx.spring_layout(self.neuron_id)
+        elif self.layoutAlgorithm == 'kamada-kawai':
+            shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-            maxIter_n += 1
+            
+            maxIter = 5
+            maxIter_n = 0
+            dist_flag = True
+            
+            while dist_flag and (maxIter_n < maxIter):
+                dist_flag = False
+                for i in itertools.combinations(pos.keys(), 2):
+                    pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
+                    if pos_dist < thres:
+                        dist_flag = True
+                        shortest_dist[i[0]][i[1]] = 2
+                        shortest_dist[i[1]][i[0]] = 2
+                pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+                maxIter_n += 1
+        elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
+            from networkx.drawing.nx_pydot import graphviz_layout
+            pos = graphviz_layout(G, prog=self.layoutAlgorithm)
+            keylist = np.array(list(pos.keys()))
+            poslist = np.array(list(pos.values()))
+            poslist /= np.max(np.abs(poslist),axis=0)
+            pos = dict(zip(keylist, poslist))
         
         if not self.removeBelowThreshold:
             rid_idx = 0
@@ -1722,7 +1761,10 @@ class NetworkEnsemble():
         
         # initialize figure
         fig = plt.figure()
-        ax = plt.gca()
+        if self.customAxis != None:
+            ax = self.customAxis
+        else:
+            ax = plt.gca()
         
         # add nodes to the figure
         for n in G:
@@ -1748,13 +1790,13 @@ class NetworkEnsemble():
                                         edgecolor=self.nodeEdgeColor, 
                                         facecolor=self.reactionNodeColor)
                 if self.labelReactionIds:
-                    plt.text(pos[n][0], 
-                             pos[n][1], 
-                             n, 
-                             fontsize=self.fontsize, 
-                             horizontalalignment='center', 
-                             verticalalignment='center', 
-                             color=self.labelColor)
+                    ax.text(pos[n][0], 
+                            pos[n][1], 
+                            n, 
+                            fontsize=self.fontsize, 
+                            horizontalalignment='center', 
+                            verticalalignment='center', 
+                            color=self.labelColor)
             else:
                 if len(n) > 10:
                     rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
@@ -1787,13 +1829,13 @@ class NetworkEnsemble():
                                         edgecolor=self.nodeEdgeColor, 
                                         facecolor=node_color)
                 if len(n) > 10:
-                    plt.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
-                             fontsize=self.fontsize, horizontalalignment='center', 
-                             verticalalignment='center', color=self.labelColor)
+                    ax.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
+                            fontsize=self.fontsize, horizontalalignment='center', 
+                            verticalalignment='center', color=self.labelColor)
                 else:
-                    plt.text(pos[n][0], pos[n][1], n, 
-                             fontsize=self.fontsize, horizontalalignment='center', 
-                             verticalalignment='center', color=self.labelColor)
+                    ax.text(pos[n][0], pos[n][1], n, 
+                            fontsize=self.fontsize, horizontalalignment='center', 
+                            verticalalignment='center', color=self.labelColor)
             G.nodes[n]['patch'] = c
         
         # add edges to the figure
@@ -2043,9 +2085,9 @@ class NetworkEnsemble():
                                            boxstyle="round,pad=0.01, rounding_size=0.01",
                                            color='w')
                         ax.add_patch(c)
-                        plt.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(count[i], 3), 
-                             fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
-                             verticalalignment='center')
+                        ax.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(count[i], 3), 
+                                fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
+                                verticalalignment='center')
                 rid_idx += 1
             else:
                 # Modifiers
@@ -2121,13 +2163,13 @@ class NetworkEnsemble():
                                                    boxstyle="round,pad=0.01, rounding_size=0.01",
                                                    color='w')
                                 ax.add_patch(c)
-                                plt.text(stackXY.T[50,0]+((points[5,0]-stackXY.T[50,0])/2),
-                                         stackXY.T[50,1]+((points[5,1]-stackXY.T[50,1])/2),
-                                         round(count[i], 3), 
-                                         fontsize=self.edgeLabelFontSize, 
-                                         horizontalalignment='center', 
-                                         verticalalignment='center', 
-                                         color='r')
+                                ax.text(stackXY.T[50,0]+((points[5,0]-stackXY.T[50,0])/2),
+                                        stackXY.T[50,1]+((points[5,1]-stackXY.T[50,1])/2),
+                                        round(count[i], 3), 
+                                        fontsize=self.edgeLabelFontSize, 
+                                        horizontalalignment='center', 
+                                        verticalalignment='center', 
+                                        color='r')
                             elif mod_type[mod_idx] == 'activator':
                                 plt.plot(points[:1,0],points[:1,1])
                                 c = FancyBboxPatch((stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2)-0.0625,
@@ -2137,13 +2179,13 @@ class NetworkEnsemble():
                                                    boxstyle="round,pad=0.01, rounding_size=0.01",
                                                    color='w')
                                 ax.add_patch(c)
-                                plt.text(stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2),
-                                         stackXY.T[50,1]+((points[1,1]-stackXY.T[50,1])/2),
-                                         round(count[i], 3), 
-                                         fontsize=self.edgeLabelFontSize, 
-                                         horizontalalignment='center', 
-                                         verticalalignment='center', 
-                                         color='r')
+                                ax.text(stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2),
+                                        stackXY.T[50,1]+((points[1,1]-stackXY.T[50,1])/2),
+                                        round(count[i], 3), 
+                                        fontsize=self.edgeLabelFontSize, 
+                                        horizontalalignment='center', 
+                                        verticalalignment='center', 
+                                        color='r')
                     
                 mod_idx += 1
             
@@ -2171,7 +2213,7 @@ class NetworkEnsemble():
             fig.savefig(savePath, bbox_inches='tight')
             return allRxn, count
         else:
-            if show:
+            if show and self.customAxis == None:
                 plt.show()
             plt.close()
             return allRxn, count
@@ -2737,7 +2779,7 @@ class NetworkEnsemble():
         if savePath != None:
             fig.savefig(savePath, bbox_inches='tight')
         else:
-            if show:
+            if show and self.customAxis == None:
                 plt.show()
             plt.close()
         
