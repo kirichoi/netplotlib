@@ -92,6 +92,7 @@ class Network():
         self.forceAnalysisAtSimTime = False
         self.plotColorbar = False
         self.inlineTimeCourseSelections = []
+        self.customaxis = None
 
 
     def getLayout(self, returnState=False):
@@ -382,7 +383,10 @@ class Network():
                 
             ax = plt.subplot(gs[0])
         else:
-            ax = plt.gca()
+            if self.customaxis != None:
+                ax = self.customaxis
+            else:
+                ax = plt.gca()
         
         hlInd = 0
         # add nodes to the figure
@@ -1106,7 +1110,8 @@ class Network():
         if savePath != None:
             fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
         else:
-            plt.show()
+            if self.customaxis == None:
+                plt.show()
         plt.close()
 
 
@@ -1174,6 +1179,7 @@ class NetworkEnsemble():
         self.plottingThreshold = 0.
         self.removeBelowThreshold = True
         self.analyzeFlux = False
+        self.customaxis = None
         
     
     def getLayout(self):
@@ -1722,7 +1728,10 @@ class NetworkEnsemble():
         
         # initialize figure
         fig = plt.figure()
-        ax = plt.gca()
+        if self.customaxis != None:
+            ax = self.customaxis
+        else:
+            ax = plt.gca()
         
         # add nodes to the figure
         for n in G:
@@ -2171,7 +2180,7 @@ class NetworkEnsemble():
             fig.savefig(savePath, bbox_inches='tight')
             return allRxn, count
         else:
-            if show:
+            if show and self.customaxis == None:
                 plt.show()
             plt.close()
             return allRxn, count
@@ -2737,7 +2746,7 @@ class NetworkEnsemble():
         if savePath != None:
             fig.savefig(savePath, bbox_inches='tight')
         else:
-            if show:
+            if show and self.customaxis == None:
                 plt.show()
             plt.close()
         
