@@ -334,6 +334,10 @@ class Network():
         elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
             from networkx.drawing.nx_pydot import graphviz_layout
             pos = graphviz_layout(Var.G, prog=self.layoutAlgorithm)
+            keylist = np.array(list(pos.keys()))
+            poslist = np.array(list(pos.values()))
+            poslist /= np.max(np.abs(poslist),axis=0)
+            pos = dict(zip(keylist, poslist))
         
         if returnState:
             return pos, Var
@@ -1399,6 +1403,10 @@ class NetworkEnsemble():
         elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
             from networkx.drawing.nx_pydot import graphviz_layout
             pos = graphviz_layout(G, prog=self.layoutAlgorithm)
+            keylist = np.array(list(pos.keys()))
+            poslist = np.array(list(pos.values()))
+            poslist /= np.max(np.abs(poslist),axis=0)
+            pos = dict(zip(keylist, poslist))
         
         return pos
     
@@ -1716,6 +1724,10 @@ class NetworkEnsemble():
         elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
             from networkx.drawing.nx_pydot import graphviz_layout
             pos = graphviz_layout(G, prog=self.layoutAlgorithm)
+            keylist = np.array(list(pos.keys()))
+            poslist = np.array(list(pos.values()))
+            poslist /= np.max(np.abs(poslist),axis=0)
+            pos = dict(zip(keylist, poslist))
         
         if not self.removeBelowThreshold:
             rid_idx = 0
