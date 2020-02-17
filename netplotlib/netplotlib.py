@@ -92,7 +92,8 @@ class Network():
         self.forceAnalysisAtSimTime = False
         self.plotColorbar = False
         self.inlineTimeCourseSelections = []
-        self.customaxis = None
+        self.customAxis = None
+        self.layoutAlgorithm = 'kamada-kawai'
 
 
     def getLayout(self, returnState=False):
@@ -305,28 +306,35 @@ class Network():
             
         # calcutate positions
         thres = 0.3
-        shortest_dist = dict(nx.shortest_path_length(Var.G, weight='weight'))
-        pos = nx.kamada_kawai_layout(Var.G, dist=shortest_dist, scale=self.scale)
-        
-        maxIter = 5
-        maxIter_n = 0
-        dist_flag = True
-        
-        if self.tightLayout:
-            comId = Var.speciesId
-        else:
-            comId = Var.speciesId + Var.rid
-        
-        while dist_flag and (maxIter_n < maxIter):
-            dist_flag = False
-            for i in itertools.combinations(comId, 2):
-                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
-                if pos_dist < thres:
-                    dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 2
-                    shortest_dist[i[1]][i[0]] = 2
+        if self.layoutAlgorithm == 'spring':
+            pos = nx.spring_layout(self.neuron_id)
+        elif self.layoutAlgorithm == 'kamada-kawai':
+            shortest_dist = dict(nx.shortest_path_length(Var.G, weight='weight'))
             pos = nx.kamada_kawai_layout(Var.G, dist=shortest_dist, scale=self.scale)
-            maxIter_n += 1
+            
+            maxIter = 5
+            maxIter_n = 0
+            dist_flag = True
+            
+            if self.tightLayout:
+                comId = Var.speciesId
+            else:
+                comId = Var.speciesId + Var.rid
+            
+            while dist_flag and (maxIter_n < maxIter):
+                dist_flag = False
+                for i in itertools.combinations(comId, 2):
+                    pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
+                    if pos_dist < thres:
+                        dist_flag = True
+                        shortest_dist[i[0]][i[1]] = 2
+                        shortest_dist[i[1]][i[0]] = 2
+                pos = nx.kamada_kawai_layout(Var.G, dist=shortest_dist, scale=self.scale)
+                maxIter_n += 1
+        elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
+            from networkx.drawing.nx_pydot import graphviz_layout
+            pos = graphviz_layout(Var.G, prog=self.layoutAlgorithm)
+        
         if returnState:
             return pos, Var
         else:
@@ -383,8 +391,8 @@ class Network():
                 
             ax = plt.subplot(gs[0])
         else:
-            if self.customaxis != None:
-                ax = self.customaxis
+            if self.customAxis != None:
+                ax = self.customAxis
             else:
                 ax = plt.gca()
         
@@ -1110,7 +1118,7 @@ class Network():
         if savePath != None:
             fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
         else:
-            if self.customaxis == None:
+            if self.customAxis == None:
                 plt.show()
         plt.close()
 
@@ -1179,7 +1187,8 @@ class NetworkEnsemble():
         self.plottingThreshold = 0.
         self.removeBelowThreshold = True
         self.analyzeFlux = False
-        self.customaxis = None
+        self.customAxis = None
+        self.layoutAlgorithm = 'kamada-kawai'
         
     
     def getLayout(self):
@@ -1367,23 +1376,29 @@ class NetworkEnsemble():
     
         # calcutate positions
         thres = 0.3
-        shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
-        pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-        
-        maxIter = 5
-        maxIter_n = 0
-        dist_flag = True
-        
-        while dist_flag and (maxIter_n < maxIter):
-            dist_flag = False
-            for i in itertools.combinations(pos.keys(), 2):
-                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
-                if pos_dist < thres:
-                    dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 2
-                    shortest_dist[i[1]][i[0]] = 2
+        if self.layoutAlgorithm == 'spring':
+            pos = nx.spring_layout(self.neuron_id)
+        elif self.layoutAlgorithm == 'kamada-kawai':
+            shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-            maxIter_n += 1
+            
+            maxIter = 5
+            maxIter_n = 0
+            dist_flag = True
+            
+            while dist_flag and (maxIter_n < maxIter):
+                dist_flag = False
+                for i in itertools.combinations(pos.keys(), 2):
+                    pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
+                    if pos_dist < thres:
+                        dist_flag = True
+                        shortest_dist[i[0]][i[1]] = 2
+                        shortest_dist[i[1]][i[0]] = 2
+                pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+                maxIter_n += 1
+        elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
+            from networkx.drawing.nx_pydot import graphviz_layout
+            pos = graphviz_layout(G, prog=self.layoutAlgorithm)
         
         return pos
     
@@ -1678,23 +1693,29 @@ class NetworkEnsemble():
         
         # calcutate positions
         thres = 0.3
-        shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
-        pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-        
-        maxIter = 5
-        maxIter_n = 0
-        dist_flag = True
-        
-        while dist_flag and (maxIter_n < maxIter):
-            dist_flag = False
-            for i in itertools.combinations(pos.keys(), 2):
-                pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
-                if pos_dist < thres:
-                    dist_flag = True
-                    shortest_dist[i[0]][i[1]] = 2
-                    shortest_dist[i[1]][i[0]] = 2
+        if self.layoutAlgorithm == 'spring':
+            pos = nx.spring_layout(self.neuron_id)
+        elif self.layoutAlgorithm == 'kamada-kawai':
+            shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
-            maxIter_n += 1
+            
+            maxIter = 5
+            maxIter_n = 0
+            dist_flag = True
+            
+            while dist_flag and (maxIter_n < maxIter):
+                dist_flag = False
+                for i in itertools.combinations(pos.keys(), 2):
+                    pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
+                    if pos_dist < thres:
+                        dist_flag = True
+                        shortest_dist[i[0]][i[1]] = 2
+                        shortest_dist[i[1]][i[0]] = 2
+                pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
+                maxIter_n += 1
+        elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
+            from networkx.drawing.nx_pydot import graphviz_layout
+            pos = graphviz_layout(G, prog=self.layoutAlgorithm)
         
         if not self.removeBelowThreshold:
             rid_idx = 0
@@ -1728,8 +1749,8 @@ class NetworkEnsemble():
         
         # initialize figure
         fig = plt.figure()
-        if self.customaxis != None:
-            ax = self.customaxis
+        if self.customAxis != None:
+            ax = self.customAxis
         else:
             ax = plt.gca()
         
@@ -2180,7 +2201,7 @@ class NetworkEnsemble():
             fig.savefig(savePath, bbox_inches='tight')
             return allRxn, count
         else:
-            if show and self.customaxis == None:
+            if show and self.customAxis == None:
                 plt.show()
             plt.close()
             return allRxn, count
@@ -2746,7 +2767,7 @@ class NetworkEnsemble():
         if savePath != None:
             fig.savefig(savePath, bbox_inches='tight')
         else:
-            if show and self.customaxis == None:
+            if show and self.customAxis == None:
                 plt.show()
             plt.close()
         
