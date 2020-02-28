@@ -307,7 +307,7 @@ class Network():
         # calcutate positions
         thres = 0.3
         if self.layoutAlgorithm == 'spring':
-            pos = nx.spring_layout(Var.G, scale=self.scale)
+            pos = nx.spring_layout(Var.G, scale=self.scale, seed=1)
         elif self.layoutAlgorithm == 'kamada-kawai':
             shortest_dist = dict(nx.shortest_path_length(Var.G, weight='weight'))
             pos = nx.kamada_kawai_layout(Var.G, dist=shortest_dist, scale=self.scale)
@@ -1381,7 +1381,7 @@ class NetworkEnsemble():
         # calcutate positions
         thres = 0.3
         if self.layoutAlgorithm == 'spring':
-            pos = nx.spring_layout(Var.G, scale=self.scale)
+            pos = nx.spring_layout(G, scale=self.scale, seed=1)
         elif self.layoutAlgorithm == 'kamada-kawai':
             shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
@@ -1702,7 +1702,7 @@ class NetworkEnsemble():
         # calcutate positions
         thres = 0.3
         if self.layoutAlgorithm == 'spring':
-            pos = nx.spring_layout(Var.G, scale=self.scale)
+            pos = nx.spring_layout(G, scale=self.scale, seed=1)
         elif self.layoutAlgorithm == 'kamada-kawai':
             shortest_dist = dict(nx.shortest_path_length(G, weight='weight'))
             pos = nx.kamada_kawai_layout(G, dist=shortest_dist, scale=self.scale)
