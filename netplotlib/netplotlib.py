@@ -333,11 +333,16 @@ class Network():
                 maxIter_n += 1
         elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
             from networkx.drawing.nx_pydot import graphviz_layout
-            pos = graphviz_layout(Var.G, prog=self.layoutAlgorithm)
+            try:
+                pos = graphviz_layout(Var.G, prog=self.layoutAlgorithm)
+            except:
+                raise Exception("Error running graphviz: Please check graphviz is properly configured.")
             keylist = np.array(list(pos.keys()))
             poslist = np.array(list(pos.values()))
             poslist /= np.max(np.abs(poslist),axis=0)
             pos = dict(zip(keylist, poslist))
+        else:
+            raise Exception("Unsupported layout algorithm.")
         
         if returnState:
             return pos, Var
@@ -1402,11 +1407,16 @@ class NetworkEnsemble():
                 maxIter_n += 1
         elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
             from networkx.drawing.nx_pydot import graphviz_layout
-            pos = graphviz_layout(G, prog=self.layoutAlgorithm)
+            try:
+                pos = graphviz_layout(G, prog=self.layoutAlgorithm)
+            except:
+                raise Exception("Error running graphviz: Please check graphviz is properly configured.")
             keylist = np.array(list(pos.keys()))
             poslist = np.array(list(pos.values()))
             poslist /= np.max(np.abs(poslist),axis=0)
             pos = dict(zip(keylist, poslist))
+        else:
+            raise Exception("Unsupported layout algorithm.")
         
         return pos
     
@@ -1723,11 +1733,16 @@ class NetworkEnsemble():
                 maxIter_n += 1
         elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
             from networkx.drawing.nx_pydot import graphviz_layout
-            pos = graphviz_layout(G, prog=self.layoutAlgorithm)
+            try:
+                pos = graphviz_layout(G, prog=self.layoutAlgorithm)
+            except:
+                raise Exception("Error running graphviz: Please check graphviz is properly configured.")
             keylist = np.array(list(pos.keys()))
             poslist = np.array(list(pos.values()))
             poslist /= np.max(np.abs(poslist),axis=0)
             pos = dict(zip(keylist, poslist))
+        else:
+            raise Exception("Unsupported layout algorithm.")
         
         if not self.removeBelowThreshold:
             rid_idx = 0
