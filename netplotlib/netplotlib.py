@@ -103,6 +103,11 @@ class Network():
         self.customAxis = None
         self.layoutAlgorithm = 'kamada-kawai'
         self._Var = _Variable()
+        self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
+        self._Var.floatingId = self.rrInstance.getFloatingSpeciesIds()
+        self._Var.rid = self.rrInstance.getReactionIds()
+        self._Var.stoch = self.rrInstance.getFullStoichiometryMatrix()
+        self._Var.stoch_row = self._Var.stoch.rownames
         self._Var.pos = None
 
 
@@ -1144,7 +1149,11 @@ class Network():
             plt.tight_layout()
         
         if savePath != None:
-            fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
+            try:
+                fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
+            except IOError as e:
+                raise Exception("Error saving diagram: " + str(e))
+                
         else:
             if self.customAxis == None:
                 plt.show()
@@ -1159,7 +1168,7 @@ class Network():
         :param dpi: dpi settings for the diagram
         """
         
-        self.draw(savePath=path, dpi=dpi)
+        self.draw(show=False, savePath=path, dpi=dpi)
         
 
 class NetworkEnsemble():
