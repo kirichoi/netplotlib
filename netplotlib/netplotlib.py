@@ -1156,7 +1156,8 @@ class Network():
                 
         else:
             if self.customAxis == None:
-                plt.show()
+                if show == True:
+                    plt.show()
         plt.close()
 
 
