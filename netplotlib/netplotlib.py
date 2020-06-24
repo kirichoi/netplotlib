@@ -31,7 +31,6 @@ def getVersion():
     
     return version
 
-
 class _Variable():
     
     def __init__(self):
@@ -56,6 +55,12 @@ class Network():
             except:
                 raise Exception("Input does not seem to be a valid SBML or Antimony string")
                 
+        self._Var = _Variable()
+        self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
+        self._Var.floatingId = self.rrInstance.getFloatingSpeciesIds()
+        self._Var.rid = self.rrInstance.getReactionIds()
+        self._Var.stoch = self.rrInstance.getFullStoichiometryMatrix()
+        self._Var.stoch_row = self._Var.stoch.rownames
         self.reset()
         
 
@@ -95,12 +100,6 @@ class Network():
         self.inlineTimeCourseSelections = []
         self.customAxis = None
         self.layoutAlgorithm = 'kamada-kawai'
-        self._Var = _Variable()
-        self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
-        self._Var.floatingId = self.rrInstance.getFloatingSpeciesIds()
-        self._Var.rid = self.rrInstance.getReactionIds()
-        self._Var.stoch = self.rrInstance.getFullStoichiometryMatrix()
-        self._Var.stoch_row = self._Var.stoch.rownames
         self._Var.pos = None
 
 
@@ -1173,26 +1172,40 @@ class NetworkEnsemble():
         :type name: list
         """
         
+        self._Var = _Variable()
+        self._Var.models = models
+        self._Var.boundaryIds = []
+        self._Var.floatingIds = []
+        self._Var.rids = []
+        self._Var.stochs = []
+        self._Var.stoch_rows = []
         self.rrInstances = []
         
         for m in models:
             try:
-                self.rrInstances.append(te.loadSBMLModel(m))
+                r = te.loadSBMLModel(m)
+                self.rrInstances.append(r)
             except:
                 try:
-                    self.rrInstances.append(te.loadAntimonyModel(m))
+                    r = te.loadAntimonyModel(m)
+                    self.rrInstances.append(r)
                 except:
                     raise Exception("Input does not seem to be a valid list of SBML or Antimony string")
+                
+            self._Var.boundaryIds.append(r.getBoundarySpeciesIds())
+            self._Var.floatingIds.append(r.getFloatingSpeciesIds())
+            self._Var.rids.append(r.getReactionIds())
+            self._Var.stochs.append(r.getFullStoichiometryMatrix())
+            self._Var.stoch_rows.append(r.getFullStoichiometryMatrix().rownames)
         
-        self.models = models
         self.reset()
-    
+        
     
     def reset(self):
         """
         Resets all properties
         """
-    
+        
         self.scale = 1.
         self.fontsize = 10
         self.edgelw = 10.
@@ -1217,14 +1230,22 @@ class NetworkEnsemble():
         self.plottingThreshold = 0.
         self.removeBelowThreshold = True
         self.analyzeFlux = False
+        self.analyzeRates = False
+        self.analyzeColorHigh = 'k'
+        self.analyzeColorLow = 'k'
+        self.analyzeColorMap = 'Reds'
+        self.analyzeColorScale = False
+        self.plotColorbar = False
         self.customAxis = None
         self.layoutAlgorithm = 'kamada-kawai'
+        self._Var.pos = None
         
     
     def getLayout(self):
         """
         Return the layout
         """
+        
         # extract reactant, product, modifiers, and kinetic laws
         allRxn = []
         count = []
@@ -1234,17 +1255,16 @@ class NetworkEnsemble():
         mod_type = []
         rid_ind = 0
         
-        if len(self.weights) > 0:
-            if len(self.weights) != len(self.rrInstances):
-                raise Exception("The dimension of weights provides does not match "
-                                "the number of models given")
+        if len(self.weights) > 0 and len(self.weights) != len(self.rrInstances):
+            raise Exception("The dimension of weights provides does not match "
+                            "the number of models given")
     
         for rind, r in enumerate(self.rrInstances):
             numBnd = r.getNumBoundarySpecies()
             numFlt = r.getNumFloatingSpecies()
-            boundaryId = r.getBoundarySpeciesIds()
-            floatingId = r.getFloatingSpeciesIds()
-            rid_temp = r.getReactionIds()
+            boundaryId = self._Var.boundaryId[rind]
+            floatingId = self._Var.floatingId[rind]
+            rid_temp = self._Var.rid[rind]
             
             # prepare symbols for sympy
             boundaryId_sympy = [] 
@@ -2259,6 +2279,7 @@ class NetworkEnsemble():
             plt.close()
             return allRxn, count
     
+    
     def drawNetworkGrid(self, nrows, ncols, auto=False, show=True, savePath=None, dpi=150):
         """
         Plot a grid of network diagrams
@@ -2285,7 +2306,7 @@ class NetworkEnsemble():
             if mdl < len(self.models):
                 net = Network(self.models[mdl])
                 
-                pos, Var = net.getLayout(returnState=True)
+                pos = net.getLayout()
         
                 # check the range of x and y positions
                 max_width = []
@@ -2298,8 +2319,8 @@ class NetworkEnsemble():
                 max_height = [min(max_height), max(max_height)]
                 
                 # add nodes to the figure
-                for n in Var.G:
-                    if n in Var.rid:
+                for n in self._Var.G:
+                    if n in self._Var.rid:
                         rec_width = 0.05*(self.fontsize/20)
                         rec_height = 0.05*(self.fontsize/20)
                         if n in self.highlight:
@@ -2336,7 +2357,7 @@ class NetworkEnsemble():
                             rec_width = max(0.045*(len(n)+1), 0.15)*(self.fontsize/20)
                             rec_height = 0.13*(self.fontsize/20)
                             
-                        if (n in Var.boundaryId) or (n == 'Input') or (n == 'Output'):
+                        if (n in self._Var.boundaryId) or (n == 'Input') or (n == 'Output'):
                             node_color = self.boundaryColor
                         else:
                             node_color = self.nodeColor
@@ -2367,24 +2388,24 @@ class NetworkEnsemble():
                             plt.text(pos[n][0], pos[n][1], n, 
                                      fontsize=self.fontsize, horizontalalignment='center', 
                                      verticalalignment='center', color=self.labelColor)
-                    Var.G.nodes[n]['patch'] = c
+                    self._Var.G.nodes[n]['patch'] = c
                 
                 # add edges to the figure
-                for i in range(len(Var.rid)):
-                    if (len(Var.rct[i]) == 1) or (len(Var.prd[i]) == 1): # UNI-involved
-                        comb = list(itertools.combinations_with_replacement(Var.rct[i],len(Var.prd[i])))
+                for i in range(len(self._Var.rid)):
+                    if (len(self._Var.rct[i]) == 1) or (len(self._Var.prd[i]) == 1): # UNI-involved
+                        comb = list(itertools.combinations_with_replacement(self._Var.rct[i],len(self._Var.prd[i])))
                         for j in [list(zip(x,Var.prd[i])) for x in comb]:
                             for k in range(len(j)):
-                                p1 = Var.G.nodes[j[k][0]]['patch']
-                                p2 = Var.G.nodes[Var.rid[i]]['patch']
-                                p3 = Var.G.nodes[j[k][1]]['patch']
+                                p1 = self._Var.G.nodes[j[k][0]]['patch']
+                                p2 = self._Var.G.nodes[self._Var.rid[i]]['patch']
+                                p3 = self._Var.G.nodes[j[k][1]]['patch']
                                 
                                 X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
                                 X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
                                 X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
                                 
-                                if ((len(np.unique(Var.rct[i])) > len(Var.prd[i])) or 
-                                    (len(Var.rct[i]) < len(np.unique(Var.prd[i])))): # Uni-Bi or Bi-Uni
+                                if ((len(np.unique(self._Var.rct[i])) > len(self._Var.prd[i])) or 
+                                    (len(self._Var.rct[i]) < len(np.unique(self._Var.prd[i])))): # Uni-Bi or Bi-Uni
                                     XY1 = np.vstack((X1, X2))
                                     XY2 = np.vstack((X2, X3))
                                     
@@ -2427,7 +2448,7 @@ class NetworkEnsemble():
                                     arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                     arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                                     
-                                    if Var.r_type[i] == 'reversible':
+                                    if self._Var.r_type[i] == 'reversible':
                                         X1top = (p1.get_x()+p1.get_width()/2,
                                                  p1.get_y()+p1.get_height())
                                         X1bot = (p1.get_x()+p1.get_width()/2,
@@ -2448,11 +2469,11 @@ class NetworkEnsemble():
                                         lpath1 = Path(stackXY1.T[n_2:])
                                         
                                         if self.analyzeFlux:
-                                            if Var.flux[i] > 0:
+                                            if self._Var.flux[i] > 0:
                                                 lw1 = (1+self.edgelw)
                                                 lw2 = (4+self.edgelw)
                                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                            elif Var.flux[i] < 0:
+                                            elif self._Var.flux[i] < 0:
                                                 lw1 = (4+self.edgelw)
                                                 lw2 = (1+self.edgelw)
                                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
@@ -2474,8 +2495,8 @@ class NetworkEnsemble():
                                     fig.axes[mdl].add_patch(e1)
                                     fig.axes[mdl].add_patch(e2)
                                     
-                                    if j[k][0] in Var.floatingId:
-                                        if (np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i]) > 1):
+                                    if j[k][0] in self._Var.floatingId:
+                                        if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i]) > 1):
                                             # position calculation
                                             slope = ((lpath1.vertices[0][1] - lpath1.vertices[10][1])/
                                                      (lpath1.vertices[0][0] - lpath1.vertices[10][0]))
@@ -2483,21 +2504,21 @@ class NetworkEnsemble():
                                             y_prime = -slope*x_prime
                                             plt.text(x_prime+lpath1.vertices[10][0], 
                                                      y_prime+lpath1.vertices[10][1], 
-                                                     int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
+                                                     int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i])), 
                                                      fontsize=self.fontsize, 
                                                      horizontalalignment='center', 
                                                      verticalalignment='center', 
                                                      color=self.reactionColor)
                                     
-                                    if j[k][1] in Var.floatingId:
-                                        if (np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i]) > 1):
+                                    if j[k][1] in self._Var.floatingId:
+                                        if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i]) > 1):
                                             slope = ((lpath2.vertices[0][1] - lpath2.vertices[-20][1])/
                                                      (lpath2.vertices[0][0] - lpath2.vertices[-20][0]))
                                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                             y_prime = -slope*x_prime
                                             plt.text(x_prime+lpath2.vertices[-20][0], 
                                                      y_prime+lpath2.vertices[-20][1], 
-                                                     int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
+                                                     int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i])), 
                                                      fontsize=self.fontsize, 
                                                      horizontalalignment='center', 
                                                      verticalalignment='center', 
@@ -2529,7 +2550,7 @@ class NetworkEnsemble():
                                             (np.abs(n_1) < np.shape(stackXY)[1] - 75)):
                                         n_1 -= 1
                                    
-                                    if Var.r_type[i] == 'reversible':
+                                    if self._Var.r_type[i] == 'reversible':
                                         X1top = (p1.get_x()+p1.get_width()/2,
                                                  p1.get_y()+p1.get_height())
                                         X1bot = (p1.get_x()+p1.get_width()/2,
@@ -2550,12 +2571,12 @@ class NetworkEnsemble():
                                         lpath = Path(stackXY.T[n_2:n_1])
                                         
                                         if self.analyzeFlux:
-                                            if Var.flux[i] > 0:
+                                            if self._Var.flux[i] > 0:
                                                 lw1 = (1+self.edgelw)
                                                 lw2 = (4+self.edgelw)
                                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                                 arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                            elif Var.flux[i] < 0:
+                                            elif self._Var.flux[i] < 0:
                                                 lw1 = (4+self.edgelw)
                                                 lw2 = (1+self.edgelw)
                                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
@@ -2597,44 +2618,44 @@ class NetworkEnsemble():
                                                             color=self.reactionColor)
                                         fig.axes[mdl].add_patch(e)
                                 
-                                    if j[k][0] in Var.floatingId:
-                                        if (np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i]) > 1):
+                                    if j[k][0] in self._Var.floatingId:
+                                        if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i]) > 1):
                                             slope = ((lpath.vertices[0][1] - lpath.vertices[10][1])/
                                                      (lpath.vertices[0][0] - lpath.vertices[10][0]))
                                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                             y_prime = -slope*x_prime
                                             plt.text(x_prime+lpath.vertices[10][0], 
                                                      y_prime+lpath.vertices[10][1], 
-                                                     int(np.abs(Var.stoch[Var.stoch_row.index(j[k][0])][i])), 
+                                                     int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i])), 
                                                      fontsize=self.fontsize, 
                                                      horizontalalignment='center', 
                                                      verticalalignment='center', 
                                                      color=self.reactionColor)
                                     
-                                    if j[k][1] in Var.floatingId:
-                                        if (np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i]) > 1):
+                                    if j[k][1] in self._Var.floatingId:
+                                        if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i]) > 1):
                                             slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
                                                      (lpath.vertices[0][0] - lpath.vertices[-20][0]))
                                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                             y_prime = -slope*x_prime
                                             plt.text(x_prime+lpath.vertices[-20][0], 
                                                      y_prime+lpath.vertices[-20][1],
-                                                     int(np.abs(Var.stoch[Var.stoch_row.index(j[k][1])][i])), 
+                                                     int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i])), 
                                                      fontsize=self.fontsize, 
                                                      horizontalalignment='center', 
                                                      verticalalignment='center',
                                                      color=self.reactionColor)
                             
                     else: # BIBI or larger
-                        if len(Var.rct[i]) < len(Var.prd[i]):
-                            rVal = len(Var.rct[i])
+                        if len(self._Var.rct[i]) < len(self._Var.prd[i]):
+                            rVal = len(self._Var.rct[i])
                         else:
-                            rVal = len(Var.prd[i])
+                            rVal = len(self._Var.prd[i])
                             
-                        for j in [list(zip(x,Var.prd[i])) for x in itertools.combinations(Var.rct[i],rVal)][0]:
-                            p1 = Var.G.nodes[j[0]]['patch']
-                            p2 = Var.G.nodes[Var.rid[i]]['patch']
-                            p3 = Var.G.nodes[j[1]]['patch']
+                        for j in [list(zip(x,Var.prd[i])) for x in itertools.combinations(self._Var.rct[i],rVal)][0]:
+                            p1 = self._Var.G.nodes[j[0]]['patch']
+                            p2 = self._Var.G.nodes[self._Var.rid[i]]['patch']
+                            p3 = self._Var.G.nodes[j[1]]['patch']
                             
                             X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
                             X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
@@ -2665,7 +2686,7 @@ class NetworkEnsemble():
                                     (np.abs(n_1) < np.shape(stackXY)[1] - 75)):
                                 n_1 -= 1
                             
-                            if Var.r_type[i] == 'reversible':
+                            if self._Var.r_type[i] == 'reversible':
                                 X1top = (p1.get_x()+p1.get_width()/2,
                                          p1.get_y()+p1.get_height())
                                 X1bot = (p1.get_x()+p1.get_width()/2,
@@ -2686,12 +2707,12 @@ class NetworkEnsemble():
                                 lpath = Path(stackXY.T[n_2:n_1])
                                 
                                 if self.analyzeFlux:
-                                    if Var.flux[i] > 0:
+                                    if self._Var.flux[i] > 0:
                                         lw1 = (1+self.edgelw)
                                         lw2 = (4+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
                                         arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                    elif Var.flux[i] < 0:
+                                    elif self._Var.flux[i] < 0:
                                         lw1 = (4+self.edgelw)
                                         lw2 = (1+self.edgelw)
                                         arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
@@ -2733,28 +2754,28 @@ class NetworkEnsemble():
                                                     color=self.reactionColor)
                                 fig.axes[mdl].add_patch(e)
                             
-                            if j[0] in Var.floatingId:
-                                if (np.abs(Var.stoch[Var.stoch_row.index(j[0])][i]) > 1):
+                            if j[0] in self._Var.floatingId:
+                                if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[0])][i]) > 1):
                                     slope = ((lpath.vertices[0][1] - lpath.vertices[15][1])/
                                              (lpath.vertices[0][0] - lpath.vertices[15][0]))
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
                                     plt.text(x_prime+lpath.vertices[15][0], 
                                              y_prime+lpath.vertices[15][1], 
-                                             int(np.abs(Var.stoch[Var.stoch_row.index(j[0])][i])), 
+                                             int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[0])][i])), 
                                              fontsize=self.fontsize, 
                                              horizontalalignment='center', 
                                              verticalalignment='center', 
                                              color=self.reactionColor)
-                            if j[1] in Var.floatingId:
-                                if (np.abs(Var.stoch[Var.stoch_row.index(j[1])][i]) > 1):
+                            if j[1] in self._Var.floatingId:
+                                if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[1])][i]) > 1):
                                     slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
                                              (lpath.vertices[0][0] - lpath.vertices[-20][0]))
                                     x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                     y_prime = -slope*x_prime
                                     plt.text(x_prime+lpath.vertices[-20][0], 
                                              y_prime+lpath.vertices[-20][1], 
-                                             int(np.abs(Var.stoch[Var.stoch_row.index(j[1])][i])), 
+                                             int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[1])][i])), 
                                              fontsize=self.fontsize,
                                              horizontalalignment='center', 
                                              verticalalignment='center', 
@@ -2762,9 +2783,9 @@ class NetworkEnsemble():
                             
                 # Modifiers
                 seen={}
-                for i, e in enumerate(Var.mod_flat):
-                    n1 = Var.G.nodes[e]['patch']
-                    n2 = Var.G.nodes[Var.modtarget_flat[i]]['patch']
+                for i, e in enumerate(self._Var.mod_flat):
+                    n1 = self._Var.G.nodes[e]['patch']
+                    n2 = self._Var.G.nodes[self._Var.modtarget_flat[i]]['patch']
                     rad = 0.1
                     shrinkB = 2.
                     
@@ -2777,16 +2798,16 @@ class NetworkEnsemble():
                     X2 = (n2.get_x()+n2.get_width()/2,
                           n2.get_y()+n2.get_height()/2)
                     
-                    if Var.modtype_flat[i] == 'inhibitor': # inhibition
+                    if self._Var.modtype_flat[i] == 'inhibitor': # inhibition
                         color = self.modifierColor
                         arrowstyle = ArrowStyle.BarAB(widthA=0.0, angleA=None, widthB=1.0, angleB=None)
                         shrinkB = 10.
                         linestyle = '-'
-                    elif Var.modtype_flat[i] == 'activator': # activation
+                    elif self._Var.modtype_flat[i] == 'activator': # activation
                         color = self.modifierColor
                         arrowstyle = arrowstyle = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                         linestyle = '-'
-                    elif Var.modtype_flat[i] == 'modifier': # Unknown modifier
+                    elif self._Var.modtype_flat[i] == 'modifier': # Unknown modifier
                         color = self.modifierColor
                         arrowstyle = arrowstyle = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                         linestyle = ':'
@@ -2807,16 +2828,16 @@ class NetworkEnsemble():
                 
                 # Add reaction nodes at last to put it on top
                 if self.drawReactionNode:
-                    allnodes = Var.speciesId + Var.rid
+                    allnodes = self._Var.speciesId + self._Var.rid
                 else:
-                    allnodes = Var.speciesId
+                    allnodes = self._Var.speciesId
                 
-                if 'Input' in Var.G.nodes:
+                if 'Input' in self._Var.G.nodes:
                     allnodes += ['Input']
-                if 'Output' in Var.G.nodes:
+                if 'Output' in self._Var.G.nodes:
                     allnodes += ['Output']
                 for i in range(len(allnodes)):
-                    fig.axes[mdl].add_patch(Var.G.nodes[allnodes[i]]['patch'])
+                    fig.axes[mdl].add_patch(self._Var.G.nodes[allnodes[i]]['patch'])
                 
                 fig.axes[mdl].autoscale()
         
