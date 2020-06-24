@@ -32,6 +32,17 @@ def getVersion():
     return version
 
 
+def getListOfAlgorithms():
+    """
+    Print list of supported layout algorithms
+    """
+    
+    algList = ['kamada-kawai', 'spring', 'twopi', 'neato', 'dot']
+    algList.sort()
+    
+    return algList
+
+
 class _Variable():
     
     def __init__(self):
@@ -2410,7 +2421,7 @@ class NetworkEnsemble():
                 for i in range(len(self._Var.rid)):
                     if (len(self._Var.rct[i]) == 1) or (len(self._Var.prd[i]) == 1): # UNI-involved
                         comb = list(itertools.combinations_with_replacement(self._Var.rct[i],len(self._Var.prd[i])))
-                        for j in [list(zip(x,Var.prd[i])) for x in comb]:
+                        for j in [list(zip(x,self._Var.prd[i])) for x in comb]:
                             for k in range(len(j)):
                                 p1 = self._Var.G.nodes[j[k][0]]['patch']
                                 p2 = self._Var.G.nodes[self._Var.rid[i]]['patch']
@@ -2668,7 +2679,7 @@ class NetworkEnsemble():
                         else:
                             rVal = len(self._Var.prd[i])
                             
-                        for j in [list(zip(x,Var.prd[i])) for x in itertools.combinations(self._Var.rct[i],rVal)][0]:
+                        for j in [list(zip(x,self._Var.prd[i])) for x in itertools.combinations(self._Var.rct[i],rVal)][0]:
                             p1 = self._Var.G.nodes[j[0]]['patch']
                             p2 = self._Var.G.nodes[self._Var.rid[i]]['patch']
                             p3 = self._Var.G.nodes[j[1]]['patch']
@@ -2805,8 +2816,8 @@ class NetworkEnsemble():
                     rad = 0.1
                     shrinkB = 2.
                     
-                    if (e,Var.modtarget_flat[i]) in seen:
-                        rad = seen.get((e,Var.modtarget_flat[i])) # TODO: No curvature when there is just a single line between two nodes
+                    if (e,self._Var.modtarget_flat[i]) in seen:
+                        rad = seen.get((e,self._Var.modtarget_flat[i])) # TODO: No curvature when there is just a single line between two nodes
                         rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
                         
                     X1 = (n1.get_x()+n1.get_width()/2,
@@ -2838,7 +2849,7 @@ class NetworkEnsemble():
                                         lw=(1+self.edgelw),
                                         color=color,
                                         linestyle=linestyle)
-                    seen[(e,Var.modtarget_flat[i])]=rad
+                    seen[(e,self._Var.modtarget_flat[i])]=rad
                     fig.axes[mdl].add_patch(e)
                     fig.axes[mdl].add_patch(n1)
                 
