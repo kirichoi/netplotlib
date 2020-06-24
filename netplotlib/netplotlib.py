@@ -16,6 +16,7 @@ import sympy
 import tesbml
 import itertools
 
+
 def getVersion():
     """
     Print version string
@@ -57,14 +58,6 @@ class Network():
                 
         self.reset()
         
-        self._Var = _Variable()
-        self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
-        self._Var.floatingId = self.rrInstance.getFloatingSpeciesIds()
-        self._Var.rid = self.rrInstance.getReactionIds()
-        self._Var.stoch = self.rrInstance.getFullStoichiometryMatrix()
-        self._Var.stoch_row = self._Var.stoch.rownames
-        self._Var.pos = None
-    
 
     def reset(self):
         """
@@ -1154,10 +1147,8 @@ class Network():
             except IOError as e:
                 raise Exception("Error saving diagram: " + str(e))
                 
-        else:
-            if self.customAxis == None:
-                if show == True:
-                    plt.show()
+        if show and self.customAxis == None:
+            plt.show()
         plt.close()
 
 
@@ -1456,6 +1447,7 @@ class NetworkEnsemble():
         Draw weighted reaction network based on frequency of reactions
         
         :param show: flag to show the diagram
+        :param savePath: path to save the diagram
         :returns allRxn: list of all reactions in the list of models presented as a pair of reactants and products
         :returns count: normalized count of reactions in allRxn throughout the list of models
         """
@@ -2255,7 +2247,10 @@ class NetworkEnsemble():
         plt.axis('equal')
         
         if savePath != None:
-            fig.savefig(savePath, bbox_inches='tight')
+            try:
+                fig.savefig(savePath, bbox_inches='tight')
+            except IOError as e:
+                raise Exception("Error saving diagram: " + str(e))
             return allRxn, count
         else:
             if show and self.customAxis == None:
@@ -2270,6 +2265,8 @@ class NetworkEnsemble():
         :param nrows: number of rows
         :param ncols: number of columns
         :param auto: Automatically configure nrows and ncols based on the number of models. Overrides nrows and ncols.
+        :param show: flag to show the diagram
+        :param savePath: path to save the diagram
         """
         
         edgelw_backup = self.edgelw
@@ -2822,7 +2819,10 @@ class NetworkEnsemble():
                 fig.axes[mdl].autoscale()
         
         if savePath != None:
-            fig.savefig(savePath, bbox_inches='tight')
+            try:
+                fig.savefig(savePath, bbox_inches='tight')
+            except IOError as e:
+                raise Exception("Error saving diagram: " + str(e))
         else:
             if show and self.customAxis == None:
                 plt.show()
@@ -2839,5 +2839,8 @@ class NetworkEnsemble():
         """
         
         allRxn, count, fig = self.drawWeightedDiagram()
-        fig.savefig(path)
+        try:
+            fig.savefig(path)
+        except IOError as e:
+            raise Exception("Error saving diagram: " + str(e))
         
