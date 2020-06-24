@@ -1442,12 +1442,13 @@ class NetworkEnsemble():
         return pos
     
     
-    def drawWeightedDiagram(self, show=True, savePath=None):
+    def drawWeightedDiagram(self, show=True, savePath=None, dpi=150):
         """     
         Draw weighted reaction network based on frequency of reactions
         
         :param show: flag to show the diagram
         :param savePath: path to save the diagram
+        :param dpi: dpi settings for the diagram
         :returns allRxn: list of all reactions in the list of models presented as a pair of reactants and products
         :returns count: normalized count of reactions in allRxn throughout the list of models
         """
@@ -2248,7 +2249,7 @@ class NetworkEnsemble():
         
         if savePath != None:
             try:
-                fig.savefig(savePath, bbox_inches='tight')
+                fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
             except IOError as e:
                 raise Exception("Error saving diagram: " + str(e))
             return allRxn, count
@@ -2258,7 +2259,7 @@ class NetworkEnsemble():
             plt.close()
             return allRxn, count
     
-    def drawNetworkGrid(self, nrows, ncols, auto=False, show=True, savePath=None):
+    def drawNetworkGrid(self, nrows, ncols, auto=False, show=True, savePath=None, dpi=150):
         """
         Plot a grid of network diagrams
         
@@ -2267,6 +2268,7 @@ class NetworkEnsemble():
         :param auto: Automatically configure nrows and ncols based on the number of models. Overrides nrows and ncols.
         :param show: flag to show the diagram
         :param savePath: path to save the diagram
+        :param dpi: dpi settings for the diagram
         """
         
         edgelw_backup = self.edgelw
@@ -2820,7 +2822,7 @@ class NetworkEnsemble():
         
         if savePath != None:
             try:
-                fig.savefig(savePath, bbox_inches='tight')
+                fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
             except IOError as e:
                 raise Exception("Error saving diagram: " + str(e))
         else:
@@ -2831,16 +2833,13 @@ class NetworkEnsemble():
         self.edgelw = edgelw_backup
 
 
-    def savefig(self, path):
+    def savefig(self, path, dpi=150):
         """
-        Save network diagram to specified location
+        Save weighted network diagram to specified location
         
         :param path: path to save the diagram
+        :param dpi: dpi settings for the diagram
         """
         
-        allRxn, count, fig = self.drawWeightedDiagram()
-        try:
-            fig.savefig(path)
-        except IOError as e:
-            raise Exception("Error saving diagram: " + str(e))
+        allRxn, count, fig = self.drawWeightedDiagram(savePath=path, dpi=dpi)
         
