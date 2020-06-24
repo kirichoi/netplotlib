@@ -133,6 +133,9 @@ class Network():
         :returns pos: Dictionary of all nodes and corresponding coordinates
         """
         
+        if self.layoutAlgorithm not in getListOfAlgorithms():
+            raise Exception("Unsupported layout algorithm: '" + str(self.layoutAlgorithm) + "'")
+        
         numBnd = self.rrInstance.getNumBoundarySpecies()
         numFlt = self.rrInstance.getNumFloatingSpecies()
         
@@ -1269,6 +1272,9 @@ class NetworkEnsemble():
         Return the layout
         """
         
+        if self.layoutAlgorithm not in getListOfAlgorithms():
+            raise Exception("Unsupported layout algorithm: '" + str(self.layoutAlgorithm) + "'")
+        
         # extract reactant, product, modifiers, and kinetic laws
         allRxn = []
         count = []
@@ -1495,6 +1501,9 @@ class NetworkEnsemble():
         :returns allRxn: list of all reactions in the list of models presented as a pair of reactants and products
         :returns count: normalized count of reactions in allRxn throughout the list of models
         """
+        
+        if self.layoutAlgorithm not in getListOfAlgorithms():
+            raise Exception("Unsupported layout algorithm: '" + str(self.layoutAlgorithm) + "'")
         
         # extract reactant, product, modifiers, and kinetic laws
         allRxn = []
@@ -2318,6 +2327,9 @@ class NetworkEnsemble():
         :param savePath: path to save the diagram
         :param dpi: dpi settings for the diagram
         """
+        
+        if self.layoutAlgorithm not in getListOfAlgorithms():
+            raise Exception("Unsupported layout algorithm: '" + str(self.layoutAlgorithm) + "'")
         
         edgelw_backup = self.edgelw
         
