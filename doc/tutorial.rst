@@ -131,12 +131,16 @@ Selecting Layout Algorithm
 Currently, netplotlib supports following layout algorithms:
 
 'kamada-kawai'
+
 'spring'
+
 'dot'
+
 'neato'
+
 'twopi'
 
-By default, netplotlib use Kamada-Kawai layout algorithm. Certain layout algorithms require external graphviz to be configured and pygraphviz package installed.
+By default, netplotlib uses Kamada-Kawai layout algorithm. Certain layout algorithms require external graphviz to be configured and pygraphviz package installed.
 
     
 NetworkEnsemble Configuration
