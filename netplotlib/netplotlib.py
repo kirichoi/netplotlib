@@ -130,6 +130,7 @@ class Network():
         """
         Return the layout of the model
         
+        :param returnState: boolean flag for returning the networkx.Graph object
         :returns pos: Dictionary of all nodes and corresponding coordinates
         """
         
@@ -1268,7 +1269,7 @@ class NetworkEnsemble():
     
     def getLayout(self):
         """
-        Return the layout
+        Return the layout of the model
         """
         
         if self.layoutAlgorithm not in getListOfAlgorithms():
