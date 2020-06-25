@@ -24,6 +24,7 @@ Network Configuration
 - hlNodeEdgeColor: node edge color of highlighted nodes
 - drawReactionNode: boolean flag for drawing reaction nodes
 - breakBoundary: boolean flag for breaking all boundary species into separate nodes
+- tightLayout: boolean flag for tighter node layout
 - analyzeFlux: boolean flag for visualizing flux
 - analyzeRates: boolean flag for visualizing species rate of changes
 - analyzeColorHigh: color to use for higher values during analysis
@@ -35,6 +36,8 @@ Network Configuration
 - forceAnalysisAtSimTime: boolean flag for running analysis at the end of simTime
 - plotColorbar: boolean flag for visualizing color bar
 - inlineTimeCourseSelections: list of species to plot for time-course simulation
+- customAxis: use custom matplotlib.pyplot.axis object for the diagram
+- layoutAlgorithm: specify layout algorithm
 
 You can define these properties and run `draw() <https://netplotlib.readthedocs.io/en/latest/API.html#netplotlib.Network.draw>`_ to generate customized network diagrams. 
 
@@ -102,7 +105,7 @@ Plot inline time-course plot along with network diagrams with matching colors by
     net.inlineTimeCourseSelections = ['MKKK_P', 'MKKK', 'MAPK_PP']
     net.simTime = 4000
     
-.. image:: ../images/ratechange.png
+.. image:: ../images/inline.png
     :width: 55%
 
 
@@ -122,6 +125,22 @@ Highlight specific nodes by passing a list to highlight property. Choose the hig
     :width: 55%
 
     
+Selecting Layout Algorithm
+--------------------------
+
+Currently, netplotlib supports following layout algorithms:
+
+'kamada-kawai'
+
+'spring'
+
+'dot'
+
+'neato'
+
+'twopi'
+
+By default, netplotlib uses Kamada-Kawai layout algorithm. Certain layout algorithms require external graphviz to be configured and pygraphviz package installed.
 
     
 NetworkEnsemble Configuration
@@ -153,7 +172,8 @@ NetworkEnsemble Configuration
 - plottingThreshold: value of threshold to prevent from displaying weighted edges
 - removeBelowThreshold: boolean flag for preventing weighted edges below plottingThreshold from displaying
 - analyzeFlux: boolean flag for visualizing flux
-
+- customAxis: use custom matplotlib.pyplot.axis object for the diagram
+- layoutAlgorithm: specify layout algorithm
 
 Grid Plot
 ---------

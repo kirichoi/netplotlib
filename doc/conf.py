@@ -22,7 +22,7 @@ import sphinx_rtd_theme
 # -- Project information -----------------------------------------------------
 
 project = 'netplotlib'
-copyright = '2018, Kiri Choi'
+copyright = '2020, Kiri Choi'
 author = 'Kiri Choi'
 
 # The short X.Y version
