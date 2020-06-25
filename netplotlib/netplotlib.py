@@ -1420,7 +1420,7 @@ class NetworkEnsemble():
 
             speciesId = list(rct + prd)
             speciesId = [item for sublist in speciesId for item in sublist]
-            speciesId = list(set(speciesId))
+            self._Var.speciesId = list(set(speciesId))
             
             for t in range(sbmlmodel.getNumReactions()):
                 if r_type_m[t] == 'irreversible':
@@ -1498,11 +1498,11 @@ class NetworkEnsemble():
         self._Var.allBoundary = np.unique(allBoundary).tolist()
         if self.breakBoundary:
             speciesId_temp = []
-            for i in range(len(speciesId)):
-                if speciesId[i] not in allBoundary + ['Input', 'Output']:
-                    speciesId_temp.append(speciesId[i])
+            for i in range(len(self._Var.speciesId)):
+                if self._Var.speciesId[i] not in allBoundary + ['Input', 'Output']:
+                    speciesId_temp.append(self._Var.speciesId[i])
                 
-            speciesId = speciesId_temp
+            self._Var.speciesId = speciesId_temp
             
             boundaryId_temp = []
             bc = 0
@@ -1510,13 +1510,13 @@ class NetworkEnsemble():
                 for j in range(len(self._Var.allRxn[i][0])):
                     if self._Var.allRxn[i][0][j] in allBoundary + ['Input', 'Output']:
                         self._Var.allRxn[i][0][j] = self._Var.allRxn[i][0][j] + '_' + str(bc)
-                        speciesId.append(self._Var.allRxn[i][0][j])
+                        self._Var.speciesId.append(self._Var.allRxn[i][0][j])
                         boundaryId_temp.append(self._Var.allRxn[i][0][j])
                         bc += 1
                 for k in range(len(self._Var.allRxn[i][1])):
                     if self._Var.allRxn[i][1][k] in allBoundary + ['Input', 'Output']:
                         self._Var.allRxn[i][1][k] = self._Var.allRxn[i][1][k] + '_' + str(bc)
-                        speciesId.append(self._Var.allRxn[i][1][k])
+                        self._Var.speciesId.append(self._Var.allRxn[i][1][k])
                         boundaryId_temp.append(self._Var.allRxn[i][1][k])
                         bc += 1
             self._Var.allBoundary = boundaryId_temp
@@ -1624,7 +1624,7 @@ class NetworkEnsemble():
                         self._Var.G.add_edges_from([(self._Var.allRxn[i][0][0], self._Var.allRxn[i][1][0])])
             
             pos = nx.spring_layout(self._Var.G, pos=pos, fixed=self._Var.sid_used+self._Var.rid_used, scale=self.scale, seed=1)
-            self._Var.sid_used = speciesId
+            self._Var.sid_used = self._Var.speciesId
             self._Var.rid_used = self._Var.rid
         
         # check the range of x and y positions
