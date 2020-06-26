@@ -1238,6 +1238,8 @@ class NetworkEnsemble():
         self.hlNodeColor = 'tab:purple'
         self.hlNodeEdgeColor = 'tab:pink'
         self.edgeLabel = True
+        self.disableReactionEdgeLabel = False
+        self.disableModifierEdgeLabel = False
         self.edgeLabelFontSize = 10
         self.drawReactionNode = True
         self.breakBoundary = False
@@ -1966,15 +1968,16 @@ class NetworkEnsemble():
                             ax.add_patch(e)
                     # Edge labels
                     if self.edgeLabel:
-                        c = FancyBboxPatch((stackXY.T[50,0]-0.0325, stackXY.T[50,1]+0.005),
-                                           0.125, 
-                                           0.05,
-                                           boxstyle="round,pad=0.01, rounding_size=0.01",
-                                           color='w')
-                        ax.add_patch(c)
-                        ax.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(self._Var.count[i], 3), 
-                                fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
-                                verticalalignment='center')
+                        if not self.disableReactionEdgeLabel:
+                            c = FancyBboxPatch((stackXY.T[50,0]-0.0325, stackXY.T[50,1]+0.005),
+                                               0.125, 
+                                               0.05,
+                                               boxstyle="round,pad=0.01, rounding_size=0.01",
+                                               color='w')
+                            ax.add_patch(c)
+                            ax.text(stackXY.T[50,0]+0.03, stackXY.T[50,1]+0.03, round(self._Var.count[i], 3), 
+                                    fontsize=self.edgeLabelFontSize, horizontalalignment='center', 
+                                    verticalalignment='center')
                 rid_idx += 1
             else:
                 # Modifiers
@@ -2039,40 +2042,41 @@ class NetworkEnsemble():
                         
                         # Edge labels
                         if self.edgeLabel:
-                            verts = e.get_path().vertices
-                            trans = e.get_patch_transform()
-                            points = trans.transform(verts)
-                            if self._Var.mod_type[mod_idx] == 'inhibitor':
-                                c = FancyBboxPatch((stackXY.T[50,0]+((points[5,0]-stackXY.T[50,0])/2)-0.0625,
-                                                    stackXY.T[50,1]+((points[5,1]-stackXY.T[50,1])/2)-0.025),
-                                                   0.125, 
-                                                   0.05,
-                                                   boxstyle="round,pad=0.01, rounding_size=0.01",
-                                                   color='w')
-                                ax.add_patch(c)
-                                ax.text(stackXY.T[50,0]+((points[5,0]-stackXY.T[50,0])/2),
-                                        stackXY.T[50,1]+((points[5,1]-stackXY.T[50,1])/2),
-                                        round(self._Var.count[i], 3), 
-                                        fontsize=self.edgeLabelFontSize, 
-                                        horizontalalignment='center', 
-                                        verticalalignment='center', 
-                                        color='r')
-                            elif self._Var.mod_type[mod_idx] == 'activator':
-                                plt.plot(points[:1,0],points[:1,1])
-                                c = FancyBboxPatch((stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2)-0.0625,
-                                                    stackXY.T[50,1]+((points[1,1]-stackXY.T[50,1])/2)-0.025),
-                                                   0.125, 
-                                                   0.05,
-                                                   boxstyle="round,pad=0.01, rounding_size=0.01",
-                                                   color='w')
-                                ax.add_patch(c)
-                                ax.text(stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2),
-                                        stackXY.T[50,1]+((points[1,1]-stackXY.T[50,1])/2),
-                                        round(self._Var.count[i], 3), 
-                                        fontsize=self.edgeLabelFontSize, 
-                                        horizontalalignment='center', 
-                                        verticalalignment='center', 
-                                        color='r')
+                            if not self.disableModifierEdgeLabel:
+                                verts = e.get_path().vertices
+                                trans = e.get_patch_transform()
+                                points = trans.transform(verts)
+                                if self._Var.mod_type[mod_idx] == 'inhibitor':
+                                    c = FancyBboxPatch((stackXY.T[50,0]+((points[5,0]-stackXY.T[50,0])/2)-0.0625,
+                                                        stackXY.T[50,1]+((points[5,1]-stackXY.T[50,1])/2)-0.025),
+                                                       0.125, 
+                                                       0.05,
+                                                       boxstyle="round,pad=0.01, rounding_size=0.01",
+                                                       color='w')
+                                    ax.add_patch(c)
+                                    ax.text(stackXY.T[50,0]+((points[5,0]-stackXY.T[50,0])/2),
+                                            stackXY.T[50,1]+((points[5,1]-stackXY.T[50,1])/2),
+                                            round(self._Var.count[i], 3), 
+                                            fontsize=self.edgeLabelFontSize, 
+                                            horizontalalignment='center', 
+                                            verticalalignment='center', 
+                                            color='r')
+                                elif self._Var.mod_type[mod_idx] == 'activator':
+                                    plt.plot(points[:1,0],points[:1,1])
+                                    c = FancyBboxPatch((stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2)-0.0625,
+                                                        stackXY.T[50,1]+((points[1,1]-stackXY.T[50,1])/2)-0.025),
+                                                       0.125, 
+                                                       0.05,
+                                                       boxstyle="round,pad=0.01, rounding_size=0.01",
+                                                       color='w')
+                                    ax.add_patch(c)
+                                    ax.text(stackXY.T[50,0]+((points[1,0]-stackXY.T[50,0])/2),
+                                            stackXY.T[50,1]+((points[1,1]-stackXY.T[50,1])/2),
+                                            round(self._Var.count[i], 3), 
+                                            fontsize=self.edgeLabelFontSize, 
+                                            horizontalalignment='center', 
+                                            verticalalignment='center', 
+                                            color='r')
                     
                 mod_idx += 1
             
