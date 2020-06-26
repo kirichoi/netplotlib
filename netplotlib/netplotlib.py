@@ -392,6 +392,7 @@ class Network():
         if self._Var.pos == None:
             pos = self.getLayout()
         else:
+            pos = self.getLayout()
             pos = self._Var.pos
             assert(len(self._Var.boundaryId)+len(self._Var.floatingId)+len(self._Var.rid) == len(pos))
         
@@ -1240,6 +1241,7 @@ class NetworkEnsemble():
         self.edgeLabelFontSize = 10
         self.drawReactionNode = True
         self.breakBoundary = False
+        self.tightLayout = False
         self.weights = []
         self.edgeTransparency = False
         self.plottingThreshold = 0.
@@ -1565,6 +1567,11 @@ class NetworkEnsemble():
             maxIter_n = 0
             dist_flag = True
             
+            if self.tightLayout:
+                comId = self._Var.speciesId
+            else:
+                comId = self._Var.speciesId + self._Var.rid
+            
             while dist_flag and (maxIter_n < maxIter):
                 dist_flag = False
                 for i in itertools.combinations(pos.keys(), 2):
@@ -1605,8 +1612,9 @@ class NetworkEnsemble():
         if self._Var.pos == None:
             pos = self.getLayout()
         else:
+            pos = self.getLayout()
             pos = self._Var.pos
-            assert(len(self._Var.boundaryId)+len(self._Var.floatingId)+len(self._Var.rid) == len(pos))
+            assert(len(self._Var.boundaryIds[0])+len(self._Var.floatingIds[0])+len(self._Var.rids[0]) == len(pos))
         
         if not self.removeBelowThreshold:
             rid_idx = 0
