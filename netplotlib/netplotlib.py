@@ -240,9 +240,9 @@ class Network():
             else:
                 n,d = sympy.fraction(expression)
                 for ml_i in range(len(self._Var.mod[ml])):
-                    if n.has(self._Var.mod[ml][ml_i]):
+                    if n.has(sympy.symbols(self._Var.mod[ml][ml_i])):
                         mod_type_temp.append('activator')
-                    elif d.has(self._Var.mod[ml][ml_i]):
+                    elif d.has(sympy.symbols(self._Var.mod[ml][ml_i])):
                         mod_type_temp.append('inhibitor')
                     else:
                         mod_type_temp.append('modifier')
@@ -1397,9 +1397,9 @@ class NetworkEnsemble():
                 else:
                     n,d = sympy.fraction(expression)
                     for ml_i in range(len(mod_m[ml])):
-                        if n.has(mod_m[ml][ml_i]):
+                        if n.has(sympy.symbols(mod_m[ml][ml_i])):
                             mod_type_temp.append('activator')
-                        elif d.has(mod_m[ml][ml_i]):
+                        elif d.has(sympy.symbols(mod_m[ml][ml_i])):
                             mod_type_temp.append('inhibitor')
                         else:
                             mod_type_temp.append('modifier')
