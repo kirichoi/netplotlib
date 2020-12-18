@@ -13,9 +13,12 @@ from matplotlib import gridspec, cm, colors
 import numpy as np
 from scipy import interpolate
 import sympy
-import tesbml
 import itertools
 
+try:
+    import libsbml
+except:
+    import tesbml as libsbml
 
 def getVersion():
     """
@@ -176,7 +179,7 @@ class Network():
         kineticLaw = []
         self._Var.mod_type = []
         
-        doc = tesbml.readSBMLFromString(self.rrInstance.getSBML())
+        doc = libsbml.readSBMLFromString(self.rrInstance.getSBML())
         sbmlmodel = doc.getModel()
         
         for slr in sbmlmodel.getListOfReactions():
@@ -1338,7 +1341,7 @@ class NetworkEnsemble():
             rr_type_m = []
             mod_type_m = []
             
-            doc = tesbml.readSBMLFromString(r.getSBML())
+            doc = libsbml.readSBMLFromString(r.getSBML())
             sbmlmodel = doc.getModel()
         
             for slr in sbmlmodel.getListOfReactions():
