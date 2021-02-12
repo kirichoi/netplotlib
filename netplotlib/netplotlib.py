@@ -112,8 +112,10 @@ class Network():
         self.analyzeColorMap = 'Reds'
         self.analyzeColorScale = False
         self.drawInlineTimeCourse = False
-        self.simTime = 100
-        self.forceAnalysisAtSimTime = False
+        self.simulationStartTime = 0
+        self.simulationEndTime = 100
+        self.numPoints = 100
+        self.forceAnalysisAtEndTime = False
         self.plotColorbar = False
         self.inlineTimeCourseSelections = []
         self.customAxis = None
@@ -307,8 +309,8 @@ class Network():
         
         # Analyze the reaction rates
         if self.analyzeFlux:
-            if self.forceAnalysisAtSimTime:
-                self.rrInstance.simulate(0, self.simTime, 300)
+            if self.forceAnalysisAtEndTime:
+                self.rrInstance.simulate(self.simulationStartTime, self.simulationEndTime, self.numPoints)
                 self._Var.flux = self.rrInstance.getReactionRates()
             else:
                 try:
@@ -317,12 +319,12 @@ class Network():
                 except:
                     print("No steadyState is found - netplotlib will use the state at t=simTime")
                     self.rrInstance.reset()
-                    self.rrInstance.simulate(0, self.simTime, 300)
+                    self.rrInstance.simulate(self.simulationStartTime, self.simulationEndTime, self.numPoints)
                     self._Var.flux = self.rrInstance.getReactionRates()
                 
         if self.analyzeRates:
             self.rrInstance.reset()
-            self.rrInstance.simulate(0, self.simTime, 300)
+            self.rrInstance.simulate(self.simulationStartTime, self.simulationEndTime, self.numPoints)
             self._Var.reaction_rate = self.rrInstance.getRatesOfChange()
         
         # initialize directional graph
@@ -418,12 +420,12 @@ class Network():
         if self.drawInlineTimeCourse:
             self.rrInstance.reset()
             if len(self.inlineTimeCourseSelections) == 0:
-                result = self.rrInstance.simulate(0, self.simTime, 300)
+                result = self.rrInstance.simulate(self.simulationStartTime, self.simulationEndTime, self.numPoints)
             else:
                 sel = self.inlineTimeCourseSelections
                 if 'time' not in sel:
                     sel = ['time'] + sel
-                result = self.rrInstance.simulate(0, self.simTime, 300, selections=sel)
+                result = self.rrInstance.simulate(self.simulationStartTime, self.simulationEndTime, self.numPoints, selections=sel)
             
             plt.tight_layout()
             
