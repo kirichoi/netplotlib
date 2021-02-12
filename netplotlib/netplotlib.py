@@ -71,11 +71,14 @@ class Network():
                 raise Exception("Input does not seem to be a valid SBML or Antimony string")
                 
         self._Var = _Variable()
-        self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
-        self._Var.floatingId = self.rrInstance.getFloatingSpeciesIds()
-        self._Var.rid = self.rrInstance.getReactionIds()
-        self._Var.stoch = self.rrInstance.getFullStoichiometryMatrix()
         self._Var.stoch_row = self._Var.stoch.rownames
+        try:
+            self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
+            self._Var.floatingId = self.rrInstance.getFloatingSpeciesIds()
+            self._Var.rid = self.rrInstance.getReactionIds()
+            self._Var.stoch = self.rrInstance.getFullStoichiometryMatrix()
+        except:
+            raise Exception("Failed to analyze the file: Check the file is valid")
         self.reset()
         
 
@@ -1212,10 +1215,13 @@ class NetworkEnsemble():
                     self.rrInstances.append(r)
                 except:
                     raise Exception("Input does not seem to be a valid list of SBML or Antimony string")
-                
-            self._Var.boundaryIds.append(r.getBoundarySpeciesIds())
-            self._Var.floatingIds.append(r.getFloatingSpeciesIds())
-            self._Var.rids.append(r.getReactionIds())
+            
+            try:
+                self._Var.boundaryIds.append(r.getBoundarySpeciesIds())
+                self._Var.floatingIds.append(r.getFloatingSpeciesIds())
+                self._Var.rids.append(r.getReactionIds())
+            except:
+                raise Exception("Failed to analyze the file: Check the file is valid")
         
         self.reset()
         
