@@ -115,12 +115,14 @@ class Network():
         self.simulationStartTime = 0
         self.simulationEndTime = 100
         self.numPoints = 100
+        self.plotStatistics = False
         self.forceAnalysisAtEndTime = False
         self.plotColorbar = False
         self.inlineTimeCourseSelections = []
         self.customAxis = None
         self.layoutAlgorithm = 'kamada-kawai'
         self._Var.pos = None
+        self._Var.ignoreAnalysisFlags = False
 
 
     def _analyze(self):
@@ -423,30 +425,38 @@ class Network():
             optbackup = self.analyzeRates
             self.analyzeRates = True
         
+        self._Var.ignoreAnalysisFlags = True
+        
         stbackup = self.simulationStartTime
         etbackup = self.simulationEndTime
         npbackup = self.numPoints
         aetbackup = self.forceAnalysisAtEndTime
+        acsbackup = self.analyzeColorScale
         
         self.forceAnalysisAtEndTime = True
+        self.analyzeColorScale = True
         pos = self.getLayout()
         self._Var.pos = pos
         
-        tempdir = tempfile.TemporaryDirectory()
+        tempdir = "./"#tempfile.TemporaryDirectory()
         print(tempdir)
         
-        # for i in range(points):
-        #     self.simulationStartTime = start
-        #     self.simulationEndTime = start + i*
-        #     self.numPoints = i
-        #     self.draw(show=False, savePath=os.path.join(tempdir, 'i.png'), dpi=dpi)
+        self.rrInstance.reset()
+        self._Var.flux = self.rrInstance.getReactionRates()
+        self.draw(show=False, savePath=os.path.join(tempdir, "0.png"), dpi=dpi)
+        
+        for i in range(points-1):
+            self.rrInstance.reset()
+            self.rrInstance.simulate(start, start+i*(end-start)/(points-1), i+2)
+            self._Var.flux = self.rrInstance.getReactionRates()
+            self.draw(show=False, savePath=os.path.join(tempdir, "%s.png" % i), dpi=dpi)
         
         # if backend == 'PIL':
         #     img, *imgs = [Image.open(f) for f in sorted(glob.glob(fp_in))]
         #     img.save(fp=fp_out, format='GIF', append_images=imgs,
         #              save_all=True, duration=200, loop=0)
         
-        tempdir.cleanup()
+        # tempdir.cleanup()
         
         if visualize == 'flux':
             self.analyzeFlux = optbackup
@@ -457,6 +467,8 @@ class Network():
         self.simulationEndTime = etbackup
         self.numPoints = npbackup
         self.forceAnalysisAtEndTime = aetbackup
+        self.analyzeColorScale = acsbackup
+        self._Var.ignoreAnalysisFlags = False
     
     
     def draw(self, show=True, savePath=None, dpi=150):
@@ -473,6 +485,9 @@ class Network():
         else:
             pos = self._Var.pos
             assert(len(self._Var.boundaryId)+len(self._Var.floatingId)+len(self._Var.rid) == len(pos))
+        
+        if (self.analyzeFlux or self.analyzeRates) and not self._Var.ignoreAnalysisFlags:
+            self._analyze()
         
         # check the range of x and y positions
         max_width = []
@@ -1224,6 +1239,10 @@ class Network():
         for i in range(len(allnodes)):
             ax.add_patch(self._Var.G.nodes[allnodes[i]]['patch'])
         
+        # Statistics
+        if self.plotStatistics and (self.analyzeFlux or self.analyzeRates):
+            pass
+        
         # reset width and height
         ax.autoscale()
         fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5)
@@ -1248,16 +1267,6 @@ class Network():
             plt.show()
         plt.close()
 
-
-    def drawWithFlux(self, show=True, savePath=None, dpi=150):
-        """
-        """
-        
-        self._Var.analyzeFluxFlag = True
-        self._analyze()
-        self.draw(show=show, savePath=savePath, dpi=dpi)
-        self._Var.analyzeFluxFlag = False
-        
 
     def savefig(self, path, dpi=150):
         """
