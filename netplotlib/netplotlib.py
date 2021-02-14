@@ -392,7 +392,8 @@ class Network():
             return pos
     
     
-    def generateTimelapse(self, start, end, points, visualize='flux', savePath=None, backend='PIL', dpi=150):
+    def generateTimelapse(self, start, end, points, visualize='flux', backend='PIL',
+                          savePath=None, dpi=150, duration=5):
         """
         Generate a timelapse of the specified variable
         
@@ -400,8 +401,10 @@ class Network():
         :param end: end time
         :param points: number of timesteps
         :param visualize: variable to visualize. Either 'flux' or 'rate'
+        :param backend: backend for file generation. Supports 'PIL' (.gif) or 'cv2' (.mp4)
         :param savePath: path to save the diagram
         :param dpi: dpi settings for the diagram
+        :param duration: timelapse duration
         """
         
         import tempfile
@@ -417,6 +420,9 @@ class Network():
                 raise Exception("Cannot import Pillow")
         else:
             raise Exception("Unsupported backend")
+        
+        if savePath == None:
+            raise Exception("Specify the save path!")
         
         if visualize == 'flux':
             optbackup = self.analyzeFlux
@@ -438,25 +444,27 @@ class Network():
         pos = self.getLayout()
         self._Var.pos = pos
         
-        tempdir = "./"#tempfile.TemporaryDirectory()
-        print(tempdir)
+        tempdir = tempfile.TemporaryDirectory()
         
         self.rrInstance.reset()
         self._Var.flux = self.rrInstance.getReactionRates()
-        self.draw(show=False, savePath=os.path.join(tempdir, "0.png"), dpi=dpi)
+        self.draw(show=False, savePath=os.path.join(tempdir.name, "0.png"), dpi=dpi)
         
         for i in range(points-1):
             self.rrInstance.reset()
             self.rrInstance.simulate(start, start+i*(end-start)/(points-1), i+2)
             self._Var.flux = self.rrInstance.getReactionRates()
-            self.draw(show=False, savePath=os.path.join(tempdir, "%s.png" % i), dpi=dpi)
+            self.draw(show=False, savePath=os.path.join(tempdir.name, "%s.png" % i), dpi=dpi)
         
-        # if backend == 'PIL':
-        #     img, *imgs = [Image.open(f) for f in sorted(glob.glob(fp_in))]
-        #     img.save(fp=fp_out, format='GIF', append_images=imgs,
-        #              save_all=True, duration=200, loop=0)
         
-        # tempdir.cleanup()
+        if backend == 'PIL':
+            fl = sorted(os.listdir(tempdir.name), key=lambda x: int(x.split(".")[0]))
+            flf = [os.path.join(tempdir.name, f) for f in fl]
+            img, *imgs = [Image.open(f) for f in flf]
+            img.save(fp=savePath, format='GIF', append_images=imgs,
+                      save_all=True, duration=duration, loop=0)
+        
+        tempdir.cleanup()
         
         if visualize == 'flux':
             self.analyzeFlux = optbackup
