@@ -415,7 +415,7 @@ class Network():
                 raise Exception("Cannot import opencv")
         elif backend=='PIL':
             try:
-                from PIL import Image
+                from PIL import Image, ImageFont, ImageDraw
             except:
                 raise Exception("Cannot import Pillow")
         else:
@@ -456,15 +456,23 @@ class Network():
             self._Var.flux = self.rrInstance.getReactionRates()
             self.draw(show=False, savePath=os.path.join(tempdir.name, "%s.png" % str(i+1)), dpi=dpi)
         
+        fl = sorted(os.listdir(tempdir.name), key=lambda x: int(x.split(".")[0]))
+        flf = [os.path.join(tempdir.name, f) for f in fl]
+        
+        if plotTime:
+            td = (end-start)/points
+            font = ImageFont.truetype("arial.ttf", 35) #TODO: Check if cross-platform compatible
+            for i,f in enumerate(flf):
+                img = Image.open(f)
+                draw = ImageDraw.Draw(img)
+                draw.text((10,10), 't = ' + str(i*td), (0,0,0), font=font)
+                img.save(f)
+        
         if backend == 'PIL':
-            fl = sorted(os.listdir(tempdir.name), key=lambda x: int(x.split(".")[0]))
-            flf = [os.path.join(tempdir.name, f) for f in fl]
             img, *imgs = [Image.open(f) for f in flf]
             img.save(fp=savePath, format='GIF', append_images=imgs, save_all=True, 
                      duration=duration, loop=0)
         elif backend == 'cv2':
-            fl = sorted(os.listdir(tempdir.name), key=lambda x: int(x.split(".")[0]))
-            flf = [os.path.join(tempdir.name, f) for f in fl]
             frame = cv2.imread(os.path.join(tempdir.name, flf[0]))
             height, width, layers = frame.shape
             
