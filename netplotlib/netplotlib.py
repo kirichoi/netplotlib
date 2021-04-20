@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 
-import os
+import os, re
 import tellurium as te
 import networkx as nx
 from matplotlib.patches import (FancyArrowPatch, FancyBboxPatch, ArrowStyle, 
@@ -169,6 +169,11 @@ class Network():
         if self.layoutAlgorithm not in getListOfAlgorithms():
             raise Exception("Unsupported layout algorithm: '" + str(self.layoutAlgorithm) + "'")
         
+        avoid = ['C', 'CC', 'Ci', 'E1', 'EX', 'Ei', 'FF', 'GF', 'Ge', 'Gt', 'I', 'LC',
+                 'LM', 'LT', 'Le', 'Li', 'Lt', 'N', 'Ne', 'O', 'Q', 'QQ', 'RR', 'S',
+                 'Si', 'ZZ', 'ff', 'fu', 'im', 'jn', 'li', 'ln', 'oo', 'pi', 're',
+                 'rf', 'yn']
+        
         numBnd = self.rrInstance.getNumBoundarySpecies()
         numFlt = self.rrInstance.getNumFloatingSpecies()
         
@@ -178,14 +183,14 @@ class Network():
         
         # Fix issues with reserved characters
         for i in range(numBnd):
-            if self._Var.boundaryId[i] == 'S':
-                boundaryId_sympy.append('_S')
+            if self._Var.boundaryId[i] in avoid:
+                boundaryId_sympy.append('_' + self._Var.boundaryId[i])
             else:
                 boundaryId_sympy.append(self._Var.boundaryId[i])
         
         for i in range(numFlt):
-            if self._Var.floatingId[i] == 'S':
-                floatingId_sympy.append('_S')
+            if self._Var.floatingId[i] in avoid:
+                floatingId_sympy.append('_' + self._Var.floatingId[i])
             else:
                 floatingId_sympy.append(self._Var.floatingId[i])
         
@@ -251,12 +256,12 @@ class Network():
                 kineticLaw.append(None)
             else:
                 # Update kinetic law according to change in species name
-                kl_split = kl.getFormula().split(' ')
+                kl_split = re.split('( |\(|\))', kl.getFormula())
                 for i in range(len(kl_split)):
-                    if kl_split[i] == 'S':
-                        kl_split[i] = '_S'
+                    if kl_split[i] in avoid:
+                        kl_split[i] = '_' + kl_split[i]
                 
-                kineticLaw.append(' '.join(kl_split))
+                kineticLaw.append(''.join(kl_split))
             
         
         nkl = 0
@@ -401,7 +406,7 @@ class Network():
         :param end: end time
         :param points: number of timesteps
         :param visualize: variable to visualize. Either 'flux' or 'rate'
-        :param backend: backend for file generation. Supports 'PIL' (.gif) or 'cv2' (.mp4)
+        :param backend: backend for file generation. Supports 'PIL' (.gif) or 'cv2' (.avi)
         :param savePath: path to save the diagram
         :param dpi: dpi settings for the diagram
         :param duration: timelapse duration
@@ -1407,6 +1412,11 @@ class NetworkEnsemble():
         if self.layoutAlgorithm not in getListOfAlgorithms():
             raise Exception("Unsupported layout algorithm: '" + str(self.layoutAlgorithm) + "'")
         
+        avoid = ['C', 'CC', 'Ci', 'E1', 'EX', 'Ei', 'FF', 'GF', 'Ge', 'Gt', 'I', 'LC',
+                 'LM', 'LT', 'Le', 'Li', 'Lt', 'N', 'Ne', 'O', 'Q', 'QQ', 'RR', 'S',
+                 'Si', 'ZZ', 'ff', 'fu', 'im', 'jn', 'li', 'ln', 'oo', 'pi', 're',
+                 'rf', 'yn']
+        
         # extract reactant, product, modifiers, and kinetic laws
         allRxn = []
         allMod = []
@@ -1436,14 +1446,14 @@ class NetworkEnsemble():
             
             # Fix issues with reserved characters
             for i in range(numBnd):
-                if boundaryId[i] == 'S':
-                    boundaryId_sympy.append('_S')
+                if boundaryId[i] in avoid:
+                    boundaryId_sympy.append('_' + boundaryId[i])
                 else:
                     boundaryId_sympy.append(boundaryId[i])
             
             for i in range(numFlt):
-                if floatingId[i] == 'S':
-                    floatingId_sympy.append('_S')
+                if floatingId[i] in avoid:
+                    floatingId_sympy.append('_' + floatingId[i])
                 else:
                     floatingId_sympy.append(floatingId[i])
                     
@@ -1505,12 +1515,12 @@ class NetworkEnsemble():
                     kineticLaw.append(None)
                 else:
                     # Update kinetic law according to change in species name
-                    kl_split = kl.getFormula().split(' ')
+                    kl_split = re.split('( |\(|\))', kl.getFormula())
                     for i in range(len(kl_split)):
-                        if kl_split[i] == 'S':
-                            kl_split[i] = '_S'
+                        if kl_split[i] in avoid:
+                            kl_split[i] = '_' + kl_split[i]
                     
-                    kineticLaw.append(' '.join(kl_split))
+                    kineticLaw.append(''.join(kl_split))
             
             nkl = 0
             # use sympy for analyzing modifiers weSmart
