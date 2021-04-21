@@ -14,6 +14,7 @@ import numpy as np
 from scipy import interpolate
 import sympy
 import itertools
+import layout
 
 try:
     import libsbml
@@ -69,7 +70,7 @@ class Network():
                 self.rrInstance = te.loadAntimonyModel(model)
             except:
                 raise Exception("Input does not seem to be a valid SBML or Antimony string")
-                
+            
         self._Var = _Variable()
         try:
             self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
@@ -158,7 +159,7 @@ class Network():
         self._Var.pos = pos
     
 
-    def getLayout(self, returnState=False):
+    def getLayout(self, returnState=False, ignoreLayout=False):
         """
         Return the layout of the model
         
@@ -335,7 +336,6 @@ class Network():
                         bc += 1
             self._Var.boundaryId = boundaryId_temp
 
-        
         # initialize directional graph
         self._Var.G = nx.DiGraph()
     
@@ -350,46 +350,50 @@ class Network():
             if len(self._Var.mod[i]) > 0:
                 for l in range(len(self._Var.mod[i])):
                     self._Var.G.add_edges_from([(self._Var.mod[i][l], self._Var.rid[i])])
-            
-        # calcutate positions
-        thres = 0.3
-        if self.layoutAlgorithm == 'spring':
-            pos = nx.spring_layout(self._Var.G, scale=self.scale, seed=1)
-        elif self.layoutAlgorithm == 'kamada-kawai':
-            shortest_dist = dict(nx.shortest_path_length(self._Var.G, weight='weight'))
-            pos = nx.kamada_kawai_layout(self._Var.G, dist=shortest_dist, scale=self.scale)
-            
-            maxIter = 5
-            maxIter_n = 0
-            dist_flag = True
-            
-            if self.tightLayout:
-                comId = self._Var.speciesId
-            else:
-                comId = self._Var.speciesId + self._Var.rid
-            
-            while dist_flag and (maxIter_n < maxIter):
-                dist_flag = False
-                for i in itertools.combinations(comId, 2):
-                    pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
-                    if pos_dist < thres:
-                        dist_flag = True
-                        shortest_dist[i[0]][i[1]] = 2
-                        shortest_dist[i[1]][i[0]] = 2
-                pos = nx.kamada_kawai_layout(self._Var.G, dist=shortest_dist, scale=self.scale)
-                maxIter_n += 1
-        elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
-            from networkx.drawing.nx_pydot import graphviz_layout
-            try:
-                pos = graphviz_layout(self._Var.G, prog=self.layoutAlgorithm)
-            except:
-                raise Exception("Error running graphviz: Please check graphviz is properly configured.")
-            keylist = np.array(list(pos.keys()))
-            poslist = np.array(list(pos.values()))
-            poslist /= np.max(np.abs(poslist),axis=0)
-            pos = dict(zip(keylist, poslist))
+                
+        layoutPlugin = sbmlmodel.getPlugin('layout')
+        if ((layoutPlugin != None) and (layoutPlugin.getNumLayouts() > 0)):
+            pos = layout.readLayout(layoutPlugin)
         else:
-            raise Exception("Unsupported layout algorithm.")
+            # calcutate positions
+            thres = 0.3
+            if self.layoutAlgorithm == 'spring':
+                pos = nx.spring_layout(self._Var.G, scale=self.scale, seed=1)
+            elif self.layoutAlgorithm == 'kamada-kawai':
+                shortest_dist = dict(nx.shortest_path_length(self._Var.G, weight='weight'))
+                pos = nx.kamada_kawai_layout(self._Var.G, dist=shortest_dist, scale=self.scale)
+                
+                maxIter = 5
+                maxIter_n = 0
+                dist_flag = True
+                
+                if self.tightLayout:
+                    comId = self._Var.speciesId
+                else:
+                    comId = self._Var.speciesId + self._Var.rid
+                
+                while dist_flag and (maxIter_n < maxIter):
+                    dist_flag = False
+                    for i in itertools.combinations(comId, 2):
+                        pos_dist = np.sqrt((pos[i[0]][0] - pos[i[1]][0])**2 + (pos[i[0]][1] - pos[i[1]][1])**2)
+                        if pos_dist < thres:
+                            dist_flag = True
+                            shortest_dist[i[0]][i[1]] = 2
+                            shortest_dist[i[1]][i[0]] = 2
+                    pos = nx.kamada_kawai_layout(self._Var.G, dist=shortest_dist, scale=self.scale)
+                    maxIter_n += 1
+            elif self.layoutAlgorithm == 'twopi' or self.layoutAlgorithm == 'neato' or self.layoutAlgorithm == 'dot':
+                from networkx.drawing.nx_pydot import graphviz_layout
+                try:
+                    pos = graphviz_layout(self._Var.G, prog=self.layoutAlgorithm)
+                except:
+                    raise Exception("Error running graphviz: Please check graphviz is properly configured.")
+                keylist = np.array(list(pos.keys()))
+                poslist = np.array(list(pos.values()))
+                poslist /= np.max(np.abs(poslist),axis=0)
+                pos = dict(zip(keylist, poslist))
+            else:
+                raise Exception("Unsupported layout algorithm.")
         
         if returnState:
             return pos, self._Var
