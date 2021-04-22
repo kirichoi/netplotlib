@@ -71,6 +71,14 @@ class Network():
             except:
                 raise Exception("Input does not seem to be a valid SBML or Antimony string")
             
+        doc = libsbml.readSBMLFromString(self.rrInstance.getSBML())
+        self._Var.sbmlmodel = doc.getModel()
+        self._Var.layoutPlugin = self._Var.sbmlmodel.getPlugin('layout')
+        if ((self._Var.layoutPlugin != None) and (self._Var.layoutPlugin.getNumLayouts() > 0)):
+            self._Var.layoutExtension = True
+        else:
+            self._Var.layoutExtension = False
+        
         self._Var = _Variable()
         try:
             self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
@@ -214,15 +222,12 @@ class Network():
         kineticLaw = []
         self._Var.mod_type = []
         
-        doc = libsbml.readSBMLFromString(self.rrInstance.getSBML())
-        sbmlmodel = doc.getModel()
-        
-        for slr in sbmlmodel.getListOfReactions():
+        for slr in self.sbmlmodel.getListOfReactions():
             temprct = []
             tempprd = []
             tempmod = []
             
-            sbmlreaction = sbmlmodel.getReaction(slr.getId())
+            sbmlreaction = self.sbmlmodel.getReaction(slr.getId())
             for sr in range(sbmlreaction.getNumReactants()):
                 sbmlrct = sbmlreaction.getReactant(sr)
                 temprct.append(sbmlrct.getSpecies())
@@ -340,7 +345,7 @@ class Network():
         self._Var.G = nx.DiGraph()
     
         # add edges
-        for i in range(sbmlmodel.getNumReactions()):
+        for i in range(self.sbmlmodel.getNumReactions()):
             for k in range(len(self._Var.rct[i])):
                 self._Var.G.add_edges_from([(self._Var.rct[i][k], self._Var.rid[i])])
             
@@ -351,9 +356,8 @@ class Network():
                 for l in range(len(self._Var.mod[i])):
                     self._Var.G.add_edges_from([(self._Var.mod[i][l], self._Var.rid[i])])
                 
-        layoutPlugin = sbmlmodel.getPlugin('layout')
-        if ((layoutPlugin != None) and (layoutPlugin.getNumLayouts() > 0)):
-            pos = layout.readLayout(layoutPlugin)
+        if ((self._Var.layoutExtension) and not (ignoreLayout)):
+            pos = layout.getPos(self._Var.layoutPlugin)
         else:
             # calcutate positions
             thres = 0.3
