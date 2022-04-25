@@ -33,7 +33,7 @@ setup(name='netplotlib',
         'libroadrunner>=1.4.24',
         'antimony>=2.9.4',
         'sympy>=1.1.1',
-        'tesbml>=5.15.0',
+        'python-libsbml>=5.15.0',
         ],
       classifiers=[
         'License :: OSI Approved :: MIT License',
