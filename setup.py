@@ -34,6 +34,7 @@ setup(name='netplotlib',
         'antimony>=2.9.4',
         'sympy>=1.1.1',
         'python-libsbml>=5.15.0',
+        'opencv-python>=4.5.1.48',
         ],
       classifiers=[
         'License :: OSI Approved :: MIT License',
