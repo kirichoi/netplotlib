@@ -233,10 +233,14 @@ def draw(NetworkClass, show=True, savePath=None, dpi=150):
         bbox = tg.getBoundingBox()
         tgpos = bbox.getPosition()
         speciesName = NetworkClass._Var.sbmlmodel.getSpecies(tg.getOriginOfTextId())
-        if speciesName.getName() != '':
-            speciesName = speciesName.getName()
+        if speciesName != None:
+            if speciesName.getName() != '':
+                speciesName = speciesName.getName()
+            else:
+                speciesName = speciesName.getId()
         else:
-            speciesName = speciesName.getId()
+            sg = layout.getSpeciesGlyph(tg.getOriginOfTextId())
+            speciesName = sg.getSpeciesId()
         layoutTextGlyphIds.append(speciesName)
         
         dim = bbox.getDimensions()
