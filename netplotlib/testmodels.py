@@ -57,6 +57,8 @@ class testmodels():
     AUTOACTBOUNDARY = content[testfiles.index('test_autoreg_act_conn.xml')]
     AUTOINHIBITION = content[testfiles.index('test_autoreg_inb.xml')]
     AUTOINHBOUNDARY = content[testfiles.index('test_autoreg_inb_conn.xml')]
+    LAYOUT1 = content[testfiles.index('test_layout1.xml')]
+    LAYOUT2 = content[testfiles.index('test_layout2.xml')]
     LIST1 = _LIST1
     LIST2 = _LIST2
     

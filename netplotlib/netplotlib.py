@@ -15,11 +15,7 @@ from scipy import interpolate
 import sympy
 import itertools
 import layout
-
-try:
-    import libsbml
-except:
-    import tesbml as libsbml
+import libsbml
 
 def getVersion():
     """
@@ -71,15 +67,16 @@ class Network():
             except:
                 raise Exception("Input does not seem to be a valid SBML or Antimony string")
             
+        self._Var = _Variable()
+            
         doc = libsbml.readSBMLFromString(self.rrInstance.getSBML())
         self._Var.sbmlmodel = doc.getModel()
         self._Var.layoutPlugin = self._Var.sbmlmodel.getPlugin('layout')
         if ((self._Var.layoutPlugin != None) and (self._Var.layoutPlugin.getNumLayouts() > 0)):
-            self._Var.layoutExtension = True
+            self._Var.layoutAvail = True
         else:
-            self._Var.layoutExtension = False
+            self._Var.layoutAvail = False
         
-        self._Var = _Variable()
         try:
             self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
             self._Var.floatingId = self.rrInstance.getFloatingSpeciesIds()
@@ -108,6 +105,9 @@ class Network():
         self.boundaryColor = 'tab:green'
         self.nodeEdgeColor = 'k'
         self.nodeEdgelw = 0
+        self.compartmentColor = 'tab:gray'
+        self.compartmentEdgeColor = 'k'
+        self.compartmentEdgelw = 2
         self.highlight = []
         self.hlNodeColor = 'tab:purple'
         self.hlNodeEdgeColor = 'tab:pink'
@@ -130,6 +130,7 @@ class Network():
         self.inlineTimeCourseSelections = []
         self.customAxis = None
         self.layoutAlgorithm = 'kamada-kawai'
+        self.ignoreLayout = False
         self._Var.pos = None
         self._Var.ignoreAnalysisFlags = False
 
@@ -167,7 +168,7 @@ class Network():
         self._Var.pos = pos
     
 
-    def getLayout(self, returnState=False, ignoreLayout=False):
+    def getLayout(self, returnState=False):
         """
         Return the layout of the model
         
@@ -222,12 +223,12 @@ class Network():
         kineticLaw = []
         self._Var.mod_type = []
         
-        for slr in self.sbmlmodel.getListOfReactions():
+        for slr in self._Var.sbmlmodel.getListOfReactions():
             temprct = []
             tempprd = []
             tempmod = []
             
-            sbmlreaction = self.sbmlmodel.getReaction(slr.getId())
+            sbmlreaction = self._Var.sbmlmodel.getReaction(slr.getId())
             for sr in range(sbmlreaction.getNumReactants()):
                 sbmlrct = sbmlreaction.getReactant(sr)
                 temprct.append(sbmlrct.getSpecies())
@@ -269,7 +270,6 @@ class Network():
                 
                 kineticLaw.append(''.join(kl_split))
             
-        
         nkl = 0
         # use sympy for analyzing modifiers weSmart
         for ml in range(len(self._Var.mod)):
@@ -345,7 +345,7 @@ class Network():
         self._Var.G = nx.DiGraph()
     
         # add edges
-        for i in range(self.sbmlmodel.getNumReactions()):
+        for i in range(self._Var.sbmlmodel.getNumReactions()):
             for k in range(len(self._Var.rct[i])):
                 self._Var.G.add_edges_from([(self._Var.rct[i][k], self._Var.rid[i])])
             
@@ -356,7 +356,7 @@ class Network():
                 for l in range(len(self._Var.mod[i])):
                     self._Var.G.add_edges_from([(self._Var.mod[i][l], self._Var.rid[i])])
                 
-        if ((self._Var.layoutExtension) and not (ignoreLayout)):
+        if ((self._Var.layoutAvail) and not (self.ignoreLayout)):
             pos = layout.getPos(self._Var.layoutPlugin)
         else:
             # calcutate positions
@@ -530,393 +530,211 @@ class Network():
         if (self.analyzeFlux or self.analyzeRates) and not self._Var.ignoreAnalysisFlags:
             self._analyze()
         
-        # check the range of x and y positions
-        max_width = []
-        max_height = []
-        for key, value in pos.items():
-            max_width.append(value[0])
-            max_height.append(value[1])
-        
-        max_width = [min(max_width), max(max_width)]
-        max_height = [min(max_height), max(max_height)]
-        
-        # initialize figure
-        fig = plt.figure()
-
-        if self.drawInlineTimeCourse:
-            self.rrInstance.reset()
-            if len(self.inlineTimeCourseSelections) == 0:
-                result = self.rrInstance.simulate(self.simulationStartTime, self.simulationEndTime, self.numPoints)
-            else:
-                sel = self.inlineTimeCourseSelections
-                if 'time' not in sel:
-                    sel = ['time'] + sel
-                result = self.rrInstance.simulate(self.simulationStartTime, self.simulationEndTime, self.numPoints, selections=sel)
-            
-            plt.tight_layout()
-            
-            colorDict = dict(zip(self.rrInstance.getFloatingSpeciesIds(), 
-                                 plt.rcParams['axes.prop_cycle'].by_key()['color'][:self.rrInstance.getNumFloatingSpecies()]))
-            
-            gs = gridspec.GridSpec(2, 1, height_ratios=[5, 1])
-            gs.update(wspace=0.025, hspace=0.05)
-            ax = plt.subplot(gs[1])
-            
-            if len(self.inlineTimeCourseSelections) == 0:
-                ax.plot(result[:,0], result[:,1], lw=3)
-            else:
-                for i in range(len(sel) - 1):
-                    ax.plot(result[:,0], result[:,i+1], lw=3, c=colorDict.get(sel[i+1]))
-                
-            ax = plt.subplot(gs[0])
+        if ((self._Var.layoutAvail) and not (self.ignoreLayout)):
+            layout.draw(self, show=show, savePath=savePath, dpi=dpi)
         else:
-            if self.customAxis != None:
-                ax = self.customAxis
-            else:
-                ax = plt.gca()
-        
-        hlInd = 0
-        # add nodes to the figure
-        for n in self._Var.G:
-            if n in self._Var.rid:
-                rec_width = 0.05*(self.fontsize/20)
-                rec_height = 0.05*(self.fontsize/20)
-                if n in self.highlight:
-                    if type(self.hlNodeEdgeColor) == list:
-                        currHlNodeEdgeColor = self.hlNodeEdgeColor[hlInd]
-                        hlInd += 1
-                    else:
-                        currHlNodeEdgeColor = self.hlNodeEdgeColor
-                    if type(self.hlNodeColor) == list:
-                        currHlNodeColor = self.hlNodeColor[hlInd]
-                        hlInd += 1
-                    else:
-                        currHlNodeColor = self.hlNodeColor
-                        
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
-                                        pos[n][1]-rec_height/2),
-                                        rec_width, 
-                                        rec_height,
-                                        boxstyle="round,pad=0.01, rounding_size=0.01",
-                                        linewidth=self.nodeEdgelw, 
-                                        edgecolor=currHlNodeEdgeColor, 
-                                        facecolor=currHlNodeColor)
+            # initialize figure
+            fig = plt.figure()
+    
+            if self.drawInlineTimeCourse:
+                self.rrInstance.reset()
+                if len(self.inlineTimeCourseSelections) == 0:
+                    result = self.rrInstance.simulate(self.simulationStartTime, 
+                                                      self.simulationEndTime, 
+                                                      self.numPoints)
                 else:
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
-                                        pos[n][1]-rec_height/2), 
-                                        rec_width, 
-                                        rec_height,
-                                        boxstyle="round,pad=0.01, rounding_size=0.01",
-                                        linewidth=self.nodeEdgelw, 
-                                        edgecolor=self.nodeEdgeColor, 
-                                        facecolor=self.reactionNodeColor)
-                if self.labelReactionIds:
-                    ax.text(pos[n][0], 
-                            pos[n][1], 
-                            n, 
-                            fontsize=self.fontsize, 
-                            horizontalalignment='center', 
-                            verticalalignment='center', 
-                            color=self.labelColor)
-            else:
-                if len(n) > 10:
-                    rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
-                    rec_height = 0.18*(self.fontsize/20)
+                    sel = self.inlineTimeCourseSelections
+                    if 'time' not in sel:
+                        sel = ['time'] + sel
+                    result = self.rrInstance.simulate(self.simulationStartTime, 
+                                                      self.simulationEndTime,
+                                                      self.numPoints, 
+                                                      selections=sel)
+                
+                plt.tight_layout()
+                
+                colorDict = dict(zip(self.rrInstance.getFloatingSpeciesIds(), 
+                                     plt.rcParams['axes.prop_cycle'].by_key()['color'][:self.rrInstance.getNumFloatingSpecies()]))
+                
+                gs = gridspec.GridSpec(2, 1, height_ratios=[5, 1])
+                gs.update(wspace=0.025, hspace=0.05)
+                ax = plt.subplot(gs[1])
+                
+                if len(self.inlineTimeCourseSelections) == 0:
+                    ax.plot(result[:,0], result[:,1], lw=3)
                 else:
-                    rec_width = max(0.04*(len(n)+1), 0.12)*(self.fontsize/20)
-                    rec_height = 0.07*(self.fontsize/20)
+                    for i in range(len(sel) - 1):
+                        ax.plot(result[:,0], result[:,i+1], lw=3, c=colorDict.get(sel[i+1]))
                     
-                if self.drawInlineTimeCourse:
-                    node_color = colorDict[n]
+                ax = plt.subplot(gs[0])
+            else:
+                if self.customAxis != None:
+                    ax = self.customAxis
                 else:
-                    if (n in self._Var.boundaryId) or (n == 'Input') or (n == 'Output'):
-                        node_color = self.boundaryColor
-                    else:
-                        if self.analyzeRates:
-                            norm = colors.Normalize(vmin=np.min(self._Var.reaction_rate),vmax=np.max(self._Var.reaction_rate))
-                            colormap = cm.get_cmap(self.analyzeColorMap)
-                            node_color = colormap(norm(self._Var.reaction_rate[0][self._Var.reaction_rate.colnames.index(n)]))
+                    ax = plt.gca()
+        
+            # check the range of x and y positions
+            max_width = []
+            max_height = []
+            for key, value in pos.items():
+                max_width.append(value[0])
+                max_height.append(value[1])
+            
+            max_width = [min(max_width), max(max_width)]
+            max_height = [min(max_height), max(max_height)]
+            
+            hlInd = 0
+            # add nodes to the figure
+            for n in self._Var.G:
+                if n in self._Var.rid:
+                    rec_width = 0.05*(self.fontsize/20)
+                    rec_height = 0.05*(self.fontsize/20)
+                    if n in self.highlight:
+                        if type(self.hlNodeEdgeColor) == list:
+                            currHlNodeEdgeColor = self.hlNodeEdgeColor[hlInd]
+                            hlInd += 1
                         else:
-                            node_color = self.nodeColor
-                    
-                if n in self.highlight:
-                    if type(self.hlNodeEdgeColor) == list:
-                        currHlNodeEdgeColor = self.hlNodeEdgeColor[hlInd]
-                        hlInd += 1
+                            currHlNodeEdgeColor = self.hlNodeEdgeColor
+                        if type(self.hlNodeColor) == list:
+                            currHlNodeColor = self.hlNodeColor[hlInd]
+                            hlInd += 1
+                        else:
+                            currHlNodeColor = self.hlNodeColor
+                            
+                        c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                            pos[n][1]-rec_height/2),
+                                            rec_width, 
+                                            rec_height,
+                                            boxstyle="round,pad=0.01, rounding_size=0.01",
+                                            linewidth=self.nodeEdgelw, 
+                                            edgecolor=currHlNodeEdgeColor, 
+                                            facecolor=currHlNodeColor)
                     else:
-                        currHlNodeEdgeColor = self.hlNodeEdgeColor
-                    if type(self.hlNodeColor) == list:
-                        currHlNodeColor = self.hlNodeColor[hlInd]
-                        hlInd += 1
+                        c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                            pos[n][1]-rec_height/2), 
+                                            rec_width, 
+                                            rec_height,
+                                            boxstyle="round,pad=0.01, rounding_size=0.01",
+                                            linewidth=self.nodeEdgelw, 
+                                            edgecolor=self.nodeEdgeColor, 
+                                            facecolor=self.reactionNodeColor)
+                    if self.labelReactionIds:
+                        ax.text(pos[n][0], 
+                                pos[n][1], 
+                                n, 
+                                fontsize=self.fontsize, 
+                                horizontalalignment='center', 
+                                verticalalignment='center', 
+                                color=self.labelColor)
+                else:
+                    if len(n) > 10:
+                        rec_width = max(0.045*((len(n)/2)+1), 0.13)*(self.fontsize/20)
+                        rec_height = 0.18*(self.fontsize/20)
                     else:
-                        currHlNodeColor = self.hlNodeColor
+                        rec_width = max(0.04*(len(n)+1), 0.12)*(self.fontsize/20)
+                        rec_height = 0.07*(self.fontsize/20)
                         
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
-                                        pos[n][1]-rec_height/2),
-                                        rec_width, 
-                                        rec_height,
-                                        boxstyle="round,pad=0.01, rounding_size=0.02",
-                                        linewidth=self.nodeEdgelw, 
-                                        edgecolor=currHlNodeEdgeColor, 
-                                        facecolor=currHlNodeColor)
-                else:
-                    c = FancyBboxPatch((pos[n][0]-rec_width/2, 
-                                        pos[n][1]-rec_height/2), 
-                                        rec_width, 
-                                        rec_height,
-                                        boxstyle="round,pad=0.01, rounding_size=0.02",
-                                        linewidth=self.nodeEdgelw, 
-                                        edgecolor=self.nodeEdgeColor, 
-                                        facecolor=node_color)
-                if len(n) > 10:
-                    ax.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
-                            fontsize=self.fontsize, horizontalalignment='center', 
-                            verticalalignment='center', color=self.labelColor)
-                else:
-                    ax.text(pos[n][0], pos[n][1], n, 
-                            fontsize=self.fontsize, horizontalalignment='center', 
-                            verticalalignment='center', color=self.labelColor)
-            self._Var.G.nodes[n]['patch'] = c
-        
-        # add edges to the figure
-        for i in range(len(self._Var.rid)):
-            if (len(self._Var.rct[i]) == 1) or (len(self._Var.prd[i]) == 1): # UNI-involved
-                comb = list(itertools.combinations_with_replacement(self._Var.rct[i],len(self._Var.prd[i])))
-                for j in [list(zip(x,self._Var.prd[i])) for x in comb]:
-                    for k in range(len(j)):
-                        p1 = self._Var.G.nodes[j[k][0]]['patch']
-                        p2 = self._Var.G.nodes[self._Var.rid[i]]['patch']
-                        p3 = self._Var.G.nodes[j[k][1]]['patch']
-                        
-                        X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
-                        X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
-                        X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
-                        
-                        if ((len(np.unique(self._Var.rct[i])) > len(self._Var.prd[i])) or 
-                            (len(self._Var.rct[i]) < len(np.unique(self._Var.prd[i])))): # Uni-Bi or Bi-Uni
-                            XY1 = np.vstack((X1, X2))
-                            XY2 = np.vstack((X2, X3))
-                            
-                            tck1, u1 = interpolate.splprep([XY1[:,0], XY1[:,1]], 
-                                                           k=1)
-                            intX1, intY1 = interpolate.splev(np.linspace(0, 1, 100),
-                                                             tck1, 
-                                                             der=0)
-                            stackXY1 = np.vstack((intX1, intY1))
-                            tck2, u2 = interpolate.splprep([XY2[:,0], XY2[:,1]], 
-                                                           k=1)
-                            intX2, intY2 = interpolate.splev(np.linspace(0, 1, 100), 
-                                                             tck2, 
-                                                             der=0)
-                            stackXY2 = np.vstack((intX2, intY2))
-                            
-                            if max(stackXY1[0]) > max_width[1]:
-                                max_width[1] = max(stackXY1[0])
-                            if min(stackXY1[0]) < max_width[0]:
-                                max_width[0] = min(stackXY1[0])
-                            if max(stackXY1[1]) > max_height[1]:
-                                max_height[1] = max(stackXY1[1])
-                            if min(stackXY1[1]) < max_height[0]:
-                                max_height[0] = min(stackXY1[1])
-                                
-                            if max(stackXY2[0]) > max_width[1]:
-                                max_width[1] = max(stackXY2[0])
-                            if min(stackXY2[0]) < max_width[0]:
-                                max_width[0] = min(stackXY2[0])
-                            if max(stackXY2[1]) > max_height[1]:
-                                max_height[1] = max(stackXY2[1])
-                            if min(stackXY2[1]) < max_height[0]:
-                                max_height[0] = min(stackXY2[1])
-                            
-                            X3top = (p3.get_x()+p3.get_width()/2,
-                                     p3.get_y()+p3.get_height())
-                            X3bot = (p3.get_x()+p3.get_width()/2,
-                                     p3.get_y())
-                            X3left = (p3.get_x(),
-                                      p3.get_y()+p3.get_height()/2)
-                            X3right = (p3.get_x()+p3.get_width(),
-                                       p3.get_y()+p3.get_height()/2)
-                            
-                            n_1 = -1
-                            arrthres_h = .02
-                            arrthres_v = .02
-                            while (((stackXY2.T[n_1][0] > (X3left[0]-arrthres_h)) and
-                                    (stackXY2.T[n_1][0] < (X3right[0]+arrthres_h)) and
-                                    (stackXY2.T[n_1][1] > (X3bot[1]-arrthres_v)) and 
-                                    (stackXY2.T[n_1][1] < (X3top[1]+arrthres_v))) and
-                                    (np.abs(n_1) < np.shape(stackXY2)[1] - 75)):
-                                n_1 -= 1
-                            
-                            lpath1 = Path(stackXY1.T)
-                            lpath2 = Path(stackXY2.T[:n_1])
-                            lw1 = (1+self.edgelw)
-                            lw2 = (1+self.edgelw)
-                            arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
-                            arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                            e1color = self.reactionColor
-                            e2color = self.reactionColor
-                            
-                            if self._Var.r_type[i] == 'reversible':
-                                X1top = (p1.get_x()+p1.get_width()/2,
-                                         p1.get_y()+p1.get_height())
-                                X1bot = (p1.get_x()+p1.get_width()/2,
-                                         p1.get_y())
-                                X1left = (p1.get_x(),
-                                          p1.get_y()+p1.get_height()/2)
-                                X1right = (p1.get_x()+p1.get_width(),
-                                           p1.get_y()+p1.get_height()/2)
-                                
-                                n_2 = 0
-                                while (((stackXY1.T[n_2][0] > (X1left[0]-arrthres_h)) and 
-                                        (stackXY1.T[n_2][0] < (X1right[0]+arrthres_h)) and
-                                        (stackXY1.T[n_2][1] > (X1bot[1]-arrthres_v)) and 
-                                        (stackXY1.T[n_2][1] < (X1top[1]+arrthres_v))) and
-                                        (np.abs(n_2) < np.shape(stackXY1)[1] - 75)):
-                                    n_2 += 1
-                                
-                                lpath1 = Path(stackXY1.T[n_2:])
+                    if self.drawInlineTimeCourse:
+                        node_color = colorDict[n]
+                    else:
+                        if (n in self._Var.boundaryId) or (n == 'Input') or (n == 'Output'):
+                            node_color = self.boundaryColor
+                        else:
+                            if self.analyzeRates:
+                                norm = colors.Normalize(vmin=np.min(self._Var.reaction_rate),vmax=np.max(self._Var.reaction_rate))
+                                colormap = cm.get_cmap(self.analyzeColorMap)
+                                node_color = colormap(norm(self._Var.reaction_rate[0][self._Var.reaction_rate.colnames.index(n)]))
                             else:
-                                arrowstyle1 = ArrowStyle.Curve()
-
-                            if self.analyzeFlux:
-                                if self._Var.flux[i] > 0:
-                                    lw1 = (1+self.edgelw)
-                                    lw2 = (4+self.edgelw)
-                                    arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                elif self._Var.flux[i] < 0:
-                                    lw1 = (4+self.edgelw)
-                                    lw2 = (1+self.edgelw)
-                                    arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
-                                
-                                if self.analyzeColorScale:
-                                    norm = colors.Normalize(vmin=np.min(self._Var.flux),vmax=np.max(self._Var.flux))
-                                    colormap = cm.get_cmap(self.analyzeColorMap)
-                                    e1color = colormap(norm(self._Var.flux[i]))#0.5-Var.flux[i]/(2*max(abs(self._Var.flux))))
-                                    e2color = colormap(norm(self._Var.flux[i]))#0.5+Var.flux[i]/(2*max(abs(self._Var.flux))))
-                                else:
-                                    e1color = self.analyzeColorLow
-                                    e2color = self.analyzeColorHigh
+                                node_color = self.nodeColor
+                        
+                    if n in self.highlight:
+                        if type(self.hlNodeEdgeColor) == list:
+                            currHlNodeEdgeColor = self.hlNodeEdgeColor[hlInd]
+                            hlInd += 1
+                        else:
+                            currHlNodeEdgeColor = self.hlNodeEdgeColor
+                        if type(self.hlNodeColor) == list:
+                            currHlNodeColor = self.hlNodeColor[hlInd]
+                            hlInd += 1
+                        else:
+                            currHlNodeColor = self.hlNodeColor
                             
-                            e1 = FancyArrowPatch(path=lpath1,
-                                                arrowstyle=arrowstyle1,
-                                                mutation_scale=10.0,
-                                                lw=lw1,
-                                                color=e1color)
+                        c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                            pos[n][1]-rec_height/2),
+                                            rec_width, 
+                                            rec_height,
+                                            boxstyle="round,pad=0.01, rounding_size=0.02",
+                                            linewidth=self.nodeEdgelw, 
+                                            edgecolor=currHlNodeEdgeColor, 
+                                            facecolor=currHlNodeColor)
+                    else:
+                        c = FancyBboxPatch((pos[n][0]-rec_width/2, 
+                                            pos[n][1]-rec_height/2), 
+                                            rec_width, 
+                                            rec_height,
+                                            boxstyle="round,pad=0.01, rounding_size=0.02",
+                                            linewidth=self.nodeEdgelw, 
+                                            edgecolor=self.nodeEdgeColor, 
+                                            facecolor=node_color)
+                    if len(n) > 10:
+                        ax.text(pos[n][0], pos[n][1], n[:int(len(n)/2)] + '\n' + n[int(len(n)/2):], 
+                                fontsize=self.fontsize, horizontalalignment='center', 
+                                verticalalignment='center', color=self.labelColor)
+                    else:
+                        ax.text(pos[n][0], pos[n][1], n, 
+                                fontsize=self.fontsize, horizontalalignment='center', 
+                                verticalalignment='center', color=self.labelColor)
+                self._Var.G.nodes[n]['patch'] = c
+            
+            # add edges to the figure
+            for i in range(len(self._Var.rid)):
+                if (len(self._Var.rct[i]) == 1) or (len(self._Var.prd[i]) == 1): # UNI-involved
+                    comb = list(itertools.combinations_with_replacement(self._Var.rct[i],len(self._Var.prd[i])))
+                    for j in [list(zip(x,self._Var.prd[i])) for x in comb]:
+                        for k in range(len(j)):
+                            p1 = self._Var.G.nodes[j[k][0]]['patch']
+                            p2 = self._Var.G.nodes[self._Var.rid[i]]['patch']
+                            p3 = self._Var.G.nodes[j[k][1]]['patch']
                             
-                            e2 = FancyArrowPatch(path=lpath2,
-                                                arrowstyle=arrowstyle2,
-                                                mutation_scale=10.0,
-                                                lw=lw2,
-                                                color=e2color)
-                                
-                            ax.add_patch(e1)
-                            ax.add_patch(e2)
+                            X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
+                            X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
+                            X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
                             
-                            if j[k][0] in self._Var.floatingId:
-                                if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i]) > 1):
-                                    # position calculation
-                                    slope = ((lpath1.vertices[0][1] - lpath1.vertices[35][1])/
-                                             (lpath1.vertices[0][0] - lpath1.vertices[35][0]))
-                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
-                                    y_prime = -slope*x_prime
-                                    ax.text(x_prime+lpath1.vertices[35][0], 
-                                            y_prime+lpath1.vertices[35][1], 
-                                            int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i])), 
-                                            fontsize=self.fontsize, 
-                                            horizontalalignment='center', 
-                                            verticalalignment='center', 
-                                            color=self.reactionColor)
-                            
-                            if j[k][1] in self._Var.floatingId:
-                                if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i]) > 1):
-                                    slope = ((lpath2.vertices[0][1] - lpath2.vertices[-35][1])/
-                                             (lpath2.vertices[0][0] - lpath2.vertices[-35][0]))
-                                    x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
-                                    y_prime = -slope*x_prime
-                                    ax.text(x_prime+lpath2.vertices[-35][0], 
-                                            y_prime+lpath2.vertices[-35][1], 
-                                            int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i])), 
-                                            fontsize=self.fontsize, 
-                                            horizontalalignment='center', 
-                                            verticalalignment='center', 
-                                            color=self.reactionColor)
-                            
-                        else: 
-                            if ((self._Var.rct[i] == self._Var.prd[i]) and (self._Var.rct[i] == self._Var.mod[i])): # Autoregulation
-                                lw1 = (1+self.edgelw)
+                            if ((len(np.unique(self._Var.rct[i])) > len(self._Var.prd[i])) or 
+                                (len(self._Var.rct[i]) < len(np.unique(self._Var.prd[i])))): # Uni-Bi or Bi-Uni
+                                XY1 = np.vstack((X1, X2))
+                                XY2 = np.vstack((X2, X3))
                                 
-                                center = [(X1[0]+X2[0])/2, (X1[1]+X2[1])/2]
-                                radius = np.sqrt(np.square(X1[0]-X2[0])+np.square(X1[1]-X2[1]))
-                                angle = np.arctan((X1[1]-X2[1])/(X1[0]-X2[0]))/np.pi*180
+                                tck1, u1 = interpolate.splprep([XY1[:,0], XY1[:,1]], 
+                                                               k=1)
+                                intX1, intY1 = interpolate.splev(np.linspace(0, 1, 100),
+                                                                 tck1, 
+                                                                 der=0)
+                                stackXY1 = np.vstack((intX1, intY1))
+                                tck2, u2 = interpolate.splprep([XY2[:,0], XY2[:,1]], 
+                                                               k=1)
+                                intX2, intY2 = interpolate.splev(np.linspace(0, 1, 100), 
+                                                                 tck2, 
+                                                                 der=0)
+                                stackXY2 = np.vstack((intX2, intY2))
                                 
-                                if (center[0]+radius)/2 > max_width[1]:
-                                    max_width[1] = (center[0]+radius)/2
-                                if (center[0]-radius)/2 < max_width[0]:
-                                    max_width[0] = (center[0]-radius)/2
-                                if (center[1]+radius)/2 > max_height[1]:
-                                    max_height[1] = (center[1]+radius)/2
-                                if (center[1]-radius)/2 < max_height[0]:
-                                    max_height[0] = (center[1]-radius)/2
-                                
-                                if self._Var.mod_type[i][0] == 'modifier':
-                                    r = Arc(center, 
-                                            radius,
-                                            radius,
-                                            theta1=angle+10, 
-                                            theta2=360+angle-10,
-                                            lw=lw1,
-                                            linestyle=':',
-                                            color=self.reactionColor)
-                                else:
-                                    r = Arc(center, 
-                                            radius,
-                                            radius,
-                                            theta1=angle+10, 
-                                            theta2=360+angle-10,
-                                            lw=lw1,
-                                            color=self.reactionColor)
-                                ax.add_patch(r)
-                                
-                                endX1 = center[0]+(radius/2)*np.cos(np.radians(360+angle-10))
-                                endY1 = center[1]+(radius/2)*np.sin(np.radians(360+angle-10))
-                                
-                                if self._Var.mod_type[i][0] == 'inhibitor':
-                                    slope = (endY1-center[1])/(endX1-center[0])
-                                    endX2 = center[0]+(radius/2-0.07/2)*np.cos(np.radians(360+angle-10))
-                                    endY2 = center[1]+(radius/2-0.07/2)*np.sin(np.radians(360+angle-10))
+                                if max(stackXY1[0]) > max_width[1]:
+                                    max_width[1] = max(stackXY1[0])
+                                if min(stackXY1[0]) < max_width[0]:
+                                    max_width[0] = min(stackXY1[0])
+                                if max(stackXY1[1]) > max_height[1]:
+                                    max_height[1] = max(stackXY1[1])
+                                if min(stackXY1[1]) < max_height[0]:
+                                    max_height[0] = min(stackXY1[1])
                                     
-                                    ar = Rectangle((endX2, 
-                                                    endY2),
-                                                    0.07, 
-                                                    0.001*lw1,
-                                                    angle=360+angle-10,
-                                                    linewidth=lw1,
-                                                    color=self.reactionColor)
-                                    ax.add_patch(ar)
-                                else:
-                                    ar = RegularPolygon((endX1, endY1), 
-                                                        3,
-                                                        lw1/120,
-                                                        np.radians(360+angle-10),
-                                                        color=self.reactionColor)
-                                
-                                    ax.add_patch(ar)
-                                
-                            else: # Uni-Uni
-                                XY = np.vstack((X1, X2, X3))
-                                
-                                tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
-                                intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
-                                stackXY = np.vstack((intX, intY))
-                                
-                                if max(stackXY[0]) > max_width[1]:
-                                    max_width[1] = max(stackXY[0])
-                                if min(stackXY[0]) < max_width[0]:
-                                    max_width[0] = min(stackXY[0])
-                                if max(stackXY[1]) > max_height[1]:
-                                    max_height[1] = max(stackXY[1])
-                                if min(stackXY[1]) < max_height[0]:
-                                    max_height[0] = min(stackXY[1])
+                                if max(stackXY2[0]) > max_width[1]:
+                                    max_width[1] = max(stackXY2[0])
+                                if min(stackXY2[0]) < max_width[0]:
+                                    max_width[0] = min(stackXY2[0])
+                                if max(stackXY2[1]) > max_height[1]:
+                                    max_height[1] = max(stackXY2[1])
+                                if min(stackXY2[1]) < max_height[0]:
+                                    max_height[0] = min(stackXY2[1])
                                 
                                 X3top = (p3.get_x()+p3.get_width()/2,
                                          p3.get_y()+p3.get_height())
@@ -930,13 +748,22 @@ class Network():
                                 n_1 = -1
                                 arrthres_h = .02
                                 arrthres_v = .02
-                                while (((stackXY.T[n_1][0] > (X3left[0]-arrthres_h)) and 
-                                        (stackXY.T[n_1][0] < (X3right[0]+arrthres_h)) and
-                                        (stackXY.T[n_1][1] > (X3bot[1]-arrthres_v)) and 
-                                        (stackXY.T[n_1][1] < (X3top[1]+arrthres_v))) and
-                                        (np.abs(n_1) < np.shape(stackXY)[1] - 75)):
+                                while (((stackXY2.T[n_1][0] > (X3left[0]-arrthres_h)) and
+                                        (stackXY2.T[n_1][0] < (X3right[0]+arrthres_h)) and
+                                        (stackXY2.T[n_1][1] > (X3bot[1]-arrthres_v)) and 
+                                        (stackXY2.T[n_1][1] < (X3top[1]+arrthres_v))) and
+                                        (np.abs(n_1) < np.shape(stackXY2)[1] - 75)):
                                     n_1 -= 1
-                               
+                                
+                                lpath1 = Path(stackXY1.T)
+                                lpath2 = Path(stackXY2.T[:n_1])
+                                lw1 = (1+self.edgelw)
+                                lw2 = (1+self.edgelw)
+                                arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
+                                arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                e1color = self.reactionColor
+                                e2color = self.reactionColor
+                                
                                 if self._Var.r_type[i] == 'reversible':
                                     X1top = (p1.get_x()+p1.get_width()/2,
                                              p1.get_y()+p1.get_height())
@@ -948,90 +775,60 @@ class Network():
                                                p1.get_y()+p1.get_height()/2)
                                     
                                     n_2 = 0
-                                    while (((stackXY.T[n_2][0] > (X1left[0]-arrthres_h)) and 
-                                            (stackXY.T[n_2][0] < (X1right[0]+arrthres_h)) and
-                                            (stackXY.T[n_2][1] > (X1bot[1]-arrthres_v)) and 
-                                            (stackXY.T[n_2][1] < (X1top[1]+arrthres_v))) and
-                                            (np.abs(n_2) < np.shape(stackXY)[1] - 75)):
+                                    while (((stackXY1.T[n_2][0] > (X1left[0]-arrthres_h)) and 
+                                            (stackXY1.T[n_2][0] < (X1right[0]+arrthres_h)) and
+                                            (stackXY1.T[n_2][1] > (X1bot[1]-arrthres_v)) and 
+                                            (stackXY1.T[n_2][1] < (X1top[1]+arrthres_v))) and
+                                            (np.abs(n_2) < np.shape(stackXY1)[1] - 75)):
                                         n_2 += 1
                                     
-                                    lpath = Path(stackXY.T[n_2:n_1])
-                                    
-                                    if self.analyzeFlux:
-                                        if self._Var.flux[i] > 0:
-                                            lw1 = (1+self.edgelw)
-                                            lw2 = (4+self.edgelw)
-                                            arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
-                                            arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                                        elif self._Var.flux[i] < 0:
-                                            lw1 = (4+self.edgelw)
-                                            lw2 = (1+self.edgelw)
-                                            arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
-                                            arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                                        else:
-                                            lw1 = (1+self.edgelw)
-                                            lw2 = (1+self.edgelw)
-                                            arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
-                                            arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                                        
-                                        if self.analyzeColorScale:
-                                            norm = colors.Normalize(vmin=np.min(self._Var.flux),vmax=np.max(self._Var.flux))
-                                            colormap = cm.get_cmap(self.analyzeColorMap)
-                                            e1color = colormap(norm(self._Var.flux[i]))
-                                            e2color = colormap(norm(self._Var.flux[i]))
-                                        else:
-                                            e1color = self.analyzeColorLow
-                                            e2color = self.analyzeColorHigh
-                                            
-                                        e1 = FancyArrowPatch(path=Path(stackXY.T[-n_1:50]),
-                                                            arrowstyle=arrowstyle1,
-                                                            mutation_scale=10.0,
-                                                            lw=lw1,
-                                                            color=e1color)
-                                        e2 = FancyArrowPatch(path=Path(stackXY.T[50:n_1]),
-                                                            arrowstyle=arrowstyle2,
-                                                            mutation_scale=10.0,
-                                                            lw=lw2,
-                                                            color=e2color)
-                                        ax.add_patch(e1)
-                                        ax.add_patch(e2)
-                                    else:
-                                        arrowstyle = ArrowStyle.CurveFilledAB(head_length=0.8, head_width=0.4)
-                                        e = FancyArrowPatch(path=lpath,
-                                                        arrowstyle=arrowstyle,
-                                                        mutation_scale=10.0,
-                                                        lw=(1+self.edgelw),
-                                                        color=self.reactionColor)
-                                        ax.add_patch(e)
-                                    
+                                    lpath1 = Path(stackXY1.T[n_2:])
                                 else:
-                                    e1color = self.reactionColor
-                                    if self.analyzeFlux:
-                                        if self.analyzeColorScale:
-                                            norm = colors.Normalize(vmin=np.min(self._Var.flux),vmax=np.max(self._Var.flux))
-                                            colormap = cm.get_cmap(self.analyzeColorMap)
-                                            e1color = colormap(norm(self._Var.flux[i]))
-                                        else:
-                                            e1color = self.reactionColor
-                                        
-                                    lpath = Path(stackXY.T[:n_1])
-                                    arrowstyle1 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                                    lw1 = (1+self.edgelw)
-                                    e = FancyArrowPatch(path=lpath,
-                                                        arrowstyle=arrowstyle1,
-                                                        mutation_scale=10.0,
-                                                        lw=lw1,
-                                                        color=e1color)
-                                    ax.add_patch(e)
-                            
+                                    arrowstyle1 = ArrowStyle.Curve()
+    
+                                if self.analyzeFlux:
+                                    if self._Var.flux[i] > 0:
+                                        lw1 = (1+self.edgelw)
+                                        lw2 = (4+self.edgelw)
+                                        arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
+                                    elif self._Var.flux[i] < 0:
+                                        lw1 = (4+self.edgelw)
+                                        lw2 = (1+self.edgelw)
+                                        arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
+                                    
+                                    if self.analyzeColorScale:
+                                        norm = colors.Normalize(vmin=np.min(self._Var.flux),vmax=np.max(self._Var.flux))
+                                        colormap = cm.get_cmap(self.analyzeColorMap)
+                                        e1color = colormap(norm(self._Var.flux[i]))#0.5-Var.flux[i]/(2*max(abs(self._Var.flux))))
+                                        e2color = colormap(norm(self._Var.flux[i]))#0.5+Var.flux[i]/(2*max(abs(self._Var.flux))))
+                                    else:
+                                        e1color = self.analyzeColorLow
+                                        e2color = self.analyzeColorHigh
+                                
+                                e1 = FancyArrowPatch(path=lpath1,
+                                                    arrowstyle=arrowstyle1,
+                                                    mutation_scale=10.0,
+                                                    lw=lw1,
+                                                    color=e1color)
+                                
+                                e2 = FancyArrowPatch(path=lpath2,
+                                                    arrowstyle=arrowstyle2,
+                                                    mutation_scale=10.0,
+                                                    lw=lw2,
+                                                    color=e2color)
+                                    
+                                ax.add_patch(e1)
+                                ax.add_patch(e2)
+                                
                                 if j[k][0] in self._Var.floatingId:
                                     if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i]) > 1):
-                                        slope = ((lpath.vertices[0][1] - lpath.vertices[35][1])/
-                                                 (lpath.vertices[0][0] - lpath.vertices[35][0]))
-                                        x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
+                                        # position calculation
+                                        slope = ((lpath1.vertices[0][1] - lpath1.vertices[35][1])/
+                                                 (lpath1.vertices[0][0] - lpath1.vertices[35][0]))
+                                        x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                         y_prime = -slope*x_prime
-                                        ax.text(x_prime+lpath.vertices[35][0], 
-                                                y_prime+lpath.vertices[35][1], 
+                                        ax.text(x_prime+lpath1.vertices[35][0], 
+                                                y_prime+lpath1.vertices[35][1], 
                                                 int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i])), 
                                                 fontsize=self.fontsize, 
                                                 horizontalalignment='center', 
@@ -1040,273 +837,484 @@ class Network():
                                 
                                 if j[k][1] in self._Var.floatingId:
                                     if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i]) > 1):
-                                        slope = ((lpath.vertices[0][1] - lpath.vertices[-25][1])/
-                                                 (lpath.vertices[0][0] - lpath.vertices[-25][0]))
-                                        x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
+                                        slope = ((lpath2.vertices[0][1] - lpath2.vertices[-35][1])/
+                                                 (lpath2.vertices[0][0] - lpath2.vertices[-35][0]))
+                                        x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                         y_prime = -slope*x_prime
-                                        ax.text(x_prime+lpath.vertices[-25][0], 
-                                                y_prime+lpath.vertices[-25][1],
+                                        ax.text(x_prime+lpath2.vertices[-35][0], 
+                                                y_prime+lpath2.vertices[-35][1], 
                                                 int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i])), 
                                                 fontsize=self.fontsize, 
                                                 horizontalalignment='center', 
-                                                verticalalignment='center',
+                                                verticalalignment='center', 
                                                 color=self.reactionColor)
-                    
-            else: # BIBI or larger
-                if len(self._Var.rct[i]) < len(self._Var.prd[i]):
-                    rVal = len(self._Var.rct[i])
-                else:
-                    rVal = len(self._Var.prd[i])
-                    
-                for j in [list(zip(x,self._Var.prd[i])) for x in itertools.combinations(self._Var.rct[i],rVal)][0]:
-                    p1 = self._Var.G.nodes[j[0]]['patch']
-                    p2 = self._Var.G.nodes[self._Var.rid[i]]['patch']
-                    p3 = self._Var.G.nodes[j[1]]['patch']
-                    
-                    X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
-                    X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
-                    X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
-                    
-                    XY = np.vstack((X1, X2, X3))
-                    
-                    tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
-                    intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
-                    stackXY = np.vstack((intX, intY))
-                    
-                    if max(stackXY[0]) > max_width[1]:
-                        max_width[1] = max(stackXY[0])
-                    if min(stackXY[0]) < max_width[0]:
-                        max_width[0] = min(stackXY[0])
-                    if max(stackXY[1]) > max_height[1]:
-                        max_height[1] = max(stackXY[1])
-                    if min(stackXY[1]) < max_height[0]:
-                        max_height[0] = min(stackXY[1])
-                    
-                    X3top = (p3.get_x()+p3.get_width()/2,
-                             p3.get_y()+p3.get_height())
-                    X3bot = (p3.get_x()+p3.get_width()/2,
-                             p3.get_y())
-                    X3left = (p3.get_x(),
-                              p3.get_y()+p3.get_height()/2)
-                    X3right = (p3.get_x()+p3.get_width(),
-                               p3.get_y()+p3.get_height()/2)
-                    
-                    n_1 = -1
-                    arrthres_h = .02
-                    arrthres_v = .02
-                    while (((stackXY.T[n_1][0] > (X3left[0]-arrthres_h)) and
-                            (stackXY.T[n_1][0] < (X3right[0]+arrthres_h)) and
-                            (stackXY.T[n_1][1] > (X3bot[1]-arrthres_v)) and 
-                            (stackXY.T[n_1][1] < (X3top[1]+arrthres_v))) and
-                            (np.abs(n_1) < np.shape(stackXY)[1] - 75)):
-                        n_1 -= 1
-                    
-                    if self._Var.r_type[i] == 'reversible':
-                        X1top = (p1.get_x()+p1.get_width()/2,
-                                 p1.get_y()+p1.get_height())
-                        X1bot = (p1.get_x()+p1.get_width()/2,
-                                 p1.get_y())
-                        X1left = (p1.get_x(),
-                                  p1.get_y()+p1.get_height()/2)
-                        X1right = (p1.get_x()+p1.get_width(),
-                                   p1.get_y()+p1.get_height()/2)
-                        
-                        n_2 = 0
-                        while (((stackXY.T[n_2][0] > (X1left[0]-arrthres_h)) and 
-                                (stackXY.T[n_2][0] < (X1right[0]+arrthres_h)) and
-                                (stackXY.T[n_2][1] > (X1bot[1]-arrthres_v)) and 
-                                (stackXY.T[n_2][1] < (X1top[1]+arrthres_v))) and
-                                (np.abs(n_2) < np.shape(stackXY)[1] - 75)):
-                            n_2 += 1
-                        
-                        lpath = Path(stackXY.T[n_2:n_1])
-                        
-                        if self.analyzeFlux:
-                            if self._Var.flux[i] > 0:
-                                lw1 = (1+self.edgelw)
-                                lw2 = (4+self.edgelw)
-                                arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
-                                arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
-                            elif self._Var.flux[i] < 0:
-                                lw1 = (4+self.edgelw)
-                                lw2 = (1+self.edgelw)
-                                arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
-                                arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                            else:
-                                lw1 = (1+self.edgelw)
-                                lw2 = (1+self.edgelw)
-                                arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
-                                arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                            
-                            if self.analyzeColorScale:
-                                norm = colors.Normalize(vmin=np.min(self._Var.flux),vmax=np.max(self._Var.flux))
-                                colormap = cm.get_cmap(self.analyzeColorMap)
-                                e1color = colormap(norm(self._Var.flux[i]))
-                                e2color = colormap(norm(self._Var.flux[i]))
-                            else:
-                                e1color = self.analyzeColorLow
-                                e2color = self.analyzeColorHigh
                                 
-                            e1 = FancyArrowPatch(path=Path(stackXY.T[n_2:50]),
+                            else: 
+                                if ((self._Var.rct[i] == self._Var.prd[i]) and (self._Var.rct[i] == self._Var.mod[i])): # Autoregulation
+                                    lw1 = (1+self.edgelw)
+                                    
+                                    center = [(X1[0]+X2[0])/2, (X1[1]+X2[1])/2]
+                                    radius = np.sqrt(np.square(X1[0]-X2[0])+np.square(X1[1]-X2[1]))
+                                    angle = np.arctan((X1[1]-X2[1])/(X1[0]-X2[0]))/np.pi*180
+                                    
+                                    if (center[0]+radius)/2 > max_width[1]:
+                                        max_width[1] = (center[0]+radius)/2
+                                    if (center[0]-radius)/2 < max_width[0]:
+                                        max_width[0] = (center[0]-radius)/2
+                                    if (center[1]+radius)/2 > max_height[1]:
+                                        max_height[1] = (center[1]+radius)/2
+                                    if (center[1]-radius)/2 < max_height[0]:
+                                        max_height[0] = (center[1]-radius)/2
+                                    
+                                    if self._Var.mod_type[i][0] == 'modifier':
+                                        r = Arc(center, 
+                                                radius,
+                                                radius,
+                                                theta1=angle+10, 
+                                                theta2=360+angle-10,
+                                                lw=lw1,
+                                                linestyle=':',
+                                                color=self.reactionColor)
+                                    else:
+                                        r = Arc(center, 
+                                                radius,
+                                                radius,
+                                                theta1=angle+10, 
+                                                theta2=360+angle-10,
+                                                lw=lw1,
+                                                color=self.reactionColor)
+                                    ax.add_patch(r)
+                                    
+                                    endX1 = center[0]+(radius/2)*np.cos(np.radians(360+angle-10))
+                                    endY1 = center[1]+(radius/2)*np.sin(np.radians(360+angle-10))
+                                    
+                                    if self._Var.mod_type[i][0] == 'inhibitor':
+                                        slope = (endY1-center[1])/(endX1-center[0])
+                                        endX2 = center[0]+(radius/2-0.07/2)*np.cos(np.radians(360+angle-10))
+                                        endY2 = center[1]+(radius/2-0.07/2)*np.sin(np.radians(360+angle-10))
+                                        
+                                        ar = Rectangle((endX2, 
+                                                        endY2),
+                                                        0.07, 
+                                                        0.001*lw1,
+                                                        angle=360+angle-10,
+                                                        linewidth=lw1,
+                                                        color=self.reactionColor)
+                                        ax.add_patch(ar)
+                                    else:
+                                        ar = RegularPolygon((endX1, endY1), 
+                                                            3,
+                                                            lw1/120,
+                                                            np.radians(360+angle-10),
+                                                            color=self.reactionColor)
+                                    
+                                        ax.add_patch(ar)
+                                    
+                                else: # Uni-Uni
+                                    XY = np.vstack((X1, X2, X3))
+                                    
+                                    tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
+                                    intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
+                                    stackXY = np.vstack((intX, intY))
+                                    
+                                    if max(stackXY[0]) > max_width[1]:
+                                        max_width[1] = max(stackXY[0])
+                                    if min(stackXY[0]) < max_width[0]:
+                                        max_width[0] = min(stackXY[0])
+                                    if max(stackXY[1]) > max_height[1]:
+                                        max_height[1] = max(stackXY[1])
+                                    if min(stackXY[1]) < max_height[0]:
+                                        max_height[0] = min(stackXY[1])
+                                    
+                                    X3top = (p3.get_x()+p3.get_width()/2,
+                                             p3.get_y()+p3.get_height())
+                                    X3bot = (p3.get_x()+p3.get_width()/2,
+                                             p3.get_y())
+                                    X3left = (p3.get_x(),
+                                              p3.get_y()+p3.get_height()/2)
+                                    X3right = (p3.get_x()+p3.get_width(),
+                                               p3.get_y()+p3.get_height()/2)
+                                    
+                                    n_1 = -1
+                                    arrthres_h = .02
+                                    arrthres_v = .02
+                                    while (((stackXY.T[n_1][0] > (X3left[0]-arrthres_h)) and 
+                                            (stackXY.T[n_1][0] < (X3right[0]+arrthres_h)) and
+                                            (stackXY.T[n_1][1] > (X3bot[1]-arrthres_v)) and 
+                                            (stackXY.T[n_1][1] < (X3top[1]+arrthres_v))) and
+                                            (np.abs(n_1) < np.shape(stackXY)[1] - 75)):
+                                        n_1 -= 1
+                                   
+                                    if self._Var.r_type[i] == 'reversible':
+                                        X1top = (p1.get_x()+p1.get_width()/2,
+                                                 p1.get_y()+p1.get_height())
+                                        X1bot = (p1.get_x()+p1.get_width()/2,
+                                                 p1.get_y())
+                                        X1left = (p1.get_x(),
+                                                  p1.get_y()+p1.get_height()/2)
+                                        X1right = (p1.get_x()+p1.get_width(),
+                                                   p1.get_y()+p1.get_height()/2)
+                                        
+                                        n_2 = 0
+                                        while (((stackXY.T[n_2][0] > (X1left[0]-arrthres_h)) and 
+                                                (stackXY.T[n_2][0] < (X1right[0]+arrthres_h)) and
+                                                (stackXY.T[n_2][1] > (X1bot[1]-arrthres_v)) and 
+                                                (stackXY.T[n_2][1] < (X1top[1]+arrthres_v))) and
+                                                (np.abs(n_2) < np.shape(stackXY)[1] - 75)):
+                                            n_2 += 1
+                                        
+                                        lpath = Path(stackXY.T[n_2:n_1])
+                                        
+                                        if self.analyzeFlux:
+                                            if self._Var.flux[i] > 0:
+                                                lw1 = (1+self.edgelw)
+                                                lw2 = (4+self.edgelw)
+                                                arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
+                                                arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
+                                            elif self._Var.flux[i] < 0:
+                                                lw1 = (4+self.edgelw)
+                                                lw2 = (1+self.edgelw)
+                                                arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
+                                                arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                            else:
+                                                lw1 = (1+self.edgelw)
+                                                lw2 = (1+self.edgelw)
+                                                arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
+                                                arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                            
+                                            if self.analyzeColorScale:
+                                                norm = colors.Normalize(vmin=np.min(self._Var.flux),vmax=np.max(self._Var.flux))
+                                                colormap = cm.get_cmap(self.analyzeColorMap)
+                                                e1color = colormap(norm(self._Var.flux[i]))
+                                                e2color = colormap(norm(self._Var.flux[i]))
+                                            else:
+                                                e1color = self.analyzeColorLow
+                                                e2color = self.analyzeColorHigh
+                                                
+                                            e1 = FancyArrowPatch(path=Path(stackXY.T[-n_1:50]),
+                                                                arrowstyle=arrowstyle1,
+                                                                mutation_scale=10.0,
+                                                                lw=lw1,
+                                                                color=e1color)
+                                            e2 = FancyArrowPatch(path=Path(stackXY.T[50:n_1]),
+                                                                arrowstyle=arrowstyle2,
+                                                                mutation_scale=10.0,
+                                                                lw=lw2,
+                                                                color=e2color)
+                                            ax.add_patch(e1)
+                                            ax.add_patch(e2)
+                                        else:
+                                            arrowstyle = ArrowStyle.CurveFilledAB(head_length=0.8, head_width=0.4)
+                                            e = FancyArrowPatch(path=lpath,
+                                                            arrowstyle=arrowstyle,
+                                                            mutation_scale=10.0,
+                                                            lw=(1+self.edgelw),
+                                                            color=self.reactionColor)
+                                            ax.add_patch(e)
+                                        
+                                    else:
+                                        e1color = self.reactionColor
+                                        if self.analyzeFlux:
+                                            if self.analyzeColorScale:
+                                                norm = colors.Normalize(vmin=np.min(self._Var.flux),vmax=np.max(self._Var.flux))
+                                                colormap = cm.get_cmap(self.analyzeColorMap)
+                                                e1color = colormap(norm(self._Var.flux[i]))
+                                            else:
+                                                e1color = self.reactionColor
+                                            
+                                        lpath = Path(stackXY.T[:n_1])
+                                        arrowstyle1 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                        lw1 = (1+self.edgelw)
+                                        e = FancyArrowPatch(path=lpath,
+                                                            arrowstyle=arrowstyle1,
+                                                            mutation_scale=10.0,
+                                                            lw=lw1,
+                                                            color=e1color)
+                                        ax.add_patch(e)
+                                
+                                    if j[k][0] in self._Var.floatingId:
+                                        if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i]) > 1):
+                                            slope = ((lpath.vertices[0][1] - lpath.vertices[35][1])/
+                                                     (lpath.vertices[0][0] - lpath.vertices[35][0]))
+                                            x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
+                                            y_prime = -slope*x_prime
+                                            ax.text(x_prime+lpath.vertices[35][0], 
+                                                    y_prime+lpath.vertices[35][1], 
+                                                    int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i])), 
+                                                    fontsize=self.fontsize, 
+                                                    horizontalalignment='center', 
+                                                    verticalalignment='center', 
+                                                    color=self.reactionColor)
+                                    
+                                    if j[k][1] in self._Var.floatingId:
+                                        if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i]) > 1):
+                                            slope = ((lpath.vertices[0][1] - lpath.vertices[-25][1])/
+                                                     (lpath.vertices[0][0] - lpath.vertices[-25][0]))
+                                            x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
+                                            y_prime = -slope*x_prime
+                                            ax.text(x_prime+lpath.vertices[-25][0], 
+                                                    y_prime+lpath.vertices[-25][1],
+                                                    int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i])), 
+                                                    fontsize=self.fontsize, 
+                                                    horizontalalignment='center', 
+                                                    verticalalignment='center',
+                                                    color=self.reactionColor)
+                        
+                else: # BIBI or larger
+                    if len(self._Var.rct[i]) < len(self._Var.prd[i]):
+                        rVal = len(self._Var.rct[i])
+                    else:
+                        rVal = len(self._Var.prd[i])
+                        
+                    for j in [list(zip(x,self._Var.prd[i])) for x in itertools.combinations(self._Var.rct[i],rVal)][0]:
+                        p1 = self._Var.G.nodes[j[0]]['patch']
+                        p2 = self._Var.G.nodes[self._Var.rid[i]]['patch']
+                        p3 = self._Var.G.nodes[j[1]]['patch']
+                        
+                        X1 = (p1.get_x()+p1.get_width()/2,p1.get_y()+p1.get_height()/2)
+                        X2 = (p2.get_x()+p2.get_width()/2,p2.get_y()+p2.get_height()/2)
+                        X3 = (p3.get_x()+p3.get_width()/2,p3.get_y()+p3.get_height()/2)
+                        
+                        XY = np.vstack((X1, X2, X3))
+                        
+                        tck, u = interpolate.splprep([XY[:,0], XY[:,1]], k=2)
+                        intX, intY = interpolate.splev(np.linspace(0, 1, 100), tck, der=0)
+                        stackXY = np.vstack((intX, intY))
+                        
+                        if max(stackXY[0]) > max_width[1]:
+                            max_width[1] = max(stackXY[0])
+                        if min(stackXY[0]) < max_width[0]:
+                            max_width[0] = min(stackXY[0])
+                        if max(stackXY[1]) > max_height[1]:
+                            max_height[1] = max(stackXY[1])
+                        if min(stackXY[1]) < max_height[0]:
+                            max_height[0] = min(stackXY[1])
+                        
+                        X3top = (p3.get_x()+p3.get_width()/2,
+                                 p3.get_y()+p3.get_height())
+                        X3bot = (p3.get_x()+p3.get_width()/2,
+                                 p3.get_y())
+                        X3left = (p3.get_x(),
+                                  p3.get_y()+p3.get_height()/2)
+                        X3right = (p3.get_x()+p3.get_width(),
+                                   p3.get_y()+p3.get_height()/2)
+                        
+                        n_1 = -1
+                        arrthres_h = .02
+                        arrthres_v = .02
+                        while (((stackXY.T[n_1][0] > (X3left[0]-arrthres_h)) and
+                                (stackXY.T[n_1][0] < (X3right[0]+arrthres_h)) and
+                                (stackXY.T[n_1][1] > (X3bot[1]-arrthres_v)) and 
+                                (stackXY.T[n_1][1] < (X3top[1]+arrthres_v))) and
+                                (np.abs(n_1) < np.shape(stackXY)[1] - 75)):
+                            n_1 -= 1
+                        
+                        if self._Var.r_type[i] == 'reversible':
+                            X1top = (p1.get_x()+p1.get_width()/2,
+                                     p1.get_y()+p1.get_height())
+                            X1bot = (p1.get_x()+p1.get_width()/2,
+                                     p1.get_y())
+                            X1left = (p1.get_x(),
+                                      p1.get_y()+p1.get_height()/2)
+                            X1right = (p1.get_x()+p1.get_width(),
+                                       p1.get_y()+p1.get_height()/2)
+                            
+                            n_2 = 0
+                            while (((stackXY.T[n_2][0] > (X1left[0]-arrthres_h)) and 
+                                    (stackXY.T[n_2][0] < (X1right[0]+arrthres_h)) and
+                                    (stackXY.T[n_2][1] > (X1bot[1]-arrthres_v)) and 
+                                    (stackXY.T[n_2][1] < (X1top[1]+arrthres_v))) and
+                                    (np.abs(n_2) < np.shape(stackXY)[1] - 75)):
+                                n_2 += 1
+                            
+                            lpath = Path(stackXY.T[n_2:n_1])
+                            
+                            if self.analyzeFlux:
+                                if self._Var.flux[i] > 0:
+                                    lw1 = (1+self.edgelw)
+                                    lw2 = (4+self.edgelw)
+                                    arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
+                                    arrowstyle2 = ArrowStyle.CurveFilledB(head_length=1.2, head_width=0.8)
+                                elif self._Var.flux[i] < 0:
+                                    lw1 = (4+self.edgelw)
+                                    lw2 = (1+self.edgelw)
+                                    arrowstyle1 = ArrowStyle.CurveFilledA(head_length=1.2, head_width=0.8)
+                                    arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                else:
+                                    lw1 = (1+self.edgelw)
+                                    lw2 = (1+self.edgelw)
+                                    arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
+                                    arrowstyle2 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                                
+                                if self.analyzeColorScale:
+                                    norm = colors.Normalize(vmin=np.min(self._Var.flux),vmax=np.max(self._Var.flux))
+                                    colormap = cm.get_cmap(self.analyzeColorMap)
+                                    e1color = colormap(norm(self._Var.flux[i]))
+                                    e2color = colormap(norm(self._Var.flux[i]))
+                                else:
+                                    e1color = self.analyzeColorLow
+                                    e2color = self.analyzeColorHigh
+                                    
+                                e1 = FancyArrowPatch(path=Path(stackXY.T[n_2:50]),
+                                                    arrowstyle=arrowstyle1,
+                                                    mutation_scale=10.0,
+                                                    lw=lw1,
+                                                    color=e1color)
+                                e2 = FancyArrowPatch(path=Path(stackXY.T[50:n_1]),
+                                                    arrowstyle=arrowstyle2,
+                                                    mutation_scale=10.0,
+                                                    lw=lw2,
+                                                    color=e2color)
+                                ax.add_patch(e1)
+                                ax.add_patch(e2)
+                            else:
+                                arrowstyle = ArrowStyle.CurveFilledAB(head_length=0.8, head_width=0.4)
+                                e = FancyArrowPatch(path=lpath,
+                                                arrowstyle=arrowstyle,
+                                                mutation_scale=10.0,
+                                                lw=(1+self.edgelw),
+                                                color=self.reactionColor)
+                                ax.add_patch(e)
+                            
+                        else:
+                            e1color = self.reactionColor
+                            if self.analyzeFlux:
+                                if self.analyzeColorScale:
+                                    norm = colors.Normalize(vmin=np.min(self._Var.flux),vmax=np.max(self._Var.flux))
+                                    colormap = cm.get_cmap(self.analyzeColorMap)
+                                    e1color = colormap(norm(self._Var.flux[i]))
+                                else:
+                                    e1color = self.reactionColor
+                                
+                            lpath = Path(stackXY.T[:n_1])
+                            arrowstyle1 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                            lw1 = (1+self.edgelw)
+                            e = FancyArrowPatch(path=lpath,
                                                 arrowstyle=arrowstyle1,
                                                 mutation_scale=10.0,
                                                 lw=lw1,
                                                 color=e1color)
-                            e2 = FancyArrowPatch(path=Path(stackXY.T[50:n_1]),
-                                                arrowstyle=arrowstyle2,
-                                                mutation_scale=10.0,
-                                                lw=lw2,
-                                                color=e2color)
-                            ax.add_patch(e1)
-                            ax.add_patch(e2)
-                        else:
-                            arrowstyle = ArrowStyle.CurveFilledAB(head_length=0.8, head_width=0.4)
-                            e = FancyArrowPatch(path=lpath,
-                                            arrowstyle=arrowstyle,
-                                            mutation_scale=10.0,
-                                            lw=(1+self.edgelw),
-                                            color=self.reactionColor)
                             ax.add_patch(e)
                         
-                    else:
-                        e1color = self.reactionColor
-                        if self.analyzeFlux:
-                            if self.analyzeColorScale:
-                                norm = colors.Normalize(vmin=np.min(self._Var.flux),vmax=np.max(self._Var.flux))
-                                colormap = cm.get_cmap(self.analyzeColorMap)
-                                e1color = colormap(norm(self._Var.flux[i]))
-                            else:
-                                e1color = self.reactionColor
-                            
-                        lpath = Path(stackXY.T[:n_1])
-                        arrowstyle1 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                        lw1 = (1+self.edgelw)
-                        e = FancyArrowPatch(path=lpath,
-                                            arrowstyle=arrowstyle1,
-                                            mutation_scale=10.0,
-                                            lw=lw1,
-                                            color=e1color)
-                        ax.add_patch(e)
-                    
-                    if j[0] in self._Var.floatingId:
-                        if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[0])][i]) > 1):
-                            slope = ((lpath.vertices[0][1] - lpath.vertices[15][1])/
-                                     (lpath.vertices[0][0] - lpath.vertices[15][0]))
-                            x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
-                            y_prime = -slope*x_prime
-                            ax.text(x_prime+lpath.vertices[15][0], 
-                                    y_prime+lpath.vertices[15][1], 
-                                    int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[0])][i])), 
-                                    fontsize=self.fontsize, 
-                                    horizontalalignment='center', 
-                                    verticalalignment='center', 
-                                    color=self.reactionColor)
-                    if j[1] in self._Var.floatingId:
-                        if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[1])][i]) > 1):
-                            slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
-                                     (lpath.vertices[0][0] - lpath.vertices[-20][0]))
-                            x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
-                            y_prime = -slope*x_prime
-                            ax.text(x_prime+lpath.vertices[-20][0], 
-                                    y_prime+lpath.vertices[-20][1], 
-                                    int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[1])][i])), 
-                                    fontsize=self.fontsize,
-                                    horizontalalignment='center', 
-                                    verticalalignment='center', 
-                                    color=self.reactionColor)
-                    
-        # Modifiers
-        seen={}
-        mc = 0
-        for m in range(len(self._Var.mod)):
-            if self._Var.rct[m] == self._Var.prd[m]:
-                pass
-            else:
-                for j in range(len(self._Var.mod[m])):
-                    s = self._Var.mod[m][j]
-                    n1 = self._Var.G.nodes[s]['patch']
-                    n2 = self._Var.G.nodes[self._Var.modtarget_flat[mc]]['patch']
-                    rad = 0.1
-                    shrinkB = 2.
-                    
-                    if (s,self._Var.modtarget_flat[mc]) in seen:
-                        rad = seen.get((s,self._Var.modtarget_flat[mc])) # TODO: No curvature when there is just a single line between two nodes
-                        rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
+                        if j[0] in self._Var.floatingId:
+                            if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[0])][i]) > 1):
+                                slope = ((lpath.vertices[0][1] - lpath.vertices[15][1])/
+                                         (lpath.vertices[0][0] - lpath.vertices[15][0]))
+                                x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
+                                y_prime = -slope*x_prime
+                                ax.text(x_prime+lpath.vertices[15][0], 
+                                        y_prime+lpath.vertices[15][1], 
+                                        int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[0])][i])), 
+                                        fontsize=self.fontsize, 
+                                        horizontalalignment='center', 
+                                        verticalalignment='center', 
+                                        color=self.reactionColor)
+                        if j[1] in self._Var.floatingId:
+                            if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[1])][i]) > 1):
+                                slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
+                                         (lpath.vertices[0][0] - lpath.vertices[-20][0]))
+                                x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
+                                y_prime = -slope*x_prime
+                                ax.text(x_prime+lpath.vertices[-20][0], 
+                                        y_prime+lpath.vertices[-20][1], 
+                                        int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[1])][i])), 
+                                        fontsize=self.fontsize,
+                                        horizontalalignment='center', 
+                                        verticalalignment='center', 
+                                        color=self.reactionColor)
                         
-                    X1 = (n1.get_x()+n1.get_width()/2,
-                          n1.get_y()+n1.get_height()/2)
-                    X2 = (n2.get_x()+n2.get_width()/2,
-                          n2.get_y()+n2.get_height()/2)
+            # Modifiers
+            seen={}
+            mc = 0
+            for m in range(len(self._Var.mod)):
+                if self._Var.rct[m] == self._Var.prd[m]:
+                    pass
+                else:
+                    for j in range(len(self._Var.mod[m])):
+                        s = self._Var.mod[m][j]
+                        n1 = self._Var.G.nodes[s]['patch']
+                        n2 = self._Var.G.nodes[self._Var.modtarget_flat[mc]]['patch']
+                        rad = 0.1
+                        shrinkB = 2.
+                        
+                        if (s,self._Var.modtarget_flat[mc]) in seen:
+                            rad = seen.get((s,self._Var.modtarget_flat[mc])) # TODO: No curvature when there is just a single line between two nodes
+                            rad = (rad+np.sign(rad)*0.1)*-1 # TODO: Change curvature
+                            
+                        X1 = (n1.get_x()+n1.get_width()/2,
+                              n1.get_y()+n1.get_height()/2)
+                        X2 = (n2.get_x()+n2.get_width()/2,
+                              n2.get_y()+n2.get_height()/2)
+                        
+                        if self._Var.modtype_flat[mc] == 'inhibitor': # inhibition
+                            color = self.modifierColor
+                            arrowstyle = ArrowStyle.BarAB(widthA=0.0, angleA=None, widthB=1.0, angleB=None)
+                            shrinkB = 10.
+                            linestyle = '-'
+                        elif self._Var.modtype_flat[mc] == 'activator': # activation
+                            color = self.modifierColor
+                            arrowstyle = arrowstyle = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                            linestyle = '-'
+                        elif self._Var.modtype_flat[mc] == 'modifier': # Unknown modifier
+                            color = self.modifierColor
+                            arrowstyle = arrowstyle = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
+                            linestyle = ':'
+                        e = FancyArrowPatch(X1,
+                                            X2,
+                                            patchA=n1,
+                                            patchB=n2,
+                                            shrinkB=shrinkB,
+                                            arrowstyle=arrowstyle,
+                                            connectionstyle='arc3,rad=%s'%rad,
+                                            mutation_scale=10.0,
+                                            lw=(1+self.edgelw),
+                                            color=color,
+                                            linestyle=linestyle)
+                        seen[(s,self._Var.modtarget_flat[mc])]=rad
+                        ax.add_patch(e)
+                        ax.add_patch(n1)
+                        mc += 1
+        
+            # Add reaction nodes at last to put it on top
+            if self.drawReactionNode:
+                allnodes = self._Var.speciesId + self._Var.rid
+            else:
+                allnodes = self._Var.speciesId
+            
+            if 'Input' in self._Var.G.nodes:
+                allnodes += ['Input']
+            if 'Output' in self._Var.G.nodes:
+                allnodes += ['Output']
+            for i in range(len(allnodes)):
+                ax.add_patch(self._Var.G.nodes[allnodes[i]]['patch'])
+        
+            # Statistics
+            if self.plotStatistics and (self.analyzeFlux or self.analyzeRates):
+                pass
+            
+            # reset width and height
+            ax.autoscale()
+            fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5)
+            fig.set_figheight((abs(max_height[0] - max_height[1])+0.5)*5)
+            if self.plotColorbar:
+                fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5 + 4)
+                sm = plt.cm.ScalarMappable(cmap=colormap, norm=norm)
+                sm.set_array([])
+                plt.colorbar(sm)
+            plt.axis('off')
+            
+            if not self.drawInlineTimeCourse:
+                plt.tight_layout()
+            
+            if savePath != None:
+                try:
+                    fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
+                except IOError as e:
+                    raise Exception("Error saving diagram: " + str(e))
                     
-                    if self._Var.modtype_flat[mc] == 'inhibitor': # inhibition
-                        color = self.modifierColor
-                        arrowstyle = ArrowStyle.BarAB(widthA=0.0, angleA=None, widthB=1.0, angleB=None)
-                        shrinkB = 10.
-                        linestyle = '-'
-                    elif self._Var.modtype_flat[mc] == 'activator': # activation
-                        color = self.modifierColor
-                        arrowstyle = arrowstyle = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                        linestyle = '-'
-                    elif self._Var.modtype_flat[mc] == 'modifier': # Unknown modifier
-                        color = self.modifierColor
-                        arrowstyle = arrowstyle = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
-                        linestyle = ':'
-                    e = FancyArrowPatch(X1,
-                                        X2,
-                                        patchA=n1,
-                                        patchB=n2,
-                                        shrinkB=shrinkB,
-                                        arrowstyle=arrowstyle,
-                                        connectionstyle='arc3,rad=%s'%rad,
-                                        mutation_scale=10.0,
-                                        lw=(1+self.edgelw),
-                                        color=color,
-                                        linestyle=linestyle)
-                    seen[(s,self._Var.modtarget_flat[mc])]=rad
-                    ax.add_patch(e)
-                    ax.add_patch(n1)
-                    mc += 1
-        
-        # Add reaction nodes at last to put it on top
-        if self.drawReactionNode:
-            allnodes = self._Var.speciesId + self._Var.rid
-        else:
-            allnodes = self._Var.speciesId
-        
-        if 'Input' in self._Var.G.nodes:
-            allnodes += ['Input']
-        if 'Output' in self._Var.G.nodes:
-            allnodes += ['Output']
-        for i in range(len(allnodes)):
-            ax.add_patch(self._Var.G.nodes[allnodes[i]]['patch'])
-        
-        # Statistics
-        if self.plotStatistics and (self.analyzeFlux or self.analyzeRates):
-            pass
-        
-        # reset width and height
-        ax.autoscale()
-        fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5)
-        fig.set_figheight((abs(max_height[0] - max_height[1])+0.5)*5)
-        if self.plotColorbar:
-            fig.set_figwidth((abs(max_width[0] - max_width[1])+0.5)*5 + 4)
-            sm = plt.cm.ScalarMappable(cmap=colormap, norm=norm)
-            sm.set_array([])
-            plt.colorbar(sm)        
-        plt.axis('off')
-        
-        if not self.drawInlineTimeCourse:
-            plt.tight_layout()
-        
-        if savePath != None:
-            try:
-                fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
-            except IOError as e:
-                raise Exception("Error saving diagram: " + str(e))
-                
-        if show and self.customAxis == None:
-            plt.show()
-        plt.close()
+            if show and self.customAxis == None:
+                plt.show()
+            plt.close()
 
 
     def savefig(self, path, dpi=150):
