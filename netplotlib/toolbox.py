@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import numpy as np
+from scipy.special import comb
 import matplotlib.pyplot as plt
 from matplotlib.colors import is_color_like
 
@@ -39,8 +41,8 @@ def checkValidity(self):
         raise Exception('nodeEdgeColor paramter does not look like a color')
     elif not isinstance(self.nodeEdgelw, (int, float)):
         raise Exception('nodeEdgelw paramter only accepts number')
-    elif self.edgeType != 'default' or self.edgeType != 'bezier':
-        raise Exception('unknown edgetype')
+    elif self.edgeType != 'default' and self.edgeType != 'bezier':
+        raise Exception('unknown edgeType')
     elif not is_color_like(self.compartmentColor):
         raise Exception('compartmentColor paramter does not look like a color')
     elif not is_color_like(self.compartmentEdgeColor):
@@ -91,8 +93,28 @@ def checkValidity(self):
         raise Exception('plotColorbar paramter only accepts boolean')
     elif type(self.inlineTimeCourseSelections) is not list:
         raise Exception('inlineTimeCourseSelections paramter only accepts list')
-    elif self.layoutAlgorithm != 'default' or self.edgeType != 'bezier':
-        raise Exception('unknown edgetype')
     elif type(self.ignoreLayout) is not bool:
         raise Exception('ignoreLayout paramter only accepts boolean')
+
+def computeBezierControlPoints(start, intermediate, end):
     
+    def bernpoly(n, t, k):
+        return np.power(t,k)*np.power((1 - t), (n - k))*comb(n, k)
+
+    def bernmatrix(T):
+        return np.matrix([[bernpoly(3, t, k) for k in range(4)] for t in T])
+
+    def lsfit(points, M):
+        M_ = np.linalg.pinv(M)
+        return M_*points
+
+    T = np.linspace(0, 1, 3)
+    M = bernmatrix(T)
+    points = np.array([start, intermediate, end])
+    
+    bcp = lsfit(points, M).tolist()
+    bcp = [tuple(x) for x in bcp]
+    bcp[0] = tuple(start)
+    bcp[-1] = tuple(end)
+    
+    return bcp
