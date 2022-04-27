@@ -80,6 +80,7 @@ class Network():
         try:
             self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
             self._Var.floatingId = self.rrInstance.getFloatingSpeciesIds()
+            self._Var.compartmentId = self.rrInstance.getCompartmentIds()
             self._Var.rid = self.rrInstance.getReactionIds()
             self._Var.stoch = self.rrInstance.getFullStoichiometryMatrix()
             self._Var.stoch_row = self._Var.stoch.rownames
@@ -582,6 +583,19 @@ class Network():
             
             max_width = [min(max_width), max(max_width)]
             max_height = [min(max_height), max(max_height)]
+            
+            # add compartments first
+            for com in self._Var.compartmentId:
+                comBox = FancyBboxPatch((max_width[0]-(max_width[1]-max_width[0])/10,
+                                         max_height[0]-(max_height[1]-max_height[0])/10), 
+                                    max_width[1]-max_width[0]+2*(max_width[1]-max_width[0])/10, 
+                                    max_height[1]-max_height[0]+2*(max_height[1]-max_height[0])/10,
+                                    boxstyle="round,pad=0.01, rounding_size=0.01",
+                                    linewidth=self.compartmentEdgelw, 
+                                    edgecolor=self.compartmentEdgeColor, 
+                                    facecolor=self.compartmentColor,
+                                    alpha=0.5)
+                ax.add_patch(comBox)
             
             hlInd = 0
             # add nodes to the figure
