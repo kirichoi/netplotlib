@@ -14,8 +14,8 @@ import numpy as np
 from scipy import interpolate
 import sympy
 import itertools
-import layout
-import toolbox
+from . import layout
+from . import toolbox
 import libsbml
 
 def getVersion():
