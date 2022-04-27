@@ -240,9 +240,12 @@ def draw(NetworkClass, show=True, savePath=None, dpi=150):
                 speciesName = speciesName.getId()
         else:
             sg = layout.getSpeciesGlyph(tg.getOriginOfTextId())
-            speciesName = sg.getSpeciesId()
+            if sg != None:
+                speciesName = sg.getSpeciesId()
+            else:
+                speciesName = tg.text
         layoutTextGlyphIds.append(speciesName)
-        
+
         dim = bbox.getDimensions()
         
         mattext = ax.text(tgpos.x_offset, tgpos.y_offset, speciesName,
