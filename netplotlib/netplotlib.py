@@ -15,6 +15,7 @@ from scipy import interpolate
 import sympy
 import itertools
 import layout
+import toolbox
 import libsbml
 
 def getVersion():
@@ -30,17 +31,6 @@ def getVersion():
     		version = f.read().rstrip()
     
     return version
-
-
-def getListOfAlgorithms():
-    """
-    Print list of supported layout algorithms
-    """
-    
-    algList = ['kamada-kawai', 'spring', 'twopi', 'neato', 'dot']
-    algList.sort()
-    
-    return algList
 
 
 class _Variable():
@@ -80,6 +70,7 @@ class Network():
         try:
             self._Var.boundaryId = self.rrInstance.getBoundarySpeciesIds()
             self._Var.floatingId = self.rrInstance.getFloatingSpeciesIds()
+            self._Var.compartmentId = self.rrInstance.getCompartmentIds()
             self._Var.rid = self.rrInstance.getReactionIds()
             self._Var.stoch = self.rrInstance.getFullStoichiometryMatrix()
             self._Var.stoch_row = self._Var.stoch.rownames
@@ -105,6 +96,7 @@ class Network():
         self.boundaryColor = 'tab:green'
         self.nodeEdgeColor = 'k'
         self.nodeEdgelw = 0
+        self.edgeType = 'default'
         self.compartmentColor = 'tab:gray'
         self.compartmentEdgeColor = 'k'
         self.compartmentEdgelw = 2
@@ -176,7 +168,7 @@ class Network():
         :returns pos: Dictionary of all nodes and corresponding coordinates
         """
         
-        if self.layoutAlgorithm not in getListOfAlgorithms():
+        if self.layoutAlgorithm not in toolbox.getListOfAlgorithms():
             raise Exception("Unsupported layout algorithm: '" + str(self.layoutAlgorithm) + "'")
         
         avoid = ['C', 'CC', 'Ci', 'E1', 'EX', 'Ei', 'FF', 'GF', 'Ge', 'Gt', 'I', 'LC',
@@ -521,6 +513,8 @@ class Network():
         :param dpi: dpi settings for the diagram
         """
         
+        toolbox.checkValidity(self)
+        
         if self._Var.pos == None:
             pos = self.getLayout()
         else:
@@ -582,6 +576,19 @@ class Network():
             
             max_width = [min(max_width), max(max_width)]
             max_height = [min(max_height), max(max_height)]
+            
+            # add compartments first
+            for com in self._Var.compartmentId:
+                comBox = FancyBboxPatch((max_width[0]-(max_width[1]-max_width[0])/10,
+                                         max_height[0]-(max_height[1]-max_height[0])/10), 
+                                    max_width[1]-max_width[0]+2*(max_width[1]-max_width[0])/10, 
+                                    max_height[1]-max_height[0]+2*(max_height[1]-max_height[0])/10,
+                                    boxstyle="round,pad=0.01, rounding_size=0.01",
+                                    linewidth=self.compartmentEdgelw, 
+                                    edgecolor=self.compartmentEdgeColor, 
+                                    facecolor=self.compartmentColor,
+                                    alpha=0.5)
+                ax.add_patch(comBox)
             
             hlInd = 0
             # add nodes to the figure
@@ -755,8 +762,17 @@ class Network():
                                         (np.abs(n_1) < np.shape(stackXY2)[1] - 75)):
                                     n_1 -= 1
                                 
-                                lpath1 = Path(stackXY1.T)
-                                lpath2 = Path(stackXY2.T[:n_1])
+                                if self.edgeType == 'default':
+                                    lpath1 = Path(stackXY1.T)
+                                    lpath2 = Path(stackXY2.T[:n_1])
+                                elif self.edgeType == 'bezier':
+                                    bcp = toolbox.computeBezierControlPoints(stackXY1.T[0], X2, stackXY1.T[-1])
+                                    lpath1 = Path([bcp[0], bcp[1], bcp[2], bcp[3]], 
+                                                 [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4])
+                                    bcp = toolbox.computeBezierControlPoints(stackXY2.T[0], X2, stackXY2.T[n_1])
+                                    lpath2 = Path([bcp[0], bcp[1], bcp[2], bcp[3]], 
+                                                 [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4])
+                                
                                 lw1 = (1+self.edgelw)
                                 lw2 = (1+self.edgelw)
                                 arrowstyle1 = ArrowStyle.CurveFilledA(head_length=0.8, head_width=0.4)
@@ -781,8 +797,13 @@ class Network():
                                             (stackXY1.T[n_2][1] < (X1top[1]+arrthres_v))) and
                                             (np.abs(n_2) < np.shape(stackXY1)[1] - 75)):
                                         n_2 += 1
-                                    
-                                    lpath1 = Path(stackXY1.T[n_2:])
+                                        
+                                    if self.edgeType == 'default':
+                                        lpath1 = Path(stackXY1.T[n_2:])
+                                    elif self.edgeType == 'bezier':
+                                        bcp = toolbox.computeBezierControlPoints(stackXY1.T[n_2], X2, stackXY1.T[-1])
+                                        lpath1 = Path([bcp[0], bcp[1], bcp[2], bcp[3]], 
+                                                     [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4])
                                 else:
                                     arrowstyle1 = ArrowStyle.Curve()
     
@@ -823,12 +844,12 @@ class Network():
                                 if j[k][0] in self._Var.floatingId:
                                     if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i]) > 1):
                                         # position calculation
-                                        slope = ((lpath1.vertices[0][1] - lpath1.vertices[35][1])/
-                                                 (lpath1.vertices[0][0] - lpath1.vertices[35][0]))
+                                        slope = ((lpath1.vertices[0][1] - lpath1.vertices[int(0.35*len(lpath1.vertices))][1])/
+                                                 (lpath1.vertices[0][0] - lpath1.vertices[int(0.35*len(lpath1.vertices))][0]))
                                         x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                         y_prime = -slope*x_prime
-                                        ax.text(x_prime+lpath1.vertices[35][0], 
-                                                y_prime+lpath1.vertices[35][1], 
+                                        ax.text(x_prime+lpath1.vertices[int(0.35*len(lpath1.vertices))][0], 
+                                                y_prime+lpath1.vertices[int(0.35*len(lpath1.vertices))][1], 
                                                 int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i])), 
                                                 fontsize=self.fontsize, 
                                                 horizontalalignment='center', 
@@ -837,12 +858,12 @@ class Network():
                                 
                                 if j[k][1] in self._Var.floatingId:
                                     if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i]) > 1):
-                                        slope = ((lpath2.vertices[0][1] - lpath2.vertices[-35][1])/
-                                                 (lpath2.vertices[0][0] - lpath2.vertices[-35][0]))
+                                        slope = ((lpath2.vertices[0][1] - lpath2.vertices[int(0.65*len(lpath2.vertices))][1])/
+                                                 (lpath2.vertices[0][0] - lpath2.vertices[int(0.65*len(lpath2.vertices))][0]))
                                         x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                         y_prime = -slope*x_prime
-                                        ax.text(x_prime+lpath2.vertices[-35][0], 
-                                                y_prime+lpath2.vertices[-35][1], 
+                                        ax.text(x_prime+lpath2.vertices[int(0.65*len(lpath2.vertices))][0], 
+                                                y_prime+lpath2.vertices[int(0.65*len(lpath2.vertices))][1], 
                                                 int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i])), 
                                                 fontsize=self.fontsize, 
                                                 horizontalalignment='center', 
@@ -963,7 +984,12 @@ class Network():
                                                 (np.abs(n_2) < np.shape(stackXY)[1] - 75)):
                                             n_2 += 1
                                         
-                                        lpath = Path(stackXY.T[n_2:n_1])
+                                        if self.edgeType == 'default':
+                                            lpath = Path(stackXY.T[n_2:n_1])
+                                        elif self.edgeType == 'bezier':
+                                            bcp = toolbox.computeBezierControlPoints(stackXY.T[n_2], X2, stackXY.T[n_1])
+                                            lpath = Path([bcp[0], bcp[1], bcp[2], bcp[3]], 
+                                                         [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4])
                                         
                                         if self.analyzeFlux:
                                             if self._Var.flux[i] > 0:
@@ -1021,8 +1047,14 @@ class Network():
                                                 e1color = colormap(norm(self._Var.flux[i]))
                                             else:
                                                 e1color = self.reactionColor
-                                            
-                                        lpath = Path(stackXY.T[:n_1])
+                                        
+                                        if self.edgeType == 'default':
+                                            lpath = Path(stackXY.T[:n_1])
+                                        elif self.edgeType == 'bezier':
+                                            bcp = toolbox.computeBezierControlPoints(stackXY.T[0], X2, stackXY.T[n_1])
+                                            lpath = Path([bcp[0], bcp[1], bcp[2], bcp[3]], 
+                                                         [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4])
+                                        
                                         arrowstyle1 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                                         lw1 = (1+self.edgelw)
                                         e = FancyArrowPatch(path=lpath,
@@ -1034,12 +1066,12 @@ class Network():
                                 
                                     if j[k][0] in self._Var.floatingId:
                                         if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i]) > 1):
-                                            slope = ((lpath.vertices[0][1] - lpath.vertices[35][1])/
-                                                     (lpath.vertices[0][0] - lpath.vertices[35][0]))
+                                            slope = ((lpath.vertices[0][1] - lpath.vertices[int(0.35*len(lpath.vertices))][1])/
+                                                     (lpath.vertices[0][0] - lpath.vertices[int(0.35*len(lpath.vertices))][0]))
                                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                             y_prime = -slope*x_prime
-                                            ax.text(x_prime+lpath.vertices[35][0], 
-                                                    y_prime+lpath.vertices[35][1], 
+                                            ax.text(x_prime+lpath.vertices[int(0.35*len(lpath.vertices))][0], 
+                                                    y_prime+lpath.vertices[int(0.35*len(lpath.vertices))][1], 
                                                     int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i])), 
                                                     fontsize=self.fontsize, 
                                                     horizontalalignment='center', 
@@ -1048,12 +1080,12 @@ class Network():
                                     
                                     if j[k][1] in self._Var.floatingId:
                                         if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i]) > 1):
-                                            slope = ((lpath.vertices[0][1] - lpath.vertices[-25][1])/
-                                                     (lpath.vertices[0][0] - lpath.vertices[-25][0]))
+                                            slope = ((lpath.vertices[0][1] - lpath.vertices[int(0.75*len(lpath.vertices))][1])/
+                                                     (lpath.vertices[0][0] - lpath.vertices[int(0.75*len(lpath.vertices))][0]))
                                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                             y_prime = -slope*x_prime
-                                            ax.text(x_prime+lpath.vertices[-25][0], 
-                                                    y_prime+lpath.vertices[-25][1],
+                                            ax.text(x_prime+lpath.vertices[int(0.75*len(lpath.vertices))][0], 
+                                                    y_prime+lpath.vertices[int(0.75*len(lpath.vertices))][1],
                                                     int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i])), 
                                                     fontsize=self.fontsize, 
                                                     horizontalalignment='center', 
@@ -1127,7 +1159,12 @@ class Network():
                                     (np.abs(n_2) < np.shape(stackXY)[1] - 75)):
                                 n_2 += 1
                             
-                            lpath = Path(stackXY.T[n_2:n_1])
+                            if self.edgeType == 'default':
+                                lpath = Path(stackXY.T[n_2:n_1])
+                            elif self.edgeType == 'bezier':
+                                bcp = toolbox.computeBezierControlPoints(stackXY.T[n_2], X2, stackXY.T[n_1])
+                                lpath = Path([bcp[0], bcp[1], bcp[2], bcp[3]], 
+                                             [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4])
                             
                             if self.analyzeFlux:
                                 if self._Var.flux[i] > 0:
@@ -1185,8 +1222,14 @@ class Network():
                                     e1color = colormap(norm(self._Var.flux[i]))
                                 else:
                                     e1color = self.reactionColor
-                                
-                            lpath = Path(stackXY.T[:n_1])
+                            
+                            if self.edgeType == 'default':
+                                lpath = Path(stackXY.T[:n_1])
+                            elif self.edgeType == 'bezier':
+                                bcp = toolbox.computeBezierControlPoints(stackXY.T[0], X2, stackXY.T[n_1])
+                                lpath = Path([bcp[0], bcp[1], bcp[2], bcp[3]], 
+                                             [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4])
+                            
                             arrowstyle1 = ArrowStyle.CurveFilledB(head_length=0.8, head_width=0.4)
                             lw1 = (1+self.edgelw)
                             e = FancyArrowPatch(path=lpath,
@@ -1198,12 +1241,12 @@ class Network():
                         
                         if j[0] in self._Var.floatingId:
                             if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[0])][i]) > 1):
-                                slope = ((lpath.vertices[0][1] - lpath.vertices[15][1])/
-                                         (lpath.vertices[0][0] - lpath.vertices[15][0]))
+                                slope = ((lpath.vertices[0][1] - lpath.vertices[int(0.15*len(lpath.vertices))][1])/
+                                         (lpath.vertices[0][0] - lpath.vertices[int(0.15*len(lpath.vertices))][0]))
                                 x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                 y_prime = -slope*x_prime
-                                ax.text(x_prime+lpath.vertices[15][0], 
-                                        y_prime+lpath.vertices[15][1], 
+                                ax.text(x_prime+lpath.vertices[int(0.15*len(lpath.vertices))][0], 
+                                        y_prime+lpath.vertices[int(0.15*len(lpath.vertices))][1], 
                                         int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[0])][i])), 
                                         fontsize=self.fontsize, 
                                         horizontalalignment='center', 
@@ -1211,12 +1254,12 @@ class Network():
                                         color=self.reactionColor)
                         if j[1] in self._Var.floatingId:
                             if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[1])][i]) > 1):
-                                slope = ((lpath.vertices[0][1] - lpath.vertices[-20][1])/
-                                         (lpath.vertices[0][0] - lpath.vertices[-20][0]))
+                                slope = ((lpath.vertices[0][1] - lpath.vertices[int(0.8*len(lpath.vertices))][1])/
+                                         (lpath.vertices[0][0] - lpath.vertices[int(0.8*len(lpath.vertices))][0]))
                                 x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                 y_prime = -slope*x_prime
-                                ax.text(x_prime+lpath.vertices[-20][0], 
-                                        y_prime+lpath.vertices[-20][1], 
+                                ax.text(x_prime+lpath.vertices[int(0.8*len(lpath.vertices))][0], 
+                                        y_prime+lpath.vertices[int(0.8*len(lpath.vertices))][1], 
                                         int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[1])][i])), 
                                         fontsize=self.fontsize,
                                         horizontalalignment='center', 
@@ -1425,7 +1468,7 @@ class NetworkEnsemble():
         Return the layout of the model
         """
         
-        if self.layoutAlgorithm not in getListOfAlgorithms():
+        if self.layoutAlgorithm not in toolbox.getListOfAlgorithms():
             raise Exception("Unsupported layout algorithm: '" + str(self.layoutAlgorithm) + "'")
         
         avoid = ['C', 'CC', 'Ci', 'E1', 'EX', 'Ei', 'FF', 'GF', 'Ge', 'Gt', 'I', 'LC',
@@ -2279,7 +2322,7 @@ class NetworkEnsemble():
         :param dpi: dpi settings for the diagram
         """
         
-        if self.layoutAlgorithm not in getListOfAlgorithms():
+        if self.layoutAlgorithm not in toolbox.getListOfAlgorithms():
             raise Exception("Unsupported layout algorithm: '" + str(self.layoutAlgorithm) + "'")
         
         edgelw_backup = self.edgelw

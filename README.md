@@ -6,7 +6,7 @@
 
 A package for visual analysis of biochemical reaction network models
 
-Copyright 2018-2021 Kiri Choi
+Copyright 2018-2022 Kiri Choi
 
 ## Introduction
 
