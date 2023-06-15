@@ -73,7 +73,6 @@ class Network():
             self._Var.compartmentId = self.rrInstance.getCompartmentIds()
             self._Var.rid = self.rrInstance.getReactionIds()
             self._Var.stoch = self.rrInstance.getFullStoichiometryMatrix()
-            self._Var.stoch_row = self._Var.stoch.rownames
         except:
             raise Exception("Failed to analyze the file: Check the file is valid")
         self.reset()
@@ -842,7 +841,7 @@ class Network():
                                 ax.add_patch(e2)
                                 
                                 if j[k][0] in self._Var.floatingId:
-                                    if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i]) > 1):
+                                    if (np.abs(self._Var.stoch[self._Var.floatingId.index(j[k][0])][i]) > 1):
                                         # position calculation
                                         slope = ((lpath1.vertices[0][1] - lpath1.vertices[int(0.35*len(lpath1.vertices))][1])/
                                                  (lpath1.vertices[0][0] - lpath1.vertices[int(0.35*len(lpath1.vertices))][0]))
@@ -850,21 +849,21 @@ class Network():
                                         y_prime = -slope*x_prime
                                         ax.text(x_prime+lpath1.vertices[int(0.35*len(lpath1.vertices))][0], 
                                                 y_prime+lpath1.vertices[int(0.35*len(lpath1.vertices))][1], 
-                                                int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i])), 
+                                                int(np.abs(self._Var.stoch[self._Var.floatingId.index(j[k][0])][i])), 
                                                 fontsize=self.fontsize, 
                                                 horizontalalignment='center', 
                                                 verticalalignment='center', 
                                                 color=self.reactionColor)
                                 
                                 if j[k][1] in self._Var.floatingId:
-                                    if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i]) > 1):
+                                    if (np.abs(self._Var.stoch[self._Var.floatingId.index(j[k][1])][i]) > 1):
                                         slope = ((lpath2.vertices[0][1] - lpath2.vertices[int(0.65*len(lpath2.vertices))][1])/
                                                  (lpath2.vertices[0][0] - lpath2.vertices[int(0.65*len(lpath2.vertices))][0]))
                                         x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                         y_prime = -slope*x_prime
                                         ax.text(x_prime+lpath2.vertices[int(0.65*len(lpath2.vertices))][0], 
                                                 y_prime+lpath2.vertices[int(0.65*len(lpath2.vertices))][1], 
-                                                int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i])), 
+                                                int(np.abs(self._Var.stoch[self._Var.floatingId.index(j[k][1])][i])), 
                                                 fontsize=self.fontsize, 
                                                 horizontalalignment='center', 
                                                 verticalalignment='center', 
@@ -1065,28 +1064,28 @@ class Network():
                                         ax.add_patch(e)
                                 
                                     if j[k][0] in self._Var.floatingId:
-                                        if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i]) > 1):
+                                        if (np.abs(self._Var.stoch[self._Var.floatingId.index(j[k][0])][i]) > 1):
                                             slope = ((lpath.vertices[0][1] - lpath.vertices[int(0.35*len(lpath.vertices))][1])/
                                                      (lpath.vertices[0][0] - lpath.vertices[int(0.35*len(lpath.vertices))][0]))
                                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                             y_prime = -slope*x_prime
                                             ax.text(x_prime+lpath.vertices[int(0.35*len(lpath.vertices))][0], 
                                                     y_prime+lpath.vertices[int(0.35*len(lpath.vertices))][1], 
-                                                    int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][0])][i])), 
+                                                    int(np.abs(self._Var.stoch[self._Var.floatingId.index(j[k][0])][i])), 
                                                     fontsize=self.fontsize, 
                                                     horizontalalignment='center', 
                                                     verticalalignment='center', 
                                                     color=self.reactionColor)
                                     
                                     if j[k][1] in self._Var.floatingId:
-                                        if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i]) > 1):
+                                        if (np.abs(self._Var.stoch[self._Var.floatingId.index(j[k][1])][i]) > 1):
                                             slope = ((lpath.vertices[0][1] - lpath.vertices[int(0.75*len(lpath.vertices))][1])/
                                                      (lpath.vertices[0][0] - lpath.vertices[int(0.75*len(lpath.vertices))][0]))
                                             x_prime = np.sqrt(0.01/(1 + np.square(slope)))*max(self.scale/2, 1)
                                             y_prime = -slope*x_prime
                                             ax.text(x_prime+lpath.vertices[int(0.75*len(lpath.vertices))][0], 
                                                     y_prime+lpath.vertices[int(0.75*len(lpath.vertices))][1],
-                                                    int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i])), 
+                                                    int(np.abs(self._Var.stoch[self._Var.floatingId.index(j[k][1])][i])), 
                                                     fontsize=self.fontsize, 
                                                     horizontalalignment='center', 
                                                     verticalalignment='center',
@@ -1240,27 +1239,27 @@ class Network():
                             ax.add_patch(e)
                         
                         if j[0] in self._Var.floatingId:
-                            if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[0])][i]) > 1):
+                            if (np.abs(self._Var.stoch[self._Var.floatingId.index(j[0])][i]) > 1):
                                 slope = ((lpath.vertices[0][1] - lpath.vertices[int(0.15*len(lpath.vertices))][1])/
                                          (lpath.vertices[0][0] - lpath.vertices[int(0.15*len(lpath.vertices))][0]))
                                 x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                 y_prime = -slope*x_prime
                                 ax.text(x_prime+lpath.vertices[int(0.15*len(lpath.vertices))][0], 
                                         y_prime+lpath.vertices[int(0.15*len(lpath.vertices))][1], 
-                                        int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[0])][i])), 
+                                        int(np.abs(self._Var.stoch[self._Var.floatingId.index(j[0])][i])), 
                                         fontsize=self.fontsize, 
                                         horizontalalignment='center', 
                                         verticalalignment='center', 
                                         color=self.reactionColor)
                         if j[1] in self._Var.floatingId:
-                            if (np.abs(self._Var.stoch[self._Var.stoch_row.index(j[1])][i]) > 1):
+                            if (np.abs(self._Var.stoch[self._Var.floatingId.index(j[1])][i]) > 1):
                                 slope = ((lpath.vertices[0][1] - lpath.vertices[int(0.8*len(lpath.vertices))][1])/
                                          (lpath.vertices[0][0] - lpath.vertices[int(0.8*len(lpath.vertices))][0]))
                                 x_prime = np.sqrt(0.01/(1 + np.square(slope)))*(self.fontsize/20)*max(self.scale/2, 1)
                                 y_prime = -slope*x_prime
                                 ax.text(x_prime+lpath.vertices[int(0.8*len(lpath.vertices))][0], 
                                         y_prime+lpath.vertices[int(0.8*len(lpath.vertices))][1], 
-                                        int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[1])][i])), 
+                                        int(np.abs(self._Var.stoch[self._Var.floatingId.index(j[1])][i])), 
                                         fontsize=self.fontsize,
                                         horizontalalignment='center', 
                                         verticalalignment='center', 
@@ -2555,7 +2554,7 @@ class NetworkEnsemble():
                                             y_prime = -slope*x_prime
                                             plt.text(x_prime+lpath2.vertices[-20][0], 
                                                      y_prime+lpath2.vertices[-20][1], 
-                                                     int(np.abs(self._Var.stoch[self._Var.stoch_row.index(j[k][1])][i])), 
+                                                     int(np.abs(self._Var.stoch[self._Var.floatingId.index(j[k][1])][i])), 
                                                      fontsize=self.fontsize, 
                                                      horizontalalignment='center', 
                                                      verticalalignment='center', 
