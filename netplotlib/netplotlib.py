@@ -1496,7 +1496,7 @@ class NetworkEnsemble():
             boundaryId = self._Var.boundaryIds[rind]
             floatingId = self._Var.floatingIds[rind]
             
-            allBoundary.append(boundaryId)
+            allBoundary.extend(boundaryId)
             
             # prepare symbols for sympy
             boundaryId_sympy = [] 
