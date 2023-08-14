@@ -503,7 +503,7 @@ class Network():
         self._Var.ignoreAnalysisFlags = False
     
     
-    def draw(self, show=True, savePath=None, dpi=150):
+    def draw(self, show=True, savePath=None, dpi=150, transparent=False):
         """
         Draw network diagram
         
@@ -1350,7 +1350,7 @@ class Network():
             
             if savePath != None:
                 try:
-                    fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
+                    fig.savefig(savePath, bbox_inches='tight', dpi=dpi, transparent=transparent)
                 except IOError as e:
                     raise Exception("Error saving diagram: " + str(e))
                     
@@ -1359,7 +1359,7 @@ class Network():
             plt.close()
 
 
-    def savefig(self, path, dpi=150):
+    def savefig(self, path, dpi=150, transparent=False):
         """
         Save network diagram to specified location
         
@@ -1367,7 +1367,7 @@ class Network():
         :param dpi: dpi settings for the diagram
         """
         
-        self.draw(show=False, savePath=path, dpi=dpi)
+        self.draw(show=False, savePath=path, dpi=dpi, transparent=transparent)
         
 
 class NetworkEnsemble():
@@ -1796,7 +1796,7 @@ class NetworkEnsemble():
         return pos
     
     
-    def drawWeightedDiagram(self, show=True, savePath=None, dpi=150):
+    def drawWeightedDiagram(self, show=True, savePath=None, dpi=150, transparent=False):
         """     
         Draw weighted reaction network based on frequency of reactions
         
@@ -1810,8 +1810,12 @@ class NetworkEnsemble():
         if self._Var.pos == None:
             pos = self.getLayout()
         else:
-            pos = self.getLayout()
-            pos = self._Var.pos
+            pos1 = self.getLayout()
+            for i in list(pos1.keys()):
+                if i in list(self._Var.pos.keys()):
+                    if not i.startswith('J'):
+                        pos1[i] = self._Var.pos[i]
+            pos = pos1
             assert(len(self._Var.boundaryIds[0])+len(self._Var.floatingIds[0])+len(self._Var.rids[0]) == len(pos))
         
         if not self.removeBelowThreshold:
@@ -2298,7 +2302,7 @@ class NetworkEnsemble():
         
         if savePath != None:
             try:
-                fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
+                fig.savefig(savePath, bbox_inches='tight', dpi=dpi, transparent=transparent)
             except IOError as e:
                 raise Exception("Error saving diagram: " + str(e))
             return self._Var.allRxn, self._Var.count
@@ -2309,7 +2313,8 @@ class NetworkEnsemble():
             return self._Var.allRxn, self._Var.count
     
     
-    def drawNetworkGrid(self, nrows, ncols, auto=False, show=True, savePath=None, dpi=150):
+    def drawNetworkGrid(self, nrows, ncols, auto=False, show=True, savePath=None, 
+                        dpi=150, transparent=False):
         """
         Plot a grid of network diagrams
         
@@ -2342,7 +2347,7 @@ class NetworkEnsemble():
                     pos, iVar = net.getLayout(returnState=True)
                 else:
                     pos = self._Var.pos
-                    assert(len(self._Var.boundaryId)+len(self._Var.floatingId)+len(self._Var.rid) == len(pos))
+                    assert(len(self._Var.boundaryIds[mdl])+len(self._Var.floatingIds[mdl])+len(self._Var.rids[mdl]) == len(pos))
         
                 # check the range of x and y positions
                 max_width = []
@@ -2879,7 +2884,7 @@ class NetworkEnsemble():
         
         if savePath != None:
             try:
-                fig.savefig(savePath, bbox_inches='tight', dpi=dpi)
+                fig.savefig(savePath, bbox_inches='tight', dpi=dpi, transparent=transparent)
             except IOError as e:
                 raise Exception("Error saving diagram: " + str(e))
         else:
